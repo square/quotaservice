@@ -41,8 +41,8 @@ Permanent rules (described in a yaml file?)
 iptables rule for hard shutdown of misbehaving clients?
 
 ## Technology stack
-* Golang (for close-to-system low-latency runtime)
-* GRPC for RPC messages
+* [Golang](https://golang.org/) (for close-to-system low-latency runtime)
+* [gRPC](http://www.grpc.io/) for RPC messages
   * Pluggable, to allow other RPC frameworks
 
 ## Background reading
