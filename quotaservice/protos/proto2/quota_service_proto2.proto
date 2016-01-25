@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package quotaservice.proto2;
+
+service QuotaService {
+  rpc Allow(AllowRequest) returns (AllowResponse) {}
+}
+
+message AllowRequest {
+  optional string from_service = 1;
+  optional string to_service = 2;
+}
+
+message AllowResponse {
+  optional bool granted = 1;
+}
