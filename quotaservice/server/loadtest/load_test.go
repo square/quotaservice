@@ -1,13 +1,14 @@
-package main
+package loadtest
 import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"golang.org/x/net/context"
 	"github.com/maniksurtani/qs/quotaservice/protos"
+	"testing"
 )
 
-func main() {
+func BenchmarkQuotaRequests(b *testing.B) {
 	fmt.Println("Starting example client.")
 	serverAddr := "127.0.0.1:10990"
 	var opts []grpc.DialOption
@@ -24,11 +25,14 @@ func main() {
 		BucketName: "one",
 		TokensRequested: 1,
 	}
-	rsp, err := client.Allow(context.TODO(), req)
-	if err != nil {
-		fmt.Printf("Caught error %v", err)
-	} else {
-		fmt.Printf("Got response %v", rsp)
-	}
+
+	b.ResetTimer()
+	b.SetParallelism(8)
+	b.RunParallel(
+		func (pb *testing.PB) {
+			for pb.Next() {
+				client.Allow(context.TODO(), req)
+			}
+		})
 }
 

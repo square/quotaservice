@@ -2,31 +2,43 @@ package server
 
 import (
 	"fmt"
-	"net"
-	"google.golang.org/grpc"
-	"github.com/maniksurtani/qs/quotaservice/protos"
-	"golang.org/x/net/context"
 	"log"
 	"os"
-	"google.golang.org/grpc/grpclog"
-	"github.com/derekparker/delve/vendor/gopkg.in/yaml.v2"
+	"github.com/maniksurtani/qs/quotaservice/server/rpc"
+	"github.com/maniksurtani/qs/quotaservice/server/configs"
+	"github.com/maniksurtani/qs/quotaservice/server/lifecycle"
+	"github.com/maniksurtani/qs/quotaservice/buckets"
+	"time"
+	"github.com/maniksurtani/qs/quotaservice/server/logging"
+	"github.com/maniksurtani/qs/quotaservice/server/service"
 )
 
-var logger = log.New(os.Stdout, "quotaservice: ", log.Ldate | log.Ltime | log.LUTC | log.Lshortfile)
-
-// Configs
-type Configs struct {
-	Port              int
-	DefaultRefillRate int `yaml:"default_refill_rate,omitempty"`
-	RefillRates       map[string]map[string]int `yaml:"refill_rates,flow"`
+type Server struct {
+	cfgs          *configs.Configs
+	currentStatus lifecycle.Status
+	stopper       *chan int
+	adminServer   *AdminServer
+	tokenBuckets  *buckets.TokenBucketsContainer
+	rpcEndpoints  []rpc.RpcEndpoint
 }
 
-// The Server type
-type Server struct {
-	cfgs          *Configs
-	grpcServer    *grpc.Server
-	currentStatus status
-	stopper       *chan int
+// Constructors
+func New(configFile string, rpcServers ...rpc.RpcEndpoint) *Server {
+	return buildServer(configs.ReadConfig(configFile), rpcServers)
+}
+
+func NewWithDefaults(rpcServers... rpc.RpcEndpoint) *Server {
+	return buildServer(configs.NewDefaultConfig(), rpcServers)
+}
+
+func buildServer(config *configs.Configs, rpcEndpoints []rpc.RpcEndpoint) *Server {
+	if len(rpcEndpoints) == 0 {
+		panic("Need at least 1 RPC endpoint to run the quota service.")
+	}
+	return &Server{
+		cfgs: config,
+		adminServer: NewAdminServer(config.AdminPort),
+		rpcEndpoints: rpcEndpoints}
 }
 
 func (this *Server) String() string {
@@ -34,81 +46,53 @@ func (this *Server) String() string {
 }
 
 func (this *Server) Start() (bool, error) {
-	// Set up buckets
-	for from, conns := range this.cfgs.RefillRates {
-		for to, rate := range conns {
-			b := NewBucket(bucketName(from, to), rate)
-			b.Start()
-		}
+
+	// Initialize buckets
+	this.tokenBuckets = buckets.InitBuckets(this.cfgs)
+	// Start the admin server
+	this.adminServer.Start()
+
+	// Start the RPC servers
+	for _, rpcServer := range this.rpcEndpoints {
+		rpcServer.Init(this.cfgs, this)
+		rpcServer.Start()
 	}
 
-	// Start ticker
-	StartTicker()
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", this.cfgs.Port))
-	if err == nil {
-		grpclog.SetLogger(logger)
-		this.grpcServer = grpc.NewServer()
-		// Each service should be registered
-		quotaservice.RegisterQuotaServiceServer(this.grpcServer, this)
-		go this.grpcServer.Serve(lis)
-		this.currentStatus = started
-		logger.Printf("Starting server on port %v", this.cfgs.Port)
-		logger.Printf("Server status: %v", this.currentStatus)
-		return true, nil
-	} else {
-		// TODO(manik) Panic?
-		logger.Fatalf("Cannot start server on port %v. Error %v", this.cfgs.Port, err)
-		return false, err
-	}
-}
-
-func (this *Server) Stop() (bool, error) {
-	// Stop ticker
-	StopTicker()
-	this.currentStatus = stopped
-	logger.Printf("Stopping server on port %v.", this.cfgs.Port)
-	this.grpcServer.Stop()
+	this.currentStatus = lifecycle.Started
 	return true, nil
 }
 
-func (this *Server) GetQuota(ctx context.Context, req *quotaservice.GetQuotaRequest) (*quotaservice.GetQuotaResponse, error) {
-	logger.Printf("Handling request %v", req)
-	rsp := new(quotaservice.GetQuotaResponse)
-	b := BucketRegistry[bucketName(*req.FromService, *req.ToService)]
+func (this *Server) Stop() (bool, error) {
+	this.currentStatus = lifecycle.Stopped
+
+	// Stop the admin server
+	this.adminServer.Stop()
+
+	// Stop the RPC servers
+	for _, rpcServer := range this.rpcEndpoints {
+		rpcServer.Stop()
+	}
+
+	return true, nil
+}
+
+func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride service.EmptyBucketPolicyOverride) (int, error) {
+	b := this.tokenBuckets.FindBucket(bucketName)
 	if b == nil {
-		return nil, fmt.Errorf("Unable to find bucket %v", bucketName)
+		return 0, service.NewError(fmt.Sprintf("No such bucket named %v", bucketName), service.ER_NO_SUCH_BUCKET)
 	}
-	granted := int32(b.Acquire(int(*req.NumTokensRequested)))
-	rsp.NumTokensGranted = &granted
-	return rsp, nil
-}
 
-// Constructor
-func New(cfgs string) *Server {
-	file, err := os.Open(cfgs)
-	defer file.Close()
-	if err != nil {
-		// TODO(manik) panic?
-		log.Fatalf("Unable to open config file %v. Error: %v", cfgs, err)
-		return nil
-	} else {
-		// TODO(manik) is this the right approach to fully parse a YAML file?
-		buf := make([]byte, 1024, 1024)
-		var cfgs Configs
-		cfgStream := make([]byte, 0)
-		bytesRead, eof := file.Read(buf)
-		for eof == nil {
-			cfgStream = append(cfgStream, buf[:bytesRead]...)
-			bytesRead, eof = file.Read(buf)
+	waitTime := b.Take(int64(tokensRequested))
+	if waitTime > 0 {
+		if (b.Cfg.RejectIfEmpty && emptyBucketPolicyOverride == service.SERVER_DEFAULTS) || emptyBucketPolicyOverride == service.REJECT {
+			return 0, service.NewError(fmt.Sprintf("Rejected for bucket %v", bucketName), service.ER_REJECTED)
+		} else if waitTime > (time.Duration(b.Cfg.WaitTimeoutMillis) * time.Millisecond) {
+			return 0, service.NewError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), service.ER_TIMED_OUT_WAITING)
+		} else {
+			logging.Printf("Waiting %v", waitTime)
+			time.Sleep(waitTime)
 		}
-
-		yaml.Unmarshal(cfgStream, &cfgs)
-		return &Server{cfgs: &cfgs}
 	}
-}
 
-func bucketName(from, to string) string {
-	return fmt.Sprintf("%v->%v", from, to)
+	return tokensRequested, nil
 }
-

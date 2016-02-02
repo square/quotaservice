@@ -4,10 +4,26 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"github.com/maniksurtani/qs/quotaservice/server/rpc/grpc"
 )
 
+type Clustering interface {
+	// Returns true if the current node is the leader
+	IsLeader() bool
+	// Returns a channel that is used to notify the query service of a membership change.
+	MembershipChangeNotificationChannel() chan bool
+}
+
+type MetricsHandler interface {
+	// Returns true if the current node is the leader
+	IsLeader() bool
+	// Returns a channel that is used to notify the query service of a membership change.
+	MembershipChangeNotificationChannel() chan bool
+}
+
+
 func main() {
-	server := server.New("/tmp/test.yaml")
+	server := server.New("/tmp/test.yaml", &grpc.GrpcEndpoint{})
 	server.Start()
 
 	// Block until SIGTERM, SIGKILL or SIGINT
