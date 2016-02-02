@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package quotaservice;
+
+service QuotaService {
+  rpc Allow(AllowRequest) returns (AllowResponse) {}
+}
+
+message AllowRequest {
+  enum EmptyBucketPolicyOverride {
+    SERVER_DEFAULTS = 0;
+    WAIT = 1;
+    REJECT = 2;
+  }
+
+  string bucket_name = 1;
+  int32 tokens_requested = 2;
+  EmptyBucketPolicyOverride empty_bucket_policy = 3;
+}
+
+message AllowResponse {
+  enum Status {
+    OK = 0;
+    TIMED_OUT = 1;
+    REJECTED = 2;
+  }
+
+  int32 tokens_granted = 1;
+  Status status = 2;
+}
