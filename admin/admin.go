@@ -1,9 +1,9 @@
-package server
+package admin
 
 import (
 	"fmt"
 	"net/http"
-	"github.com/maniksurtani/qs/quotaservice/server/logging"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 type AdminServer struct {

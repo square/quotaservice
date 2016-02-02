@@ -2,14 +2,15 @@ package grpc
 import (
 	"net"
 	"fmt"
-	"github.com/maniksurtani/qs/quotaservice/protos"
-	"github.com/maniksurtani/qs/quotaservice/server/logging"
-	"github.com/maniksurtani/qs/quotaservice/server/configs"
-	"github.com/maniksurtani/qs/quotaservice/server/lifecycle"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"golang.org/x/net/context"
-	"github.com/maniksurtani/qs/quotaservice/server/service"
+	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice"
+	qspb "github.com/maniksurtani/quotaservice/protos"
+	"github.com/maniksurtani/quotaservice/lifecycle"
+	"github.com/maniksurtani/quotaservice/configs"
+
 )
 
 // gRPC-backed implementation of an RPC endpoint
@@ -17,10 +18,10 @@ type GrpcEndpoint struct {
 	cfgs          *configs.Configs
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
-	qs            service.QuotaService
+	qs            quotaservice.QuotaService
 }
 
-func (this *GrpcEndpoint) Init(cfgs *configs.Configs, qs service.QuotaService) {
+func (this *GrpcEndpoint) Init(cfgs *configs.Configs, qs quotaservice.QuotaService) {
 	this.cfgs = cfgs
 	this.qs = qs
 }
@@ -35,7 +36,7 @@ func (this *GrpcEndpoint) Start() {
 	grpclog.SetLogger(logging.GetLogger())
 	this.grpcServer = grpc.NewServer()
 	// Each service should be registered
-	quotaservice.RegisterQuotaServiceServer(this.grpcServer, this)
+	qspb.RegisterQuotaServiceServer(this.grpcServer, this)
 	go this.grpcServer.Serve(lis)
 	this.currentStatus = lifecycle.Started
 	logging.Printf("Starting server on port %v", this.cfgs.Port)
@@ -47,39 +48,39 @@ func (this *GrpcEndpoint) Stop() {
 	this.currentStatus = lifecycle.Stopped
 }
 
-func (this *GrpcEndpoint) Allow(ctx context.Context, req *quotaservice.AllowRequest) (*quotaservice.AllowResponse, error) {
-	rsp := new(quotaservice.AllowResponse)
+func (this *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
+	rsp := new(qspb.AllowResponse)
 	// TODO(manik) validate inputs
 	granted, err := this.qs.Allow(req.BucketName, int(req.TokensRequested), convert(req.EmptyBucketPolicy))
 
 	if err != nil {
-		if qsErr, ok := err.(service.QuotaServiceError); ok {
+		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
 			switch qsErr.Reason {
-			case service.ER_NO_SUCH_BUCKET:
-				rsp.Status = quotaservice.AllowResponse_REJECTED
-			case service.ER_REJECTED:
-				rsp.Status = quotaservice.AllowResponse_REJECTED
-			case service.ER_TIMED_OUT_WAITING:
-				rsp.Status = quotaservice.AllowResponse_TIMED_OUT
+			case quotaservice.ER_NO_SUCH_BUCKET:
+				rsp.Status = qspb.AllowResponse_REJECTED
+			case quotaservice.ER_REJECTED:
+				rsp.Status = qspb.AllowResponse_REJECTED
+			case quotaservice.ER_TIMED_OUT_WAITING:
+				rsp.Status = qspb.AllowResponse_TIMED_OUT
 			}
 		} else {
 			return nil, err
 		}
 	} else {
-		rsp.Status = quotaservice.AllowResponse_OK
+		rsp.Status = qspb.AllowResponse_OK
 		rsp.TokensGranted = int32(granted)
 	}
 	return rsp, nil
 }
 
-func convert(o quotaservice.AllowRequest_EmptyBucketPolicyOverride) service.EmptyBucketPolicyOverride {
+func convert(o qspb.AllowRequest_EmptyBucketPolicyOverride) quotaservice.EmptyBucketPolicyOverride {
 	switch o {
-	case quotaservice.AllowRequest_REJECT:
-		return service.REJECT
-	case quotaservice.AllowRequest_WAIT:
-		return service.WAIT
-	case quotaservice.AllowRequest_SERVER_DEFAULTS:
-		return service.SERVER_DEFAULTS
+	case qspb.AllowRequest_REJECT:
+		return quotaservice.EBP_REJECT
+	case qspb.AllowRequest_WAIT:
+		return quotaservice.EBP_WAIT
+	case qspb.AllowRequest_SERVER_DEFAULTS:
+		return quotaservice.EBP_SERVER_DEFAULTS
 	default:
 		panic(fmt.Sprintf("Unknown enum value %+v", o))
 	}

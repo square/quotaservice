@@ -1,13 +1,12 @@
 package http
 
 import (
-	"github.com/maniksurtani/qs/quotaservice/server/configs"
-	"github.com/maniksurtani/qs/quotaservice/server/lifecycle"
 	"google.golang.org/grpc"
-	"github.com/maniksurtani/qs/quotaservice/server/service"
 	"github.com/mohamedattahri/rst"
-	"github.com/gorilla/mux"
 	"net/http"
+	"github.com/maniksurtani/quotaservice/lifecycle"
+	"github.com/maniksurtani/quotaservice/configs"
+	"github.com/maniksurtani/quotaservice"
 )
 
 // HTTP-backed implementation of an RPC endpoint
@@ -15,14 +14,14 @@ type HttpEndpoint struct {
 	cfgs          *configs.Configs
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
-	qs            service.QuotaService
+	qs            quotaservice.QuotaService
 }
 
 type Response struct {
 	granted int
 }
 
-func (this *HttpEndpoint) Init(cfgs *configs.Configs, qs service.QuotaService) {
+func (this *HttpEndpoint) Init(cfgs *configs.Configs, qs quotaservice.QuotaService) {
 	this.cfgs = cfgs
 	this.qs = qs
 }
@@ -32,7 +31,7 @@ func (this *HttpEndpoint) Start() {
 	mux.Get("/allow/{bucketname:\\s+}/{tokens:\\d+}", func(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
 		name := vars.Get("bucketname")
 		tokens := int32(vars.Get("tokens"))
-		granted, err := this.qs.Allow(name, tokens, service.SERVER_DEFAULTS)
+		granted, err := this.qs.Allow(name, tokens, quotaservice.EBP_SERVER_DEFAULTS)
 		if err != nil {
 			return nil, err
 		}

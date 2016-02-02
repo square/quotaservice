@@ -1,43 +1,40 @@
-package server
+package quotaservice
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"github.com/maniksurtani/qs/quotaservice/server/rpc"
-	"github.com/maniksurtani/qs/quotaservice/server/configs"
-	"github.com/maniksurtani/qs/quotaservice/server/lifecycle"
-	"github.com/maniksurtani/qs/quotaservice/buckets"
 	"time"
-	"github.com/maniksurtani/qs/quotaservice/server/logging"
-	"github.com/maniksurtani/qs/quotaservice/server/service"
+	"github.com/maniksurtani/quotaservice/configs"
+	"github.com/maniksurtani/quotaservice/buckets"
+	"github.com/maniksurtani/quotaservice/lifecycle"
+	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice/admin"
 )
 
 type Server struct {
 	cfgs          *configs.Configs
 	currentStatus lifecycle.Status
 	stopper       *chan int
-	adminServer   *AdminServer
+	adminServer   *admin.AdminServer
 	tokenBuckets  *buckets.TokenBucketsContainer
-	rpcEndpoints  []rpc.RpcEndpoint
+	rpcEndpoints  []RpcEndpoint
 }
 
 // Constructors
-func New(configFile string, rpcServers ...rpc.RpcEndpoint) *Server {
+func New(configFile string, rpcServers ...RpcEndpoint) *Server {
 	return buildServer(configs.ReadConfig(configFile), rpcServers)
 }
 
-func NewWithDefaults(rpcServers... rpc.RpcEndpoint) *Server {
+func NewWithDefaults(rpcServers... RpcEndpoint) *Server {
 	return buildServer(configs.NewDefaultConfig(), rpcServers)
 }
 
-func buildServer(config *configs.Configs, rpcEndpoints []rpc.RpcEndpoint) *Server {
+func buildServer(config *configs.Configs, rpcEndpoints []RpcEndpoint) *Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
 	return &Server{
 		cfgs: config,
-		adminServer: NewAdminServer(config.AdminPort),
+		adminServer: admin.NewAdminServer(config.AdminPort),
 		rpcEndpoints: rpcEndpoints}
 }
 
@@ -76,18 +73,18 @@ func (this *Server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride service.EmptyBucketPolicyOverride) (int, error) {
+func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride EmptyBucketPolicyOverride) (int, error) {
 	b := this.tokenBuckets.FindBucket(bucketName)
 	if b == nil {
-		return 0, service.NewError(fmt.Sprintf("No such bucket named %v", bucketName), service.ER_NO_SUCH_BUCKET)
+		return 0, newError(fmt.Sprintf("No such bucket named %v", bucketName), ER_NO_SUCH_BUCKET)
 	}
 
 	waitTime := b.Take(int64(tokensRequested))
 	if waitTime > 0 {
-		if (b.Cfg.RejectIfEmpty && emptyBucketPolicyOverride == service.SERVER_DEFAULTS) || emptyBucketPolicyOverride == service.REJECT {
-			return 0, service.NewError(fmt.Sprintf("Rejected for bucket %v", bucketName), service.ER_REJECTED)
+		if (b.Cfg.RejectIfEmpty && emptyBucketPolicyOverride == EBP_SERVER_DEFAULTS) || emptyBucketPolicyOverride == EBP_REJECT {
+			return 0, newError(fmt.Sprintf("Rejected for bucket %v", bucketName), ER_REJECTED)
 		} else if waitTime > (time.Duration(b.Cfg.WaitTimeoutMillis) * time.Millisecond) {
-			return 0, service.NewError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), service.ER_TIMED_OUT_WAITING)
+			return 0, newError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), ER_TIMED_OUT_WAITING)
 		} else {
 			logging.Printf("Waiting %v", waitTime)
 			time.Sleep(waitTime)

@@ -4,7 +4,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"golang.org/x/net/context"
-	"github.com/maniksurtani/qs/quotaservice/protos"
+	qspb "github.com/maniksurtani/quotaservice/protos"
 )
 
 func main() {
@@ -18,9 +18,9 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := quotaservice.NewQuotaServiceClient(conn)
+	client := qspb.NewQuotaServiceClient(conn)
 
-	req := &quotaservice.AllowRequest{
+	req := &qspb.AllowRequest{
 		BucketName: "one",
 		TokensRequested: 1,
 	}

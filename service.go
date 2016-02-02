@@ -1,12 +1,12 @@
-package service
+package quotaservice
 import "errors"
 
 type EmptyBucketPolicyOverride int
 
 const (
-	SERVER_DEFAULTS EmptyBucketPolicyOverride = iota
-	WAIT
-	REJECT
+	EBP_SERVER_DEFAULTS EmptyBucketPolicyOverride = iota
+	EBP_WAIT
+	EBP_REJECT
 )
 
 type ErrorReason int
@@ -30,6 +30,6 @@ func (e QuotaServiceError) Error() string {
 	return e.error.Error()
 }
 
-func NewError(msg string, reason ErrorReason) QuotaServiceError {
+func newError(msg string, reason ErrorReason) QuotaServiceError {
 	return QuotaServiceError{error: errors.New(msg), Reason: reason}
 }

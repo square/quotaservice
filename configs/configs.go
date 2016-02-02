@@ -3,7 +3,7 @@ import (
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
 	"fmt"
-	"github.com/maniksurtani/qs/quotaservice/server/logging"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 type Configs struct {

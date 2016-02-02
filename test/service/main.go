@@ -1,10 +1,10 @@
 package main
 import (
-	"github.com/maniksurtani/qs/quotaservice/server"
+	"github.com/maniksurtani/quotaservice"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/maniksurtani/qs/quotaservice/server/rpc/grpc"
+	"github.com/maniksurtani/quotaservice/rpc/grpc"
 )
 
 type Clustering interface {
@@ -23,7 +23,7 @@ type MetricsHandler interface {
 
 
 func main() {
-	server := server.New("/tmp/test.yaml", &grpc.GrpcEndpoint{})
+	server := quotaservice.New("/tmp/test.yaml", &grpc.GrpcEndpoint{})
 	server.Start()
 
 	// Block until SIGTERM, SIGKILL or SIGINT
@@ -31,10 +31,10 @@ func main() {
 	shutdown := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
 	go func() {
-		<- sigs
+		<-sigs
 		shutdown <- true
 	}()
-	<- shutdown
+	<-shutdown
 	server.Stop()
 }
 

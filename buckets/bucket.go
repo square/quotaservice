@@ -2,8 +2,8 @@ package buckets
 import (
 	"time"
 	"github.com/hotei/tokenbucket"
-	"github.com/maniksurtani/qs/quotaservice/server/configs"
-	"github.com/maniksurtani/qs/quotaservice/server/logging"
+	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice/configs"
 )
 
 type TokenBucketsContainer struct {
