@@ -24,6 +24,7 @@ import (
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/admin"
+	"github.com/maniksurtani/quotaservice/clustering"
 )
 
 type Server struct {
@@ -33,6 +34,7 @@ type Server struct {
 	adminServer   *admin.AdminServer
 	tokenBuckets  *buckets.TokenBucketsContainer
 	rpcEndpoints  []RpcEndpoint
+	monitoring    *Monitoring
 }
 
 // Constructors
@@ -48,10 +50,16 @@ func buildServer(config *configs.Configs, rpcEndpoints []RpcEndpoint) *Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
-	return &Server{
+	s := &Server{
 		cfgs: config,
 		adminServer: admin.NewAdminServer(config.AdminPort),
 		rpcEndpoints: rpcEndpoints}
+
+	// TODO(manik): Metrics? Monitoring? Naming...
+	if config.MetricsEnabled {
+		s.monitoring = newMonitoring()
+	}
+	return s
 }
 
 func (this *Server) String() string {
@@ -109,3 +117,17 @@ func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPol
 
 	return tokensRequested, nil
 }
+
+func (this *Server) GetMonitoring() *Monitoring {
+	return this.monitoring
+}
+
+func (this *Server) SetLogger(logger logging.Logger) {
+	logging.SetLogger(logger)
+}
+
+func (this *Server) SetClustering(clustering clustering.Clustering) {
+	// TODO(manik): Implement me
+}
+
+

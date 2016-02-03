@@ -40,6 +40,9 @@ type MetricsHandler interface {
 
 func main() {
 	server := quotaservice.New("/tmp/test.yaml", &grpc.GrpcEndpoint{})
+	// server.SetLogging( ... some custom logger ... );
+	// server.SetClustering( ... some custom clustering ... )
+	_ = server.GetMonitoring()
 	server.Start()
 
 	// Block until SIGTERM, SIGKILL or SIGINT
