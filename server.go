@@ -33,26 +33,28 @@ type Server struct {
 	stopper       *chan int
 	adminServer   *admin.AdminServer
 	tokenBuckets  *buckets.TokenBucketsContainer
+	bucketFactory buckets.BucketFactory
 	rpcEndpoints  []RpcEndpoint
 	monitoring    *Monitoring
 }
 
 // Constructors
-func New(configFile string, rpcServers ...RpcEndpoint) *Server {
-	return buildServer(configs.ReadConfig(configFile), rpcServers)
+func New(configFile string, bucketFactory buckets.BucketFactory, rpcServers ...RpcEndpoint) *Server {
+	return buildServer(configs.ReadConfig(configFile), bucketFactory, rpcServers)
 }
 
-func NewWithDefaults(rpcServers... RpcEndpoint) *Server {
-	return buildServer(configs.NewDefaultConfig(), rpcServers)
+func NewWithDefaults(bucketFactory buckets.BucketFactory, rpcServers... RpcEndpoint) *Server {
+	return buildServer(configs.NewDefaultConfig(), bucketFactory, rpcServers)
 }
 
-func buildServer(config *configs.Configs, rpcEndpoints []RpcEndpoint) *Server {
+func buildServer(config *configs.Configs, bucketFactory buckets.BucketFactory, rpcEndpoints []RpcEndpoint) *Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
 	s := &Server{
 		cfgs: config,
 		adminServer: admin.NewAdminServer(config.AdminPort),
+		bucketFactory: bucketFactory,
 		rpcEndpoints: rpcEndpoints}
 
 	// TODO(manik): Metrics? Monitoring? Naming...
@@ -69,7 +71,7 @@ func (this *Server) String() string {
 func (this *Server) Start() (bool, error) {
 
 	// Initialize buckets
-	this.tokenBuckets = buckets.InitBuckets(this.cfgs)
+	this.tokenBuckets = buckets.InitBuckets(this.cfgs, this.bucketFactory)
 	// Start the admin server
 	this.adminServer.Start()
 
@@ -103,16 +105,19 @@ func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPol
 		return 0, newError(fmt.Sprintf("No such bucket named %v", bucketName), ER_NO_SUCH_BUCKET)
 	}
 
-	waitTime := b.Take(int64(tokensRequested))
-	if waitTime > 0 {
-		if (b.Cfg.RejectIfEmpty && emptyBucketPolicyOverride == EBP_SERVER_DEFAULTS) || emptyBucketPolicyOverride == EBP_REJECT {
-			return 0, newError(fmt.Sprintf("Rejected for bucket %v", bucketName), ER_REJECTED)
-		} else if waitTime > (time.Duration(b.Cfg.WaitTimeoutMillis) * time.Millisecond) {
-			return 0, newError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), ER_TIMED_OUT_WAITING)
-		} else {
-			logging.Printf("Waiting %v", waitTime)
-			time.Sleep(waitTime)
-		}
+	cfg := b.GetConfig()
+	granted := false
+	nonBlocking := (cfg.RejectIfEmpty && emptyBucketPolicyOverride == EBP_SERVER_DEFAULTS) || emptyBucketPolicyOverride == EBP_REJECT
+	if nonBlocking {
+		// Non-blocking call
+		granted = b.Take(tokensRequested)
+	} else {
+		// Block until available
+		granted = b.TakeBlocking(tokensRequested, time.Duration(cfg.WaitTimeoutMillis) * time.Millisecond)
+	}
+
+	if !granted {
+		return 0, newError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), ER_TIMED_OUT_WAITING)
 	}
 
 	return tokensRequested, nil

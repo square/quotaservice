@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"syscall"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
+	"github.com/maniksurtani/quotaservice/buckets/memory"
 )
 
 type Clustering interface {
@@ -39,7 +40,7 @@ type MetricsHandler interface {
 
 
 func main() {
-	server := quotaservice.New("/tmp/test.yaml", &grpc.GrpcEndpoint{})
+	server := quotaservice.New("/tmp/test.yaml", memory.BucketFactory{}, &grpc.GrpcEndpoint{})
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	_ = server.GetMonitoring()
