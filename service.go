@@ -17,14 +17,6 @@
 package quotaservice
 import "errors"
 
-type EmptyBucketPolicyOverride int
-
-const (
-	EBP_SERVER_DEFAULTS EmptyBucketPolicyOverride = iota
-	EBP_WAIT
-	EBP_REJECT
-)
-
 type ErrorReason int
 
 const (
@@ -34,7 +26,7 @@ const (
 )
 
 type QuotaService interface {
-	Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride EmptyBucketPolicyOverride) (int, error)
+	Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error)
 }
 
 type QuotaServiceError struct {

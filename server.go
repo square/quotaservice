@@ -99,28 +99,39 @@ func (this *Server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (this *Server) Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride EmptyBucketPolicyOverride) (int, error) {
-	b := this.tokenBuckets.FindBucket(bucketName)
+func (this *Server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
+	bn := fmt.Sprintf("%v:%v", namespace, name)
+	b := this.tokenBuckets.FindBucket(bn)
+	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
-		return 0, newError(fmt.Sprintf("No such bucket named %v", bucketName), ER_NO_SUCH_BUCKET)
+		err = newError(fmt.Sprintf("No such bucket named %v", bn), ER_NO_SUCH_BUCKET)
+		return
 	}
 
 	cfg := b.GetConfig()
-	granted := false
-	nonBlocking := (cfg.RejectIfEmpty && emptyBucketPolicyOverride == EBP_SERVER_DEFAULTS) || emptyBucketPolicyOverride == EBP_REJECT
+	granted = 0
+	waitTime = 0
+
+	nonBlocking := cfg.RejectIfEmpty
 	if nonBlocking {
 		// Non-blocking call
-		granted = b.Take(tokensRequested)
+		if b.Take(tokensRequested) {
+			granted = tokensRequested
+		}
 	} else {
 		// Block until available
-		granted = b.TakeBlocking(tokensRequested, time.Duration(cfg.WaitTimeoutMillis) * time.Millisecond)
+		// TODO(manik) remove blocking call, add a wait time.
+		if b.TakeBlocking(tokensRequested, time.Duration(cfg.WaitTimeoutMillis) * time.Millisecond) {
+			granted = tokensRequested
+			// TODO(manik) add waitTime
+		}
 	}
 
-	if !granted {
-		return 0, newError(fmt.Sprintf("Timed out waiting on bucket %v", bucketName), ER_TIMED_OUT_WAITING)
+	if granted == 0 {
+		err = newError(fmt.Sprintf("Timed out waiting on bucket %v", bn), ER_TIMED_OUT_WAITING)
 	}
 
-	return tokensRequested, nil
+	return
 }
 
 func (this *Server) GetMonitoring() *Monitoring {

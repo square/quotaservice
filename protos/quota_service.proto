@@ -14,33 +14,29 @@
  *   limitations under the License.
  */
 
-syntax = "proto3";
+syntax = "proto2";
 
 package quotaservice;
 
 service QuotaService {
-  rpc Allow(AllowRequest) returns (AllowResponse) {}
+  rpc Allow (AllowRequest) returns (AllowResponse) {
+  }
 }
 
 message AllowRequest {
-  enum EmptyBucketPolicyOverride {
-    SERVER_DEFAULTS = 0;
-    WAIT = 1;
-    REJECT = 2;
-  }
-
-  string bucket_name = 1;
-  int32 tokens_requested = 2;
-  EmptyBucketPolicyOverride empty_bucket_policy = 3;
+  optional string namespace = 1;
+  optional string name = 2;
+  optional int32 num_tokens_requested = 3; // Defaults to 1
 }
 
 message AllowResponse {
   enum Status {
-    OK = 0;
-    TIMED_OUT = 1;
-    REJECTED = 2;
+    OK = 1;
+    OK_WAIT = 2;
+    REJECTED = 3;
   }
 
-  int32 tokens_granted = 1;
-  Status status = 2;
+  optional Status status = 1;
+  optional int32 num_tokens_granted = 2;
+  optional int64 wait_millis = 3; // Defaults to 0
 }

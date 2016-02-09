@@ -67,7 +67,7 @@ func (this *GrpcEndpoint) Stop() {
 func (this *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
 	// TODO(manik) validate inputs
-	granted, err := this.qs.Allow(req.BucketName, int(req.TokensRequested), convert(req.EmptyBucketPolicy))
+	granted, wait, err := this.qs.Allow(req.Namespace, req.Name, int(req.NumTokensRequested))
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
@@ -77,27 +77,15 @@ func (this *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*q
 			case quotaservice.ER_REJECTED:
 				rsp.Status = qspb.AllowResponse_REJECTED
 			case quotaservice.ER_TIMED_OUT_WAITING:
-				rsp.Status = qspb.AllowResponse_TIMED_OUT
+				rsp.Status = qspb.AllowResponse_REJECTED
 			}
 		} else {
 			return nil, err
 		}
 	} else {
 		rsp.Status = qspb.AllowResponse_OK
-		rsp.TokensGranted = int32(granted)
+		rsp.NumTokensGranted = int32(granted)
+		rsp.WaitMillis = int64(wait)
 	}
 	return rsp, nil
-}
-
-func convert(o qspb.AllowRequest_EmptyBucketPolicyOverride) quotaservice.EmptyBucketPolicyOverride {
-	switch o {
-	case qspb.AllowRequest_REJECT:
-		return quotaservice.EBP_REJECT
-	case qspb.AllowRequest_WAIT:
-		return quotaservice.EBP_WAIT
-	case qspb.AllowRequest_SERVER_DEFAULTS:
-		return quotaservice.EBP_SERVER_DEFAULTS
-	default:
-		panic(fmt.Sprintf("Unknown enum value %+v", o))
-	}
 }
