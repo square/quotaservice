@@ -3,6 +3,9 @@ language: go
 go:
   - 1.5
 
+before_install:
+  - cd /tmp && wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protoc-3.0.0-beta-2-linux-x86_64.zip && unzip -a protoc-3.0.0-beta-2-linux-x86_64.zip && ls -l /tmp
+
 install:
   - go get google.golang.org/grpc
   - go get github.com/golang/protobuf/protoc-gen-go
