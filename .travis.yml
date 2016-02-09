@@ -10,5 +10,6 @@ install:
   - go get google.golang.org/grpc
   - go get github.com/golang/protobuf/protoc-gen-go
   - export PATH=/tmp/pbc:$PATH && ls && ./bin/compile_protos.sh
+  - ls && ls -l ./src/github.com && ls -l ./src/github.com/maniksurtani
   - go get -t ./..
 
