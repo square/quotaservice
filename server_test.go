@@ -18,10 +18,28 @@ package quotaservice
 
 import (
 	"testing"
+//	"github.com/maniksurtani/quotaservice/buckets/memory"
+//	"io/ioutil"
+	"fmt"
+	"github.com/maniksurtani/quotaservice/buckets/memory"
 )
 
-// TODO(manik) Think of some setup for testing the server endpoint.
+func TestWithNoCfg(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Did not panic()")
+		} else {
+			fmt.Print(r)
+		}
+	}()
+	doWork()
+}
 
-func Test(t *testing.T) {
-
+func doWork() {
+	New("/does/not/exist", &memory.BucketFactory{})
+//	_, err := ioutil.ReadFile("Does not exist")
+//	if err != nil {
+//		panic(fmt.Sprintf("Unable to open config file DNE. Error: %v", err))
+//	}
+//	panic("x")
 }
