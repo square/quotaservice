@@ -37,6 +37,7 @@ type BucketFactory struct {
 }
 
 func (bf *BucketFactory) Init(cfg *configs.Configs) {
+/*
 	bf.Lock()
 	defer bf.Unlock()
 
@@ -56,21 +57,24 @@ func (bf *BucketFactory) Init(cfg *configs.Configs) {
 	}
 
 	go bf.runReplenisher()
+	*/
 }
 
-func (bf *BucketFactory) runReplenisher() {
-	for _ := range time.Tick(time.Millisecond * 100) {
-		bf.refillBuckets()
-	}
-}
+//func (bf *BucketFactory) runReplenisher() {
+//	for _ := range time.Tick(time.Millisecond * 100) {
+//		bf.refillBuckets()
+//	}
+//}
 
 func (bf *BucketFactory) refillBuckets() {
+	/*
 	bf.RLock()
 	defer bf.Unlock()
 
 	for rb := range bf.buckets {
 		// TODO(manik)
 	}
+	*/
 }
 
 func (bf *BucketFactory) NewBucket(name string, cfg *configs.BucketConfig) buckets.Bucket {
@@ -78,6 +82,7 @@ func (bf *BucketFactory) NewBucket(name string, cfg *configs.BucketConfig) bucke
 }
 
 func (b *redisBucket) TakeBlocking(numTokens int, timeout time.Duration) (success bool) {
+	/*
 	m := b.client.Multi()
 	defer m.Exec(nil)
 	deadline := time.Now() + timeout
@@ -95,10 +100,12 @@ func (b *redisBucket) TakeBlocking(numTokens int, timeout time.Duration) (succes
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+	*/
 	return false
 }
 
 func (b *redisBucket) Take(numTokens int) (success bool) {
+	/*
 	m := b.client.Multi()
 	defer m.Exec(nil)
 	s := m.Get(b.name)
@@ -112,6 +119,8 @@ func (b *redisBucket) Take(numTokens int) (success bool) {
 	} else {
 		return false
 	}
+	*/
+	return false
 }
 
 func (b *redisBucket) GetConfig() *configs.BucketConfig {
