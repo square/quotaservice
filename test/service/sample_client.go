@@ -21,9 +21,10 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"golang.org/x/net/context"
 	qspb "github.com/maniksurtani/quotaservice/protos"
+	"github.com/golang/protobuf/proto"
 )
 
-func main() {
+func mainc() {
 	fmt.Println("Starting example client.")
 	serverAddr := "127.0.0.1:10990"
 	var opts []grpc.DialOption
@@ -37,9 +38,9 @@ func main() {
 	client := qspb.NewQuotaServiceClient(conn)
 
 	req := &qspb.AllowRequest{
-		Namespace: "test.namespace",
-		Name: "one",
-		NumTokensRequested: 1}
+		Namespace: proto.String("test.namespace"),
+		Name: proto.String("one"),
+		NumTokensRequested: proto.Int(1)}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {
 		fmt.Printf("Caught error %v", err)

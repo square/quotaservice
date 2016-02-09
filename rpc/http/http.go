@@ -18,8 +18,6 @@ package http
 
 import (
 	"google.golang.org/grpc"
-	"github.com/mohamedattahri/rst"
-	"net/http"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice"
@@ -43,6 +41,7 @@ func (this *HttpEndpoint) Init(cfgs *configs.Configs, qs quotaservice.QuotaServi
 }
 
 func (this *HttpEndpoint) Start() {
+	/*
 	mux := rst.NewMux()
 	mux.Get("/allow/{bucketname:\\s+}/{tokens:\\d+}", func(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
 		name := vars.Get("bucketname")
@@ -55,6 +54,7 @@ func (this *HttpEndpoint) Start() {
 		return &Response{granted: granted}, nil
 	})
 	this.currentStatus = lifecycle.Started
+	*/
 }
 
 func (this *HttpEndpoint) Stop() {
