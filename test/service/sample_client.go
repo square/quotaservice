@@ -37,9 +37,9 @@ func main() {
 	client := qspb.NewQuotaServiceClient(conn)
 
 	req := &qspb.AllowRequest{
-		BucketName: "one",
-		TokensRequested: 1,
-	}
+		Namespace: "test.namespace",
+		Name: "one",
+		NumTokensRequested: 1}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {
 		fmt.Printf("Caught error %v", err)

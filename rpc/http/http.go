@@ -47,7 +47,7 @@ func (this *HttpEndpoint) Start() {
 	mux.Get("/allow/{bucketname:\\s+}/{tokens:\\d+}", func(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
 		name := vars.Get("bucketname")
 		tokens := int32(vars.Get("tokens"))
-		granted, err := this.qs.Allow(name, tokens, quotaservice.EBP_SERVER_DEFAULTS)
+		granted, wait, err := this.qs.Allow("", name, tokens)
 		if err != nil {
 			return nil, err
 		}
