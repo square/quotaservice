@@ -27,6 +27,7 @@ import (
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/configs"
 
+	"github.com/golang/protobuf/proto"
 )
 
 // gRPC-backed implementation of an RPC endpoint
@@ -67,25 +68,27 @@ func (this *GrpcEndpoint) Stop() {
 func (this *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
 	// TODO(manik) validate inputs
-	granted, wait, err := this.qs.Allow(req.Namespace, req.Name, int(req.NumTokensRequested))
+	granted, wait, err := this.qs.Allow(*req.Namespace, *req.Name, int(*req.NumTokensRequested))
+	var status qspb.AllowResponse_Status;
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
 			switch qsErr.Reason {
 			case quotaservice.ER_NO_SUCH_BUCKET:
-				rsp.Status = qspb.AllowResponse_REJECTED
+				status = qspb.AllowResponse_REJECTED
 			case quotaservice.ER_REJECTED:
-				rsp.Status = qspb.AllowResponse_REJECTED
+				status = qspb.AllowResponse_REJECTED
 			case quotaservice.ER_TIMED_OUT_WAITING:
-				rsp.Status = qspb.AllowResponse_REJECTED
+				status = qspb.AllowResponse_REJECTED
 			}
 		} else {
 			return nil, err
 		}
 	} else {
-		rsp.Status = qspb.AllowResponse_OK
-		rsp.NumTokensGranted = int32(granted)
-		rsp.WaitMillis = int64(wait)
+		status = qspb.AllowResponse_OK
+		rsp.NumTokensGranted = proto.Int(granted)
+		rsp.WaitMillis = proto.Int64(wait)
 	}
+	rsp.Status = &status
 	return rsp, nil
 }
