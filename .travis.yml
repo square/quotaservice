@@ -4,10 +4,10 @@ go:
   - 1.5
 
 before_install:
-  - cd /tmp && wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protoc-3.0.0-beta-2-linux-x86_64.zip && unzip -a protoc-3.0.0-beta-2-linux-x86_64.zip && ls -l /tmp
+  - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protoc-3.0.0-beta-2-linux-x86_64.zip -O /tmp/pbc.zip && unzip /tmp/pbc.zip -d /tmp/pbc
 
 install:
   - go get google.golang.org/grpc
   - go get github.com/golang/protobuf/protoc-gen-go
-  - export PATH=/tmp:$PATH && ls && ./bin/compile_protos.sh
+  - export PATH=/tmp/pbc:$PATH && ls && ./bin/compile_protos.sh
 
