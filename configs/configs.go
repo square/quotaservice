@@ -45,7 +45,6 @@ func (b *BucketConfig) String() string {
 func ReadConfig(filename string) *Configs {
 	dat, err := ioutil.ReadFile(filename)
 	if err != nil {
-		logging.Fatalf("Unable to open config file %v. Error: %v", filename, err)
 		panic(fmt.Sprintf("Unable to open config file %v. Error: %v", filename, err))
 	}
 

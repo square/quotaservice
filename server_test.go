@@ -18,13 +18,36 @@ package quotaservice
 
 import (
 	"testing"
-//	"github.com/maniksurtani/quotaservice/buckets/memory"
-//	"io/ioutil"
 	"fmt"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
+	"io/ioutil"
+	"os"
 )
 
 func TestWithNoCfg(t *testing.T) {
+	expectingPanic(t, func() {
+		New("/does/not/exist", &memory.BucketFactory{})
+	})
+}
+
+func TestWithNoRpcs(t *testing.T) {
+	filename := createDummyYamlFile()
+	defer os.Remove(filename)
+	defer
+	expectingPanic(t, func() {
+		New(filename, &memory.BucketFactory{})
+	})
+}
+
+func createDummyYamlFile() string {
+	f, err := ioutil.TempFile("", "quotaservice-cfg")
+	if err != nil {
+		panic(err)
+	}
+	return f.Name()
+}
+
+func expectingPanic(t *testing.T, f func()) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("Did not panic()")
@@ -32,14 +55,6 @@ func TestWithNoCfg(t *testing.T) {
 			fmt.Print(r)
 		}
 	}()
-	doWork()
-}
 
-func doWork() {
-	New("/does/not/exist", &memory.BucketFactory{})
-//	_, err := ioutil.ReadFile("Does not exist")
-//	if err != nil {
-//		panic(fmt.Sprintf("Unable to open config file DNE. Error: %v", err))
-//	}
-//	panic("x")
+	f()
 }
