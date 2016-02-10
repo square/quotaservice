@@ -3,13 +3,7 @@ language: go
 go:
   - 1.5
 
-before_install:
-  - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protoc-3.0.0-beta-2-linux-x86_64.zip -O /tmp/pbc.zip && unzip /tmp/pbc.zip -d /tmp/pbc
-
 install:
   - export GO15VENDOREXPERIMENT=1
-  - go get google.golang.org/grpc
-  - go get github.com/golang/protobuf/protoc-gen-go
-  - export PATH=/tmp/pbc:$PATH && ls && ./bin/compile_protos.sh
 
 
