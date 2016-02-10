@@ -1,5 +1,5 @@
 # Quota Service
-
+![Travis Build Status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis Build Status")
 # Overview
 The purpose of a quota service is to prevent cascading failures in micro-service environments. The service acts as a traffic cop, slowing down traffic where necessary to prevent overloading services. Further, it can be used as a global rate limiter. For this to work, remote procedure calls (RPCs) between services consult the quota service before making a call. The service isn’t strictly for RPCs between services, and can even be used to apply quotas to database calls, for example.
 
