@@ -26,7 +26,6 @@ import (
 	qspb "github.com/maniksurtani/quotaservice/protos"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/configs"
-
 	"github.com/golang/protobuf/proto"
 )
 

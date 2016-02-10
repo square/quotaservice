@@ -1,0 +1,111 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "github.com/codahale/hdrhistogram",
+			"revision": "2da969979c0dd5cda296463b05293e775bc3b5be",
+			"revisionTime": "2016-01-31T11:50:05-08:00"
+		},
+		{
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "68415e7123da32b07eab49c96d2c4d6158360e9b",
+			"revisionTime": "2015-12-07T15:07:14+11:00"
+		},
+		{
+			"path": "github.com/hotei/tokenbucket",
+			"revision": "eb2fc421a32d7b83621e40928c68eaba8df05b42",
+			"revisionTime": "2015-05-01T16:15:57-04:00"
+		},
+		{
+			"path": "golang.org/x/net/context",
+			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
+			"revisionTime": "2015-12-19T16:51:57+06:00"
+		},
+		{
+			"path": "golang.org/x/net/http2",
+			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
+			"revisionTime": "2015-12-19T16:51:57+06:00"
+		},
+		{
+			"path": "golang.org/x/net/http2/hpack",
+			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
+			"revisionTime": "2015-12-19T16:51:57+06:00"
+		},
+		{
+			"path": "golang.org/x/net/internal/timeseries",
+			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
+			"revisionTime": "2015-12-19T16:51:57+06:00"
+		},
+		{
+			"path": "golang.org/x/net/trace",
+			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
+			"revisionTime": "2015-12-19T16:51:57+06:00"
+		},
+		{
+			"path": "google.golang.org/grpc",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/codes",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/credentials",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/grpclog",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/metadata",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/naming",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/peer",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "google.golang.org/grpc/transport",
+			"revision": "af41c9cc8e970a9ff93a3cb5d602428192d966cf",
+			"revisionTime": "2016-02-09T15:38:37-08:00"
+		},
+		{
+			"path": "gopkg.in/bsm/ratelimit.v1",
+			"revision": "f14ad9c78b155f69b480cfa41cb655259baac260",
+			"revisionTime": "2015-12-10T17:49:14Z"
+		},
+		{
+			"path": "gopkg.in/redis.v3",
+			"revision": "3f059e5c53cd635382697546e6225f1437e3c5a2",
+			"revisionTime": "2016-01-22T12:45:54+02:00"
+		},
+		{
+			"path": "gopkg.in/redis.v3/internal/consistenthash",
+			"revision": "3f059e5c53cd635382697546e6225f1437e3c5a2",
+			"revisionTime": "2016-01-22T12:45:54+02:00"
+		},
+		{
+			"path": "gopkg.in/redis.v3/internal/hashtag",
+			"revision": "3f059e5c53cd635382697546e6225f1437e3c5a2",
+			"revisionTime": "2016-01-22T12:45:54+02:00"
+		},
+		{
+			"path": "gopkg.in/yaml.v2",
+			"revision": "f7716cbe52baa25d2e9b0d0da546fcf909fc16b4",
+			"revisionTime": "2015-12-01T14:27:45-02:00"
+		}
+	]
+}
