@@ -17,13 +17,8 @@
 package buckets
 import (
 	"testing"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/configs"
 )
 
 func TestBucket(t *testing.T) {
-	bf := &memory.BucketFactory{}
-	bf.Init(configs.NewDefaultConfig())
-
 	// TODO(manik) Test this
 }
