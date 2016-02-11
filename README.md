@@ -12,8 +12,6 @@ The quota service is of interest to anyone building services that communicate wi
 
 Whether the shared resource is a database or a service in itself, less critical systems could overwhelm a shared resource which could trigger outages in more critical functions that depend on this shared resource.
 
-We have seen this as a problem in the past, and have attached custom rate limiter code to various parts of various services (NOTE:  Such as Spot talking to SqWeb and Esperanto; inbound calls to Esperanto; inbound calls to the Developers group of services.), and just increased capacity without visibility or measurement in other cases (NOTE:  SqWeb, for example.).
-
 The quota service discussed here aims to ration how much a shared resource can be used by a given service, limiting the impact of such cascading failures. Increasing quotas would involve a capacity planning exercise to ensure the resource is capable of handling the allowed load.
 
 ## Background and Project Overview
@@ -130,41 +128,41 @@ A token bucket has a name and a namespace to which it belongs. Namespaces have d
 
 #### Example 1: S2S RPCs
 
-A token bucket namespace for requests from Spot to Esperanto, for all services:
+A token bucket namespace for requests from Service A to Service B, for all endpoints:
 
-spot_esperanto
+`service_a_service_b`
 
-A token bucket for requests from Spot to Esperanto, for all endpoints on the PaymentService
+A token bucket for requests from Service A to Service B, for all endpoints on the UserService
 
-spot_esperanto:PaymentService
+`service_a_service_b:UserService`
 
-A token bucket for requests from Spot to Esperanto, for PaymentService.lookupPayment()
+A token bucket for requests from Service A to Service B, for UserService.getUser()
 
-spot_esperanto:PaymentService_lookupPayment
+`service_a_service_b:UserService_getUser`
 
 #### Example 2: Databases
 
-A token bucket namespace for spot making calls to its MySQL database:
+A token bucket namespace for Service A making calls to its MySQL database:
 
-spot_spotmysql
+`service_a_mysql`
 
-A token bucket for spot making calls to the payments table in its MySQL database:
+A token bucket for Service A  making calls to the users table in its MySQL database:
 
-spot_spotmysql:payments
+`service_a_mysql:users`
 
-A token bucket for spot making calls to the payments table in its MySQL database, for inserts:
+A token bucket for Service A  making calls to the users table in its MySQL database, for inserts:
 
-spot_spotmysql:payments_insert
+`service_a_mysql:users_insert`
 
 #### Example 3: Context-specific quotas
 
-A token bucket namespace for all auth requests in Esperanto:
+A token bucket namespace for all public API calls in Service A:
 
-esperanto_auths_by_merchant
+`service_a_public`
 
-Dynamic bucket configured for this namespace, restricting individual merchants to send at most 10 auths/sec. Requests would look like:
+Dynamic bucket configured for this namespace, restricting individual IP addresses to send at most 10 reqs/sec. Requests would look like:
 
-esperanto_auths_by_merchant:MERCHANT_TOKEN
+`service_a_public:${IP_ADDRESS}`
 
 ## Data storage
 
@@ -172,13 +170,13 @@ Token buckets are stored in a map, allowing for constant time lookups. This map 
 
 ### Hierarchies and bucket search order
 
-The preference is to use a named bucket as possible. For example, given an AllowRequest for  spot_esperanto:PaymentService_lookupPayment,  the quota service would look for token buckets in the following order:
+The preference is to use a named bucket as possible. For example, given an `AllowRequest` for `service_a_service_b:UserService_getUser`,  the quota service would look for token buckets in the following order:
 
-1. spot_esperanto:PaymentService_lookupPayment
+1. `service_a_service_b:UserService_getUser`
 
-2. Create a dynamic bucket in the spot_esperanto namespace, if allowed.
+2. Create a dynamic bucket in the `service_a_service_b` namespace, if allowed.
 
-3. Use a default bucket in the spot_esperanto namespace, if allowed.
+3. Use a default bucket in the `service_a_service_b` namespace, if allowed.
 
 4. Use a global default bucket, if allowed.
 
@@ -212,9 +210,8 @@ Tokens are added to a bucket lazily when tokens are requested and sufficient tim
 
 A protobuf service endpoint will be exposed by the quota service.
 
-<table>
-  <tr>
-    <td>syntax = "proto2";
+```protobuf
+syntax = "proto2";
 
 package quotaservice;
 
@@ -239,36 +236,27 @@ message AllowResponse {
  optional int32 num_tokens_granted = 2;
  optional int64 wait_millis = 3; // Defaults to 0
 }
-</td>
-  </tr>
-</table>
-
+```
 
 ### Alternative APIs
 
 While we’re designing for a gRPC-based API, it is conceivable that other RPC mechanisms may also be desired, such as [Thrift](https://thrift.apache.org/) or even simple JSON-over-HTTP. To this end, the quota service is designed to plug into any request/response style RPC mechanism, by providing an interface as an extension point, that would have to be implemented to support more RPC mechanisms.
 
-<table>
-  <tr>
-    <td>type RpcEndpoint interface {
+```
+type RpcEndpoint interface {
   Init(cfgs *configs.Configs, qs service.QuotaService)
   Start()
   Stop()
-}</td>
-  </tr>
-</table>
-
+}
+```
 
 The QuotaService interface passed in encapsulates the token buckets and provides the basic functionality of acquiring quotas.
 
-<table>
-  <tr>
-    <td>type QuotaService interface {
+```
+type QuotaService interface {
   Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride EmptyBucketPolicyOverride) (int, error)
-}</td>
-  </tr>
-</table>
-
+}
+```
 
 The built-in gRPC implementation of the RpcEndpoint interface, for example, simply adapts the protobuf service implementation to call in to QuotaService.Allow, transforming parameters accordingly.
 
@@ -280,23 +268,20 @@ The quota service can be run as a single node, however it will have limited scal
 
 Rather than implementing cluster coordination between Quota Service nodes, we rely on an external system providing such cluster change information. Most organizations have systems that perform this function anyway, and plugging this into the Quota Service is trivial. The Quota Service declares a Clustering interface, which must be implemented and passed in when initializing the Quota Service. The interface above can be implemented in a number of ways, such as backed by [Zookeeper](https://zookeeper.apache.org/), a [RAFT](https://raft.github.io/) implementation, or a distributed consensus protocol.
 
-<table>
-  <tr>
-    <td>type Clustering interface {
+```
+type Clustering interface {
   // Returns the current node name
   CurrentNodeName() string
   // Returns a slice of node names that form a cluster.
   Members() []string
   // Returns a channel that is used to notify listeners of a membership change.
   MembershipChangeNotificationChannel() chan bool
-}</td>
-  </tr>
-</table>
-
+}
+```
 
 ### Mastering buckets
 
-Buckets are mastered by a single node in the cluster, with remaining nodes in the cluster acting as backups for the master. When determining the master of a bucket, the namespace (e.g., spot_esperanto in spot_esperanto:PaymentService_lookupPayment) is used as a key in a [consistent hash](http://michaelnielsen.org/blog/consistent-hashing/) wheel.
+Buckets are mastered by a single node in the cluster, with remaining nodes in the cluster acting as backups for the master. When determining the master of a bucket, the namespace is used as a key in a [consistent hash](http://michaelnielsen.org/blog/consistent-hashing/) wheel.
 
 ### Proxying requests
 
@@ -318,9 +303,8 @@ Simpler architecture. All nodes answer all requests. The data structure is model
 
 The quota service makes use of standard Go [logging](https://golang.org/pkg/log/). However this can be overridden to allow for different logging back-ends by passing in a logger implementing Logger:
 
-<table>
-  <tr>
-    <td>// Logger mimics golang's standard Logger as an interface.
+```
+// Logger mimics golang's standard Logger as an interface.
 type Logger interface {
   Fatal(args ...interface{})
   Fatalf(format string, args ...interface{})
@@ -328,9 +312,8 @@ type Logger interface {
   Print(args ...interface{})
   Printf(format string, args ...interface{})
   Println(args ...interface{})
-}</td>
-  </tr>
-</table>
+}
+```
 
 
 ## Metrics
