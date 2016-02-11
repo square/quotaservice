@@ -242,7 +242,7 @@ message AllowResponse {
 
 While we’re designing for a gRPC-based API, it is conceivable that other RPC mechanisms may also be desired, such as [Thrift](https://thrift.apache.org/) or even simple JSON-over-HTTP. To this end, the quota service is designed to plug into any request/response style RPC mechanism, by providing an interface as an extension point, that would have to be implemented to support more RPC mechanisms.
 
-```
+```go
 type RpcEndpoint interface {
   Init(cfgs *configs.Configs, qs service.QuotaService)
   Start()
@@ -252,7 +252,7 @@ type RpcEndpoint interface {
 
 The QuotaService interface passed in encapsulates the token buckets and provides the basic functionality of acquiring quotas.
 
-```
+```go
 type QuotaService interface {
   Allow(bucketName string, tokensRequested int, emptyBucketPolicyOverride EmptyBucketPolicyOverride) (int, error)
 }
@@ -268,7 +268,7 @@ The quota service can be run as a single node, however it will have limited scal
 
 Rather than implementing cluster coordination between Quota Service nodes, we rely on an external system providing such cluster change information. Most organizations have systems that perform this function anyway, and plugging this into the Quota Service is trivial. The Quota Service declares a Clustering interface, which must be implemented and passed in when initializing the Quota Service. The interface above can be implemented in a number of ways, such as backed by [Zookeeper](https://zookeeper.apache.org/), a [RAFT](https://raft.github.io/) implementation, or a distributed consensus protocol.
 
-```
+```go
 type Clustering interface {
   // Returns the current node name
   CurrentNodeName() string
@@ -303,7 +303,7 @@ Simpler architecture. All nodes answer all requests. The data structure is model
 
 The quota service makes use of standard Go [logging](https://golang.org/pkg/log/). However this can be overridden to allow for different logging back-ends by passing in a logger implementing Logger:
 
-```
+```go
 // Logger mimics golang's standard Logger as an interface.
 type Logger interface {
   Fatal(args ...interface{})
