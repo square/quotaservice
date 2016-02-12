@@ -77,7 +77,7 @@ func (this *Server) Start() (bool, error) {
 
 	// Start the RPC servers
 	for _, rpcServer := range this.rpcEndpoints {
-		rpcServer.Init(this.cfgs, this)
+		rpcServer.Init(this)
 		rpcServer.Start()
 	}
 

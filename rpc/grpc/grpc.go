@@ -25,28 +25,30 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	qspb "github.com/maniksurtani/quotaservice/protos"
 	"github.com/maniksurtani/quotaservice/lifecycle"
-	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/golang/protobuf/proto"
 )
 
 // gRPC-backed implementation of an RPC endpoint
 type GrpcEndpoint struct {
-	cfgs          *configs.Configs
+	port          int
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
 	qs            quotaservice.QuotaService
 }
 
-func (this *GrpcEndpoint) Init(cfgs *configs.Configs, qs quotaservice.QuotaService) {
-	this.cfgs = cfgs
+func New(port int) *GrpcEndpoint {
+	return &GrpcEndpoint{port: port}
+}
+
+func (this *GrpcEndpoint) Init(qs quotaservice.QuotaService) {
 	this.qs = qs
 }
 
 func (this *GrpcEndpoint) Start() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", this.cfgs.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", this.port))
 	if err != nil {
-		logging.Fatalf("Cannot start server on port %v. Error %v", this.cfgs.Port, err)
-		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", this.cfgs.Port, err))
+		logging.Fatalf("Cannot start server on port %v. Error %v", this.port, err)
+		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", this.port, err))
 	}
 
 	grpclog.SetLogger(logging.GetLogger())
@@ -55,7 +57,7 @@ func (this *GrpcEndpoint) Start() {
 	qspb.RegisterQuotaServiceServer(this.grpcServer, this)
 	go this.grpcServer.Serve(lis)
 	this.currentStatus = lifecycle.Started
-	logging.Printf("Starting server on port %v", this.cfgs.Port)
+	logging.Printf("Starting server on port %v", this.port)
 	logging.Printf("Server status: %v", this.currentStatus)
 
 }

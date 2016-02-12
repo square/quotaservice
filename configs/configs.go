@@ -17,9 +17,9 @@
 package configs
 import (
 	"io/ioutil"
-	"gopkg.in/yaml.v2"
 	"fmt"
 	"github.com/maniksurtani/quotaservice/logging"
+	"gopkg.in/yaml.v2"
 )
 
 type Configs struct {

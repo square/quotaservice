@@ -24,7 +24,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func mainc() {
+func main() {
 	fmt.Println("Starting example client.")
 	serverAddr := "127.0.0.1:10990"
 	var opts []grpc.DialOption

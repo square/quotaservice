@@ -24,23 +24,8 @@ import (
 	"github.com/maniksurtani/quotaservice/buckets/memory"
 )
 
-type Clustering interface {
-	// Returns true if the current node is the leader
-	IsLeader() bool
-	// Returns a channel that is used to notify the query service of a membership change.
-	MembershipChangeNotificationChannel() chan bool
-}
-
-type MetricsHandler interface {
-	// Returns true if the current node is the leader
-	IsLeader() bool
-	// Returns a channel that is used to notify the query service of a membership change.
-	MembershipChangeNotificationChannel() chan bool
-}
-
-
 func main() {
-	server := quotaservice.New("/tmp/test.yaml", memory.BucketFactory{}, &grpc.GrpcEndpoint{})
+	server := quotaservice.New("/tmp/test.yaml", memory.BucketFactory{}, grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	_ = server.GetMonitoring()
