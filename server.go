@@ -18,7 +18,6 @@ package quotaservice
 
 import (
 	"fmt"
-	"time"
 	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice/buckets"
 	"github.com/maniksurtani/quotaservice/lifecycle"
@@ -28,7 +27,7 @@ import (
 )
 
 type Server struct {
-	cfgs          *configs.Configs
+	cfgs          *configs.ServiceConfig
 	currentStatus lifecycle.Status
 	stopper       *chan int
 	adminServer   *admin.AdminServer
@@ -47,7 +46,7 @@ func NewWithDefaults(bucketFactory buckets.BucketFactory, rpcServers... RpcEndpo
 	return buildServer(configs.NewDefaultConfig(), bucketFactory, rpcServers)
 }
 
-func buildServer(config *configs.Configs, bucketFactory buckets.BucketFactory, rpcEndpoints []RpcEndpoint) *Server {
+func buildServer(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints []RpcEndpoint) *Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
@@ -65,7 +64,7 @@ func buildServer(config *configs.Configs, bucketFactory buckets.BucketFactory, r
 }
 
 func (this *Server) String() string {
-	return fmt.Sprintf("Quota Server running on port %v with status %v", this.cfgs.Port, this.currentStatus)
+	return fmt.Sprintf("Quota Server running with status %v", this.currentStatus)
 }
 
 func (this *Server) Start() (bool, error) {
@@ -108,23 +107,12 @@ func (this *Server) Allow(namespace string, name string, tokensRequested int) (g
 		return
 	}
 
-	cfg := b.GetConfig()
 	granted = 0
 	waitTime = 0
 
-	nonBlocking := cfg.RejectIfEmpty
-	if nonBlocking {
-		// Non-blocking call
-		if b.Take(tokensRequested) {
-			granted = tokensRequested
-		}
-	} else {
-		// Block until available
-		// TODO(manik) remove blocking call, add a wait time.
-		if b.TakeBlocking(tokensRequested, time.Duration(cfg.WaitTimeoutMillis) * time.Millisecond) {
-			granted = tokensRequested
-			// TODO(manik) add waitTime
-		}
+	// Non-blocking call
+	if b.Take(tokensRequested) {
+		granted = tokensRequested
 	}
 
 	if granted == 0 {

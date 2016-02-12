@@ -26,7 +26,7 @@ import (
 type BucketFactory struct {
 }
 
-func (bf BucketFactory) Init(cfg *configs.Configs) {
+func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
 	// A no-op
 }
 

@@ -19,8 +19,8 @@ import (
 	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice/buckets"
 	"time"
-	"gopkg.in/redis.v3"
 	"sync"
+	"gopkg.in/redis.v3"
 )
 
 type redisBucket struct {
@@ -36,7 +36,7 @@ type BucketFactory struct {
 	buckets		[]*redisBucket
 }
 
-func (bf *BucketFactory) Init(cfg *configs.Configs) {
+func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 /*
 	bf.Lock()
 	defer bf.Unlock()

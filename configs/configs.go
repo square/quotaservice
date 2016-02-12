@@ -22,12 +22,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Configs struct {
-	Port                  int
+type ServiceConfig struct {
 	AdminPort             int `yaml:"admin_port"`
 	MetricsEnabled        bool `yaml:"metrics_enabled"`
 	FillerFrequencyMillis int `yaml:"filler_frequency_millis"`
-	UseDefaultBuckets     bool `yaml:"use_default_buckets"`
+	GlobalDefaultBucket   *BucketConfig `yaml:"global_default_bucket,flow"`
+	Namespaces            map[string]*NamespaceConfig `yaml:",flow"`
+}
+
+type NamespaceConfig struct {
+	DefaultBucket         *BucketConfig `yaml:"default_bucket,flow"`
+	DynamicBucketTemplate *BucketConfig `yaml:"dynamic_bucket_template,flow"`
+	MaxDynamicBuckets     int `yaml:"max_dynamic_buckets"`
 	Buckets               map[string]*BucketConfig `yaml:",flow"`
 }
 
@@ -35,14 +41,14 @@ type BucketConfig struct {
 	Size              int
 	FillRate          int `yaml:"fill_rate"`
 	WaitTimeoutMillis int `yaml:"wait_timeout_millis"`
-	RejectIfEmpty     bool `yaml:"reject_if_empty"`
+	MaxIdleMillis     int `yaml:"max_idle_millis"`
 }
 
 func (b *BucketConfig) String() string {
 	return fmt.Sprint(*b)
 }
 
-func ReadConfig(filename string) *Configs {
+func ReadConfig(filename string) *ServiceConfig {
 	dat, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to open config file %v. Error: %v", filename, err))
@@ -50,38 +56,52 @@ func ReadConfig(filename string) *Configs {
 
 	logging.Print(string(dat))
 	cfg := NewDefaultConfig()
+	cfg.GlobalDefaultBucket = nil
 	yaml.Unmarshal(dat, cfg)
 
-	// Apply defaults to all named buckets
+	// Apply defaults
 	// TODO(manik) there must be a better way to apply defaults when parsing YAML!
-	for _, b := range cfg.Buckets {
-		applyBucketDefaults(b)
+	applyBucketDefaults(cfg.GlobalDefaultBucket)
+	for _, ns := range cfg.Namespaces {
+		applyBucketDefaults(ns.DefaultBucket)
+		applyBucketDefaults(ns.DynamicBucketTemplate)
+
+		for _, b := range ns.Buckets {
+			applyBucketDefaults(b)
+		}
 	}
 
 	logging.Printf("Read config %+v", cfg)
 	return cfg
 }
 
-func NewDefaultConfig() *Configs {
-	return &Configs{
-		Port: 11100,
+func NewDefaultConfig() *ServiceConfig {
+	return &ServiceConfig{
 		AdminPort: 8080,
 		MetricsEnabled: false,
 		FillerFrequencyMillis: 1000,
-		UseDefaultBuckets: false,
-	}
+		GlobalDefaultBucket: defaultBucketConfig(),
+		Namespaces: make(map[string]*NamespaceConfig)}
+}
+
+func defaultBucketConfig() *BucketConfig {
+	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1}
 }
 
 func applyBucketDefaults(b *BucketConfig) {
-	if b.FillRate == 0 {
-		b.FillRate = 100
+	if b.Size == 0 {
+		b.Size = 100
 	}
 
-	if b.Size == 0 {
-		b.Size = 1000
+	if b.FillRate == 0 {
+		b.FillRate = 50
 	}
 
 	if b.WaitTimeoutMillis == 0 {
-		b.WaitTimeoutMillis = 5000
+		b.WaitTimeoutMillis = 1000
+	}
+
+	if b.MaxIdleMillis == 0 {
+		b.MaxIdleMillis = -1
 	}
 }

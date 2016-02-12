@@ -32,19 +32,20 @@ type Bucket interface {
 }
 
 type BucketFactory interface {
-	Init(cfg *configs.Configs)
+	Init(cfg *configs.ServiceConfig)
 	NewBucket(name string, cfg *configs.BucketConfig) Bucket
 }
 
 var tokenBuckets *TokenBucketsContainer
 
-func InitBuckets(cfg *configs.Configs, bf BucketFactory) *TokenBucketsContainer {
+func InitBuckets(cfg *configs.ServiceConfig, bf BucketFactory) *TokenBucketsContainer {
 	tokenBuckets = &TokenBucketsContainer{buckets:make(map[string]Bucket)}
 	logging.Print("Initializing buckets")
 	bf.Init(cfg)
-	for n, b := range cfg.Buckets {
-		tokenBuckets.buckets[n] = bf.NewBucket(n, b)
-	}
+	// TODO(manik)
+//	for n, b := range cfg.Buckets {
+//		tokenBuckets.buckets[n] = bf.NewBucket(n, b)
+//	}
 	logging.Print("Finished initializing buckets")
 	return tokenBuckets
 }
