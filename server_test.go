@@ -26,6 +26,6 @@ import (
 func TestWithNoRpcs(t *testing.T) {
 	defer
 	test.ExpectingPanic(t, func() {
-		New(configs.DefaultBucketConfig(), &memory.BucketFactory{})
+		New(configs.NewDefaultConfig(), &memory.BucketFactory{})
 	})
 }
