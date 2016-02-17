@@ -74,6 +74,10 @@ func (this *Server) Start() (bool, error) {
 		rpcServer.Start()
 	}
 
+	if this.cfgs.MetricsEnabled {
+		this.monitoring = newMonitoring()
+	}
+
 	this.currentStatus = lifecycle.Started
 	return true, nil
 }

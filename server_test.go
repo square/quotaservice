@@ -23,8 +23,24 @@ import (
 	"github.com/maniksurtani/quotaservice/test"
 )
 
+type dummyEndpoint struct {}
+func (d *dummyEndpoint) Init(qs QuotaService) {}
+func (d *dummyEndpoint) Start() {}
+func (d *dummyEndpoint) Stop() {}
+
+
 func TestWithNoRpcs(t *testing.T) {
 	test.ExpectingPanic(t, func() {
 		New(configs.NewDefaultConfig(), &memory.BucketFactory{})
 	})
+}
+
+func TestValidServer(t *testing.T) {
+	s := New(configs.NewDefaultConfig(), &memory.BucketFactory{}, &dummyEndpoint{})
+	s.Start()
+	defer s.Stop()
+
+	if s.GetMonitoring() == nil {
+		t.Fatal("Expected a Monitoring instance")
+	}
 }
