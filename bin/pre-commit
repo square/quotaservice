@@ -1,0 +1,29 @@
+#!/bin/sh
+
+files=`git diff-index --cached HEAD | cut -f 5 -d ' ' | cut -f 2`
+
+CYAN="\033[0;36m"
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+PURPLE="\033[0;35m"
+BLUE="\033[0;34m"
+NO_COLOUR="\033[0m"
+
+echo "${PURPLE}Inspecting your commit.${NO_COLOUR}"
+
+function fail {
+    reason=$1
+    echo "${RED}${reason}${NO_COLOUR}"
+    echo "${RED}Refusing to commit.${NO_COLOUR}"
+    exit 1
+}
+
+go test -v ./...
+
+if [ $? -ne 0 ] ; then
+    echo "${RED}${reason}${NO_COLOUR}"
+    echo "${RED}Refusing to commit.${NO_COLOUR}"
+    exit 1
+fi
+
+echo "${GREEN}Committing....${NO_COLOUR}"
