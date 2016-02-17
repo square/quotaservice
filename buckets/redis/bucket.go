@@ -104,7 +104,7 @@ func (b *redisBucket) TakeBlocking(numTokens int, timeout time.Duration) (succes
 	return false
 }
 
-func (b *redisBucket) Take(numTokens int) (success bool) {
+func (b *redisBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
 	/*
 	m := b.client.Multi()
 	defer m.Exec(nil)
