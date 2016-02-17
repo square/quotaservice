@@ -19,14 +19,14 @@ package quotaservice
 import (
 	"testing"
 	"fmt"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
 	"io/ioutil"
 	"os"
+	"github.com/maniksurtani/quotaservice/configs"
 )
 
 func TestWithNoCfg(t *testing.T) {
 	expectingPanic(t, func() {
-		New("/does/not/exist", &memory.BucketFactory{})
+		_ = configs.ReadConfigFromFile("/does/not/exist")
 	})
 }
 
@@ -35,7 +35,7 @@ func TestWithNoRpcs(t *testing.T) {
 	defer os.Remove(filename)
 	defer
 	expectingPanic(t, func() {
-		New(filename, &memory.BucketFactory{})
+		_ = configs.ReadConfigFromFile(filename)
 	})
 }
 
