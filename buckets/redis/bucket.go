@@ -81,29 +81,6 @@ func (bf *BucketFactory) NewBucket(name string, cfg *configs.BucketConfig) bucke
 	return &redisBucket{cfg: cfg, name: name, client: bf.client}
 }
 
-func (b *redisBucket) TakeBlocking(numTokens int, timeout time.Duration) (success bool) {
-	/*
-	m := b.client.Multi()
-	defer m.Exec(nil)
-	deadline := time.Now() + timeout
-	for ; deadline > time.Now(); {
-		s := m.Get(b.name)
-		tokens, err := s.Int64()
-		if err != nil {
-			return false
-		}
-		if tokens > numTokens {
-			m.DecrBy(b.name, numTokens)
-			return true
-		} else {
-			// TODO(manik) use some inter-thread signalling
-			time.Sleep(10 * time.Millisecond)
-		}
-	}
-	*/
-	return false
-}
-
 func (b *redisBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
 	/*
 	m := b.client.Multi()
@@ -120,7 +97,7 @@ func (b *redisBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime t
 		return false
 	}
 	*/
-	return false
+	return 0
 }
 
 func (b *redisBucket) GetConfig() *configs.BucketConfig {
