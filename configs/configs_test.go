@@ -14,18 +14,14 @@
  *   limitations under the License.
  */
 
-package quotaservice
-
+package configs
 import (
-	"testing"
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/test"
+"testing"
+"github.com/maniksurtani/quotaservice/test"
 )
 
-func TestWithNoRpcs(t *testing.T) {
-	defer
+func TestNonexistentFile(t *testing.T) {
 	test.ExpectingPanic(t, func() {
-		New(configs.DefaultBucketConfig(), &memory.BucketFactory{})
+		_ = ReadConfigFromFile("/does/not/exist")
 	})
 }

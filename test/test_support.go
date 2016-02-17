@@ -14,18 +14,22 @@
  *   limitations under the License.
  */
 
-package quotaservice
+package test
 
 import (
+	"fmt"
 	"testing"
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/test"
 )
 
-func TestWithNoRpcs(t *testing.T) {
-	defer
-	test.ExpectingPanic(t, func() {
-		New(configs.DefaultBucketConfig(), &memory.BucketFactory{})
-	})
+func ExpectingPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("Did not panic()")
+		} else {
+			fmt.Print(r)
+		}
+	}()
+
+	f()
 }
+
