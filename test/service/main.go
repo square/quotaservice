@@ -22,10 +22,11 @@ import (
 	"syscall"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
+	"github.com/maniksurtani/quotaservice/configs"
 )
 
 func main() {
-	server := quotaservice.New("/tmp/test.yaml", memory.BucketFactory{}, grpc.New(10990))
+	server := quotaservice.New(configs.NewDefaultConfig(), memory.BucketFactory{}, grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	_ = server.GetMonitoring()

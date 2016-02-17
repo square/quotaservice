@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/yaml.v2"
+	"io"
 )
 
 type ServiceConfig struct {
@@ -48,16 +49,29 @@ func (b *BucketConfig) String() string {
 	return fmt.Sprint(*b)
 }
 
-func ReadConfig(filename string) *ServiceConfig {
-	dat, err := ioutil.ReadFile(filename)
+func ReadConfigFromFile(filename string) *ServiceConfig {
+	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to open config file %v. Error: %v", filename, err))
+		panic(fmt.Sprintf("Unable to open file %v. Error: %v", filename, err))
 	}
 
-	logging.Print(string(dat))
+	return readConfigFromBytes(bytes)
+}
+
+func ReadConfig(yamlStream io.Reader) *ServiceConfig {
+	bytes, err := ioutil.ReadAll(yamlStream)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to open reader. Error: %v", err))
+	}
+
+	return readConfigFromBytes(bytes)
+}
+
+func readConfigFromBytes(bytes []byte) *ServiceConfig {
+	logging.Print(string(bytes))
 	cfg := NewDefaultConfig()
 	cfg.GlobalDefaultBucket = nil
-	yaml.Unmarshal(dat, cfg)
+	yaml.Unmarshal(bytes, cfg)
 
 	// Apply defaults
 	// TODO(manik) there must be a better way to apply defaults when parsing YAML!
@@ -80,11 +94,11 @@ func NewDefaultConfig() *ServiceConfig {
 		AdminPort: 8080,
 		MetricsEnabled: false,
 		FillerFrequencyMillis: 1000,
-		GlobalDefaultBucket: defaultBucketConfig(),
+		GlobalDefaultBucket: DefaultBucketConfig(),
 		Namespaces: make(map[string]*NamespaceConfig)}
 }
 
-func defaultBucketConfig() *BucketConfig {
+func DefaultBucketConfig() *BucketConfig {
 	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1}
 }
 

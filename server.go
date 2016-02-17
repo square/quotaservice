@@ -24,29 +24,22 @@ import (
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/clustering"
+	"time"
 )
 
 type Server struct {
-	cfgs          *configs.ServiceConfig
-	currentStatus lifecycle.Status
-	stopper       *chan int
-	adminServer   *admin.AdminServer
-	tokenBuckets  *buckets.TokenBucketsContainer
-	bucketFactory buckets.BucketFactory
-	rpcEndpoints  []RpcEndpoint
-	monitoring    *Monitoring
+	cfgs            *configs.ServiceConfig
+	currentStatus   lifecycle.Status
+	stopper         *chan int
+	adminServer     *admin.AdminServer
+	bucketContainer *buckets.BucketContainer
+	bucketFactory   buckets.BucketFactory
+	rpcEndpoints    []RpcEndpoint
+	monitoring      *Monitoring
 }
 
-// Constructors
-func New(configFile string, bucketFactory buckets.BucketFactory, rpcServers ...RpcEndpoint) *Server {
-	return buildServer(configs.ReadConfig(configFile), bucketFactory, rpcServers)
-}
-
-func NewWithDefaults(bucketFactory buckets.BucketFactory, rpcServers... RpcEndpoint) *Server {
-	return buildServer(configs.NewDefaultConfig(), bucketFactory, rpcServers)
-}
-
-func buildServer(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints []RpcEndpoint) *Server {
+// NewFromFile creates a new quotaservice server.
+func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints ...RpcEndpoint) *Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
@@ -70,7 +63,8 @@ func (this *Server) String() string {
 func (this *Server) Start() (bool, error) {
 
 	// Initialize buckets
-	this.tokenBuckets = buckets.InitBuckets(this.cfgs, this.bucketFactory)
+	this.bucketFactory.Init(this.cfgs)
+	this.bucketContainer = buckets.NewBucketContainer(this.cfgs, this.bucketFactory)
 	// Start the admin server
 	this.adminServer.Start()
 
@@ -99,24 +93,21 @@ func (this *Server) Stop() (bool, error) {
 }
 
 func (this *Server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
-	bn := fmt.Sprintf("%v:%v", namespace, name)
-	b := this.tokenBuckets.FindBucket(bn)
+	b := this.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
-		err = newError(fmt.Sprintf("No such bucket named %v", bn), ER_NO_SUCH_BUCKET)
+		err = newError(fmt.Sprintf("No such bucket %v:%v in namespace %v", namespace, name), ER_NO_SUCH_BUCKET)
 		return
 	}
 
-	granted = 0
-	waitTime = 0
+	dur := time.Millisecond * time.Duration(b.GetConfig().WaitTimeoutMillis)
+	waitTimeNanos := b.Take(tokensRequested, dur).Nanoseconds()
+	waitTime = (waitTimeNanos % 1e9) / 1e6
 
-	// Non-blocking call
-	if b.Take(tokensRequested) {
+	if waitTime < 0 {
+		err = newError(fmt.Sprintf("Timed out waiting on %v:%v in ", namespace, name), ER_TIMED_OUT_WAITING)
+	} else {
 		granted = tokensRequested
-	}
-
-	if granted == 0 {
-		err = newError(fmt.Sprintf("Timed out waiting on bucket %v", bn), ER_TIMED_OUT_WAITING)
 	}
 
 	return

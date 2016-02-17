@@ -13,14 +13,17 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
+// Package memory presents an in-memory token bucket representation based on
+// http://github.com/hotei/tokenbucket
 package memory
+
 import (
 	"time"
+
+	"github.com/maniksurtani/quotaservice/buckets"
+	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/hotei/tokenbucket"
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/buckets"
 )
 
 type BucketFactory struct {
@@ -30,31 +33,21 @@ func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
 	// A no-op
 }
 
-func (bf BucketFactory) NewBucket(name string, cfg *configs.BucketConfig) buckets.Bucket {
+func (bf BucketFactory) NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	dur := time.Nanosecond * time.Duration(1000000000 / cfg.FillRate)
-	logging.Printf("Creating bucket for name %v with fill duration %v and capacity %v", name, dur, cfg.Size)
+	logging.Printf("Creating bucket for name %v:%v with fill duration %v and capacity %v", namespace, bucketName, dur, cfg.Size)
 	tb := tokenbucket.New(dur, float64(cfg.Size))
-	return &tokenBucket{cfg: cfg, tb: *tb}
+	return &tokenBucket{cfg: cfg, tb: tb}
 }
 
 type tokenBucket struct {
-	tb  tokenbucket.TokenBucket // Embed actual token bucket
+	tb  *tokenbucket.TokenBucket // Embed actual token bucket
 	cfg *configs.BucketConfig
 }
 
-func (b *tokenBucket) TakeBlocking(numTokens int, timeout time.Duration) (success bool) {
-	w := b.tb.Take(int64(numTokens))
-	if w > timeout {
-		return false
-	}
-
-	time.Sleep(w)
-	return true
-}
-
-func (b *tokenBucket) Take(numTokens int) (success bool) {
-	w := b.tb.Take(int64(numTokens))
-	return w == 0
+func (b *tokenBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
+	// TODO(manik) respect maxWaitTime
+	return b.tb.Take(int64(numTokens))
 }
 
 func (b *tokenBucket) GetConfig() *configs.BucketConfig {

@@ -14,44 +14,45 @@
  *   limitations under the License.
  */
 
+// Package buckets defines interfaces for abstractions of token buckets.
 package buckets
 import (
-	"time"
-	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/configs"
+	"time"
 )
 
-type TokenBucketsContainer struct {
-	buckets map[string]Bucket
+// BucketContainer is a holder for configurations and bucket factories.
+type BucketContainer struct {
+	cfg *configs.ServiceConfig
+	bf  BucketFactory
 }
 
+// Bucket is an abstraction of a token bucket.
 type Bucket interface {
-	TakeBlocking(numTokens int, timeout time.Duration) (success bool)
-	Take(numTokens int) (success bool)
+	// Take retrieves tokens from a token bucket, returning the time, in millis, to wait before
+	// the number of tokens becomes available. A return value of 0 would mean no waiting is
+	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
+	// within the max time limit specified.
+	Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration)
 	GetConfig() *configs.BucketConfig
 }
 
+// BucketFactory creates buckets.
 type BucketFactory interface {
+	// Init initializes the bucket factory.
 	Init(cfg *configs.ServiceConfig)
-	NewBucket(name string, cfg *configs.BucketConfig) Bucket
+
+	// NewBucket creates a new bucket.
+	NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig) Bucket
 }
 
-var tokenBuckets *TokenBucketsContainer
-
-func InitBuckets(cfg *configs.ServiceConfig, bf BucketFactory) *TokenBucketsContainer {
-	tokenBuckets = &TokenBucketsContainer{buckets:make(map[string]Bucket)}
-	logging.Print("Initializing buckets")
-	bf.Init(cfg)
-	// TODO(manik)
-//	for n, b := range cfg.Buckets {
-//		tokenBuckets.buckets[n] = bf.NewBucket(n, b)
-//	}
-	logging.Print("Finished initializing buckets")
-	return tokenBuckets
+// NewBucketContainer creates a new bucket container.
+func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) *BucketContainer {
+	return &BucketContainer{cfg: cfg, bf: bf}
 }
 
-func (tb *TokenBucketsContainer) FindBucket(name string) Bucket {
-	b := tb.buckets[name]
+// FindBucket locates a bucket for a given name and namespace.
+func (tb *BucketContainer) FindBucket(namespace string, bucketName string) Bucket {
 	// TODO(manik) perform an actual search
-	return b
+	return nil
 }
