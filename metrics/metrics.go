@@ -1,15 +1,15 @@
-package monitoring
+package metrics
 
 import (
 	"github.com/codahale/hdrhistogram"
 )
 
-type Monitoring struct {
+type Metrics struct {
 	histo hdrhistogram.Histogram
 }
 
-func New() *Monitoring {
+func New() *Metrics {
 	// TODO(manik): Proper init
-	return &Monitoring{}
+	return &Metrics{}
 }
 

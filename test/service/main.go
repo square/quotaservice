@@ -35,7 +35,6 @@ func main() {
 	server := quotaservice.New(cfg, memory.BucketFactory{}, grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
-	_ = server.GetMonitoring()
 	server.Start()
 
 	// Block until SIGTERM, SIGKILL or SIGINT

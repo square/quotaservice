@@ -24,7 +24,7 @@ import (
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/clustering"
-	"github.com/maniksurtani/quotaservice/monitoring"
+	"github.com/maniksurtani/quotaservice/metrics"
 	"time"
 )
 
@@ -36,7 +36,7 @@ type Server struct {
 	bucketContainer *buckets.BucketContainer
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
-	monitoring      *monitoring.Monitoring
+	metrics         *metrics.Metrics
 }
 
 // NewFromFile creates a new quotaservice server.
@@ -52,7 +52,7 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 
 	// TODO(manik): Metrics? Monitoring? Naming...
 	if config.MetricsEnabled {
-		s.monitoring = monitoring.New()
+		s.metrics = metrics.New()
 	}
 	return s
 }
@@ -76,7 +76,7 @@ func (this *Server) Start() (bool, error) {
 	}
 
 	if this.cfgs.MetricsEnabled {
-		this.monitoring = monitoring.New()
+		this.metrics = metrics.New()
 	}
 
 	this.currentStatus = lifecycle.Started
@@ -118,8 +118,8 @@ func (this *Server) Allow(namespace string, name string, tokensRequested int) (g
 	return
 }
 
-func (this *Server) GetMonitoring() *monitoring.Monitoring {
-	return this.monitoring
+func (this *Server) GetMetrics() *metrics.Metrics {
+	return this.metrics
 }
 
 func (this *Server) SetLogger(logger logging.Logger) {

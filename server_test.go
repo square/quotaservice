@@ -40,7 +40,7 @@ func TestValidServer(t *testing.T) {
 	s.Start()
 	defer s.Stop()
 
-	if s.GetMonitoring() == nil {
-		t.Fatal("Expected a Monitoring instance")
+	if s.GetMetrics() == nil {
+		t.Fatal("Expected a Metrics instance")
 	}
 }
