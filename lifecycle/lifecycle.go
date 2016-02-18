@@ -24,8 +24,8 @@ const (
 	Started
 )
 
-func (this Status) String() string {
-	switch this {
+func (s Status) String() string {
+	switch s {
 	case Started:
 		return "Started"
 	case Stopped:

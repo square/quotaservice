@@ -40,36 +40,36 @@ func New(port int) *GrpcEndpoint {
 	return &GrpcEndpoint{port: port}
 }
 
-func (this *GrpcEndpoint) Init(qs quotaservice.QuotaService) {
-	this.qs = qs
+func (g *GrpcEndpoint) Init(qs quotaservice.QuotaService) {
+	g.qs = qs
 }
 
-func (this *GrpcEndpoint) Start() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", this.port))
+func (g *GrpcEndpoint) Start() {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", g.port))
 	if err != nil {
-		logging.Fatalf("Cannot start server on port %v. Error %v", this.port, err)
-		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", this.port, err))
+		logging.Fatalf("Cannot start server on port %v. Error %v", g.port, err)
+		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", g.port, err))
 	}
 
 	grpclog.SetLogger(logging.GetLogger())
-	this.grpcServer = grpc.NewServer()
+	g.grpcServer = grpc.NewServer()
 	// Each service should be registered
-	qspb.RegisterQuotaServiceServer(this.grpcServer, this)
-	go this.grpcServer.Serve(lis)
-	this.currentStatus = lifecycle.Started
-	logging.Printf("Starting server on port %v", this.port)
-	logging.Printf("Server status: %v", this.currentStatus)
+	qspb.RegisterQuotaServiceServer(g.grpcServer, g)
+	go g.grpcServer.Serve(lis)
+	g.currentStatus = lifecycle.Started
+	logging.Printf("Starting server on port %v", g.port)
+	logging.Printf("Server status: %v", g.currentStatus)
 
 }
 
-func (this *GrpcEndpoint) Stop() {
-	this.currentStatus = lifecycle.Stopped
+func (g *GrpcEndpoint) Stop() {
+	g.currentStatus = lifecycle.Stopped
 }
 
-func (this *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
+func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
 	// TODO(manik) validate inputs
-	granted, wait, err := this.qs.Allow(*req.Namespace, *req.Name, int(*req.NumTokensRequested))
+	granted, wait, err := g.qs.Allow(*req.Namespace, *req.Name, int(*req.NumTokensRequested))
 	var status qspb.AllowResponse_Status;
 
 	if err != nil {

@@ -31,13 +31,13 @@ func NewAdminServer(port int) *AdminServer {
 	return &s
 }
 
-func (this *AdminServer) Start() {
-	logging.Printf("Starting admin console on port %v", this.port)
+func (a *AdminServer) Start() {
+	logging.Printf("Starting admin console on port %v", a.port)
 	http.HandleFunc("/", handler)
-	go http.ListenAndServe(fmt.Sprintf(":%v", this.port), nil)
+	go http.ListenAndServe(fmt.Sprintf(":%v", a.port), nil)
 }
 
-func (this *AdminServer) Stop() {
+func (a *AdminServer) Stop() {
 	logging.Print("Stopping admin console")
 }
 

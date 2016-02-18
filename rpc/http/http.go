@@ -38,14 +38,14 @@ func NewDefault() *HttpEndpoint {
 	return New(defaultPort)
 }
 
-func (this *HttpEndpoint) Init(qs quotaservice.QuotaService) {
-	this.qs = qs
+func (h *HttpEndpoint) Init(qs quotaservice.QuotaService) {
+	h.qs = qs
 }
 
-func (this *HttpEndpoint) Start() {
-	this.currentStatus = lifecycle.Started
+func (h *HttpEndpoint) Start() {
+	h.currentStatus = lifecycle.Started
 }
 
-func (this *HttpEndpoint) Stop() {
-	this.currentStatus = lifecycle.Stopped
+func (h *HttpEndpoint) Stop() {
+	h.currentStatus = lifecycle.Stopped
 }

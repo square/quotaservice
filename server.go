@@ -58,48 +58,48 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 	return s
 }
 
-func (this *Server) String() string {
-	return fmt.Sprintf("Quota Server running with status %v", this.currentStatus)
+func (s *Server) String() string {
+	return fmt.Sprintf("Quota Server running with status %v", s.currentStatus)
 }
 
-func (this *Server) Start() (bool, error) {
+func (s *Server) Start() (bool, error) {
 
 	// Initialize buckets
-	this.bucketFactory.Init(this.cfgs)
-	this.bucketContainer = buckets.NewBucketContainer(this.cfgs, this.bucketFactory)
+	s.bucketFactory.Init(s.cfgs)
+	s.bucketContainer = buckets.NewBucketContainer(s.cfgs, s.bucketFactory)
 	// Start the admin server
-	this.adminServer.Start()
+	s.adminServer.Start()
 
 	// Start the RPC servers
-	for _, rpcServer := range this.rpcEndpoints {
-		rpcServer.Init(this)
+	for _, rpcServer := range s.rpcEndpoints {
+		rpcServer.Init(s)
 		rpcServer.Start()
 	}
 
-	if this.cfgs.MetricsEnabled {
-		this.metrics = metrics.New()
+	if s.cfgs.MetricsEnabled {
+		s.metrics = metrics.New()
 	}
 
-	this.currentStatus = lifecycle.Started
+	s.currentStatus = lifecycle.Started
 	return true, nil
 }
 
-func (this *Server) Stop() (bool, error) {
-	this.currentStatus = lifecycle.Stopped
+func (s *Server) Stop() (bool, error) {
+	s.currentStatus = lifecycle.Stopped
 
 	// Stop the admin server
-	this.adminServer.Stop()
+	s.adminServer.Stop()
 
 	// Stop the RPC servers
-	for _, rpcServer := range this.rpcEndpoints {
+	for _, rpcServer := range s.rpcEndpoints {
 		rpcServer.Stop()
 	}
 
 	return true, nil
 }
 
-func (this *Server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
-	b := this.bucketContainer.FindBucket(namespace, name)
+func (s *Server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
+	b := s.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
 		err = newError(fmt.Sprintf("No such bucket %v:%v in namespace %v", namespace, name), ER_NO_SUCH_BUCKET)
@@ -119,16 +119,16 @@ func (this *Server) Allow(namespace string, name string, tokensRequested int) (g
 	return
 }
 
-func (this *Server) GetMetrics() *metrics.Metrics {
-	return this.metrics
+func (s *Server) GetMetrics() *metrics.Metrics {
+	return s.metrics
 }
 
-func (this *Server) SetLogger(logger logging.Logger) {
+func (s *Server) SetLogger(logger logging.Logger) {
 	logging.SetLogger(logger)
 }
 
-func (this *Server) SetClustering(clustering clustering.Clustering) {
-	this.clustering = clustering
+func (s *Server) SetClustering(clustering clustering.Clustering) {
+	s.clustering = clustering
 }
 
 
