@@ -14,11 +14,97 @@
  *   limitations under the License.
  */
 
+// Package buckets defines interfaces for abstractions of token buckets.
 package buckets
 import (
 	"testing"
+	"github.com/maniksurtani/quotaservice/configs"
+	"time"
 )
 
-func TestBucket(t *testing.T) {
-	// TODO(manik) Test this
+// Mock objects
+type mockBucket struct{
+	namespace, bucketName string
+}
+
+func (b *mockBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {return 0}
+func (b *mockBucket) GetConfig() *configs.BucketConfig {return nil}
+
+type mockBucketFactory struct{}
+
+func (bf mockBucketFactory) Init(cfg *configs.ServiceConfig) {}
+func (bf mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig) Bucket {
+	return &mockBucket{namespace: namespace, bucketName: bucketName}
+}
+
+
+var cfg = func() *configs.ServiceConfig {
+	c := configs.NewDefaultServiceConfig()
+	c.GlobalDefaultBucket = configs.NewDefaultBucketConfig()
+	c.Namespaces["x"] = configs.NewDefaultNamespaceConfig()
+	c.Namespaces["x"].DefaultBucket = configs.NewDefaultBucketConfig()
+	c.Namespaces["x"].Buckets["a"] = configs.NewDefaultBucketConfig()
+	c.Namespaces["y"] = configs.NewDefaultNamespaceConfig()
+	c.Namespaces["y"].DynamicBucketTemplate = configs.NewDefaultBucketConfig()
+	c.Namespaces["y"].Buckets["a"] = configs.NewDefaultBucketConfig()
+	return c
+}()
+
+var container = NewBucketContainer(cfg, &mockBucketFactory{})
+
+func TestFallbackToGlobalDefaultBucket(t *testing.T) {
+	b := container.FindBucket("nonexistent_namespace", "nonexistent_bucket")
+	if b == nil {
+		t.Fatal("Should fall back to default bucket.")
+	}
+
+	if b != container.defaultBucket {
+		t.Fatal("Should fall back to default bucket.")
+	}
+}
+
+func TestFallbackToDefaultBucket(t *testing.T) {
+	b := container.FindBucket("x", "nonexistent_bucket")
+	if b == nil {
+		t.Fatal("Should fall back to default bucket.")
+	}
+
+	if b != container.namespaces["x"].defaultBucket {
+		t.Fatal("Should fall back to default bucket.")
+	}
+}
+
+func TestDynamicBucket(t *testing.T) {
+	b := container.FindBucket("y", "new")
+	if b == nil {
+		t.Fatal("Should create new bucket.")
+	}
+
+	if b != container.namespaces["y"].buckets["new"] {
+		t.Fatal("Should create new bucket.")
+	}
+}
+
+func TestBucketNamespaces(t *testing.T) {
+	bx := container.FindBucket("x", "a")
+	if bx == nil {
+		t.Fatal("Should create new bucket.")
+	}
+
+	if bx != container.namespaces["x"].buckets["a"] {
+		t.Fatal("Should create new bucket.")
+	}
+
+	by := container.FindBucket("y", "a")
+	if by == nil {
+		t.Fatal("Should create new bucket.")
+	}
+
+	if by != container.namespaces["y"].buckets["a"] {
+		t.Fatal("Should create new bucket.")
+	}
+
+	if by == bx {
+		t.Fatal("Buckets in different namespaces should be different instances.")
+	}
 }

@@ -69,18 +69,24 @@ func ReadConfig(yamlStream io.Reader) *ServiceConfig {
 
 func readConfigFromBytes(bytes []byte) *ServiceConfig {
 	logging.Print(string(bytes))
-//	cfg := NewDefaultConfig()
-	var cfg ServiceConfig
-	logging.Printf("Default config %+v", cfg)
+	cfg := NewDefaultServiceConfig()
 	cfg.GlobalDefaultBucket = nil
-	yaml.Unmarshal(bytes, &cfg)
-	logging.Printf("UNM config %+v", cfg)
+	yaml.Unmarshal(bytes, cfg)
 
 	// Apply defaults
 	// TODO(manik) there must be a better way to apply defaults when parsing YAML!
 	applyBucketDefaults(cfg.GlobalDefaultBucket)
 
-	for _, ns := range cfg.Namespaces {
+	for name, ns := range cfg.Namespaces {
+		if ns.DefaultBucket != nil && ns.DynamicBucketTemplate != nil {
+			panic(fmt.Sprintf("Namespace %v is not allowed to have a default bucket as well as allow dynamic buckets.", name))
+		}
+
+		// Ensure the namespace's bucket map exists.
+		if ns.Buckets == nil {
+			ns.Buckets = make(map[string]*BucketConfig)
+		}
+
 		applyBucketDefaults(ns.DefaultBucket)
 		applyBucketDefaults(ns.DynamicBucketTemplate)
 
@@ -90,19 +96,23 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 	}
 
 	logging.Printf("Read config %+v", cfg)
-	return &cfg
+	return cfg
 }
 
-func NewDefaultConfig() *ServiceConfig {
+func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
 		AdminPort: 8080,
 		MetricsEnabled: true,
 		FillerFrequencyMillis: 1000,
-		GlobalDefaultBucket: DefaultBucketConfig(),
+		GlobalDefaultBucket: NewDefaultBucketConfig(),
 		Namespaces: make(map[string]*NamespaceConfig)}
 }
 
-func DefaultBucketConfig() *BucketConfig {
+func NewDefaultNamespaceConfig() *NamespaceConfig {
+	return &NamespaceConfig{Buckets: make(map[string]*BucketConfig)}
+}
+
+func NewDefaultBucketConfig() *BucketConfig {
 	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1}
 }
 

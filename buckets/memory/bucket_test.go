@@ -24,6 +24,6 @@ func TestMemoryBucket(t *testing.T) {
 	bf := &BucketFactory{}
 	// Test that the in-memory bucket factory actually doesn't need any more config
 	bf.Init(nil)
-	cfg := configs.DefaultBucketConfig()
+	cfg := configs.NewDefaultBucketConfig()
 	bf.NewBucket("ns", "n", cfg)
 }

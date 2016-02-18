@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	server := quotaservice.New(configs.NewDefaultConfig(), memory.BucketFactory{}, grpc.New(10990))
+	server := quotaservice.New(configs.NewDefaultServiceConfig(), memory.BucketFactory{}, grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	_ = server.GetMonitoring()
