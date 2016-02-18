@@ -37,6 +37,7 @@ type Server struct {
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
 	metrics         *metrics.Metrics
+	clustering 		clustering.Clustering
 }
 
 // NewFromFile creates a new quotaservice server.
@@ -127,7 +128,7 @@ func (this *Server) SetLogger(logger logging.Logger) {
 }
 
 func (this *Server) SetClustering(clustering clustering.Clustering) {
-	// TODO(manik): Implement me
+	this.clustering = clustering
 }
 
 
