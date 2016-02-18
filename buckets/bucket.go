@@ -29,11 +29,11 @@ const (
 
 // BucketContainer is a holder for configurations and bucket factories.
 type BucketContainer struct {
+	sync.RWMutex // Embedded mutex
 	cfg           *configs.ServiceConfig
 	bf            BucketFactory
 	namespaces    map[string]*namespace
 	defaultBucket Bucket
-	mutex         sync.RWMutex
 }
 
 // Bucket is an abstraction of a token bucket.
@@ -66,8 +66,8 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 	// TODO(manik) start bucket refiller
 	// TODO(manik) start bucket reaper
 	bc = &BucketContainer{cfg: cfg, bf: bf, namespaces: make(map[string]*namespace)}
-	bc.mutex.Lock()
-	defer bc.mutex.Unlock()
+	bc.Lock()
+	defer bc.Unlock()
 
 	if cfg.GlobalDefaultBucket != nil {
 		bc.defaultBucket = bf.NewBucket(GLOBAL_NAMESPACE, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket)
@@ -97,16 +97,16 @@ func (tb *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 	} else {
 
 		// Check if the precise bucket exists.
-		tb.mutex.RLock()
+		tb.RLock()
 		bucket = ns.buckets[bucketName]
-		tb.mutex.RUnlock()
+		tb.RUnlock()
 
 		if bucket == nil {
 			if ns.cfg.DynamicBucketTemplate != nil {
 				// Double-checked locking is safe in Golang, since acquiring locks (read or write)
 				// have the same effect as volatile in Java, causing a memory fence being crossed.
-				tb.mutex.Lock()
-				defer tb.mutex.Unlock()
+				tb.Lock()
+				defer tb.Unlock()
 				// need to check if an instance has been created concurrently.
 				bucket = ns.buckets[bucketName]
 				if bucket == nil {
