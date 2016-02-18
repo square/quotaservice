@@ -26,7 +26,13 @@ import (
 )
 
 func main() {
-	server := quotaservice.New(configs.NewDefaultServiceConfig(), memory.BucketFactory{}, grpc.New(10990))
+	cfg := configs.NewDefaultServiceConfig()
+	cfg.Namespaces["test.namespace"] = configs.NewDefaultNamespaceConfig()
+	cfg.Namespaces["test.namespace"].DynamicBucketTemplate = configs.NewDefaultBucketConfig()
+	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.Size = 100000000000
+	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.FillRate = 100000000
+
+	server := quotaservice.New(cfg, memory.BucketFactory{}, grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	_ = server.GetMonitoring()

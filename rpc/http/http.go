@@ -13,7 +13,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
+// TODO(manik) Implement this package
 package http
 
 import (
@@ -23,7 +23,7 @@ import (
 
 const defaultPort = 80
 
-// HTTP-backed implementation of an RPC endpoint
+// HttpEndpoint is an HTTP-based implementation of an RPC endpoint
 type HttpEndpoint struct {
 	port          int
 	currentStatus lifecycle.Status
@@ -38,29 +38,12 @@ func NewDefault() *HttpEndpoint {
 	return New(defaultPort)
 }
 
-type Response struct {
-	granted int
-}
-
 func (this *HttpEndpoint) Init(qs quotaservice.QuotaService) {
 	this.qs = qs
 }
 
 func (this *HttpEndpoint) Start() {
-	/*
-	mux := rst.NewMux()
-	mux.Get("/allow/{bucketname:\\s+}/{tokens:\\d+}", func(vars rst.RouteVars, r *http.Request) (rst.Resource, error) {
-		name := vars.Get("bucketname")
-		tokens := int32(vars.Get("tokens"))
-		granted, wait, err := this.qs.Allow("", name, tokens)
-		if err != nil {
-			return nil, err
-		}
-
-		return &Response{granted: granted}, nil
-	})
 	this.currentStatus = lifecycle.Started
-	*/
 }
 
 func (this *HttpEndpoint) Stop() {
