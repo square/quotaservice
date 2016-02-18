@@ -28,7 +28,15 @@ import (
 	"time"
 )
 
-type Server struct {
+type Server interface {
+	Start() (bool, error)
+	Stop() (bool, error)
+	GetMetrics() metrics.Metrics
+	SetLogger(logger logging.Logger)
+	SetClustering(clustering clustering.Clustering)
+}
+
+type server struct {
 	cfgs            *configs.ServiceConfig
 	currentStatus   lifecycle.Status
 	stopper         *chan int
@@ -36,16 +44,16 @@ type Server struct {
 	bucketContainer *buckets.BucketContainer
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
-	metrics         *metrics.Metrics
+	metrics         metrics.Metrics
 	clustering 		clustering.Clustering
 }
 
 // NewFromFile creates a new quotaservice server.
-func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints ...RpcEndpoint) *Server {
+func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
-	s := &Server{
+	s := &server{
 		cfgs: config,
 		adminServer: admin.NewAdminServer(config.AdminPort),
 		bucketFactory: bucketFactory,
@@ -58,11 +66,11 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 	return s
 }
 
-func (s *Server) String() string {
+func (s *server) String() string {
 	return fmt.Sprintf("Quota Server running with status %v", s.currentStatus)
 }
 
-func (s *Server) Start() (bool, error) {
+func (s *server) Start() (bool, error) {
 
 	// Initialize buckets
 	s.bucketFactory.Init(s.cfgs)
@@ -84,7 +92,7 @@ func (s *Server) Start() (bool, error) {
 	return true, nil
 }
 
-func (s *Server) Stop() (bool, error) {
+func (s *server) Stop() (bool, error) {
 	s.currentStatus = lifecycle.Stopped
 
 	// Stop the admin server
@@ -98,7 +106,7 @@ func (s *Server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *Server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
+func (s *server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
 	b := s.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
@@ -119,15 +127,15 @@ func (s *Server) Allow(namespace string, name string, tokensRequested int) (gran
 	return
 }
 
-func (s *Server) GetMetrics() *metrics.Metrics {
+func (s *server) GetMetrics() metrics.Metrics {
 	return s.metrics
 }
 
-func (s *Server) SetLogger(logger logging.Logger) {
+func (s *server) SetLogger(logger logging.Logger) {
 	logging.SetLogger(logger)
 }
 
-func (s *Server) SetClustering(clustering clustering.Clustering) {
+func (s *server) SetClustering(clustering clustering.Clustering) {
 	s.clustering = clustering
 }
 
