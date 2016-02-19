@@ -13,7 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-// TODO(manik) Implement this package
 package redis
 import (
 	"github.com/maniksurtani/quotaservice/configs"
@@ -24,79 +23,60 @@ import (
 )
 
 type redisBucket struct {
-	cfg    *configs.BucketConfig
-	name   string
-	client *redis.Client
+	cfg     *configs.BucketConfig
+	name    string
+	factory *BucketFactory
 }
 
 type BucketFactory struct {
-	*sync.RWMutex // Embed a lock.
+	m           *sync.RWMutex // Embed a lock.
 	client      *redis.Client
 	initialized bool
-	buckets		[]*redisBucket
+}
+
+func NewBucketFactory() *BucketFactory {
+	return &BucketFactory{initialized: false, m: &sync.RWMutex{}}
 }
 
 func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
-/*
-	bf.Lock()
-	defer bf.Unlock()
-
 	if !bf.initialized {
-		bf.initialized = true
+		bf.m.Lock()
+		defer bf.m.Unlock()
 
-		// Set up connection to Redis
-		// TODO(manik) read cfgs
-		bf.client = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
-			Password: "", // no password set
-			DB:       0, // use default DB
-		})
+		if !bf.initialized {
+			bf.initialized = true
 
-		// Set up buckets slice
-		bf.buckets = make([]*redisBucket)
+			// Set up connection to Redis
+			// TODO(manik) read cfgs
+			bf.client = redis.NewClient(&redis.Options{
+				Addr:     "localhost:6379",
+				Password: "", // no password set
+				DB:       0, // use default DB
+			})
+		}
 	}
-
-	go bf.runReplenisher()
-	*/
 }
 
-//func (bf *BucketFactory) runReplenisher() {
-//	for _ := range time.Tick(time.Millisecond * 100) {
-//		bf.refillBuckets()
-//	}
-//}
-
-func (bf *BucketFactory) refillBuckets() {
-	/*
-	bf.RLock()
-	defer bf.Unlock()
-
-	for rb := range bf.buckets {
-		// TODO(manik)
-	}
-	*/
-}
-
-func (bf *BucketFactory) NewBucket(name string, cfg *configs.BucketConfig) buckets.Bucket {
-	return &redisBucket{cfg: cfg, name: name, client: bf.client}
+func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+	return &redisBucket{cfg: cfg, name: bucketName, factory: bf}
 }
 
 func (b *redisBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
-	/*
-	m := b.client.Multi()
+
+	client := b.factory.client
+	m := client.Multi()
 	defer m.Exec(nil)
 	s := m.Get(b.name)
 	tokens, err := s.Int64()
 	if err != nil {
-		return false
+		return 0
 	}
-	if tokens > numTokens {
-		m.DecrBy(b.name, numTokens)
-		return true
+	if tokens > int64(numTokens) {
+		m.DecrBy(b.name, int64(numTokens))
+		return 0
 	} else {
-		return false
+		return 0
 	}
-	*/
 	return 0
 }
 

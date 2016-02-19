@@ -58,7 +58,7 @@ type BucketFactory interface {
 	Init(cfg *configs.ServiceConfig)
 
 	// NewBucket creates a new bucket.
-	NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig) Bucket
+	NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) Bucket
 }
 
 // NewBucketContainer creates a new bucket container.
