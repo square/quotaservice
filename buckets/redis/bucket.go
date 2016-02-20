@@ -119,12 +119,14 @@ func (b *redisBucket) Take(requested int, maxWaitTime time.Duration) (waitTime t
 	futureWaitNanos := tokensToWaitFor * b.nanosBetweenTokens
 
 	// Is waitTime too long?
-	if waitTime > 0 && waitTime > maxWaitTime {
+	if waitTime > 0 && waitTime > maxWaitTime && maxWaitTime > 0 {
 		// Don't "claim" any tokens.
 		waitTime = time.Duration(-1)
 	} else {
 		tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
 		accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
+
+		// TODO(manik) see if we can re-implement using INCR?
 
 		// "Claim" tokens by writing variables back to Redis and releasing lock.
 		m.Set(b.tokensNextAvblNanosRedisKey, tokensNextAvailableNanos, 0)

@@ -36,9 +36,14 @@ func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
 func (bf BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	// fill rate is tokens-per-second.
 	dur := time.Nanosecond * time.Duration(1e9 / cfg.FillRate)
-	logging.Printf("Creating bucket for name %v:%v with fill duration %v and capacity %v", namespace, bucketName, dur, cfg.Size)
+	logging.Printf("Creating bucket for name %v with fill duration %v and capacity %v",
+		buckets.FullyQualifiedName(namespace, bucketName), dur, cfg.Size)
 	tb := tokenbucket.New(dur, float64(cfg.Size))
 	return &tokenBucket{cfg: cfg, tb: tb}
+}
+
+func NewBucketFactory() buckets.BucketFactory {
+	return &BucketFactory{}
 }
 
 type tokenBucket struct {
@@ -47,8 +52,11 @@ type tokenBucket struct {
 }
 
 func (b *tokenBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
-	// TODO(manik) respect maxWaitTime
-	return b.tb.Take(int64(numTokens))
+	waitTime = b.tb.Take(int64(numTokens))
+	if waitTime > maxWaitTime && maxWaitTime > 0 {
+		waitTime = -1
+	}
+	return
 }
 
 func (b *tokenBucket) GetConfig() *configs.BucketConfig {

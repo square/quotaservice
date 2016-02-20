@@ -20,6 +20,7 @@ import (
 	"github.com/maniksurtani/quotaservice/configs"
 	"time"
 	"sync"
+	"fmt"
 )
 
 const (
@@ -122,4 +123,8 @@ func (tb *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 	}
 
 	return
+}
+
+func FullyQualifiedName(namespace, bucketName string) string {
+	return fmt.Sprintf("%v:%v", namespace, bucketName)
 }
