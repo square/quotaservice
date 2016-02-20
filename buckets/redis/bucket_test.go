@@ -18,6 +18,7 @@ package redis
 import (
 	"testing"
 	"github.com/maniksurtani/quotaservice/configs"
+	"time"
 )
 
 func TestRedisBucket(t *testing.T) {
@@ -32,6 +33,11 @@ func TestRedisBucket(t *testing.T) {
 
 	if b.GetConfig() != cfg {
 		t.Fatal("Bucket cfg should be the same as passed in")
+	}
+
+	for i :=0; i<10; i++ {
+		_ = b.Take(50, 10 * time.Second)
+		// TODO(manik) assertions, edge cases
 	}
 }
 

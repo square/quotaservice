@@ -34,7 +34,8 @@ func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
 }
 
 func (bf BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
-	dur := time.Nanosecond * time.Duration(1000000000 / cfg.FillRate)
+	// fill rate is tokens-per-second.
+	dur := time.Nanosecond * time.Duration(1e9 / cfg.FillRate)
 	logging.Printf("Creating bucket for name %v:%v with fill duration %v and capacity %v", namespace, bucketName, dur, cfg.Size)
 	tb := tokenbucket.New(dur, float64(cfg.Size))
 	return &tokenBucket{cfg: cfg, tb: tb}
