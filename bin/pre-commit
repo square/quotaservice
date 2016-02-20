@@ -18,7 +18,7 @@ function fail {
     exit 1
 }
 
-go test -v ./...
+go test -v $(go list ./... | grep -v /vendor/)
 
 if [ $? -ne 0 ] ; then
     echo "${RED}${reason}${NO_COLOUR}"
