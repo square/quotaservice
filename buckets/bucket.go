@@ -16,6 +16,7 @@
 
 // Package buckets defines interfaces for abstractions of token buckets.
 package buckets
+
 import (
 	"github.com/maniksurtani/quotaservice/configs"
 	"time"
@@ -30,7 +31,6 @@ const (
 
 // BucketContainer is a holder for configurations and bucket factories.
 type BucketContainer struct {
-	sync.RWMutex // Embedded mutex
 	cfg           *configs.ServiceConfig
 	bf            BucketFactory
 	namespaces    map[string]*namespace
@@ -39,6 +39,7 @@ type BucketContainer struct {
 
 // Bucket is an abstraction of a token bucket.
 type Bucket interface {
+	ActivityReporter
 	// Take retrieves tokens from a token bucket, returning the time, in millis, to wait before
 	// the number of tokens becomes available. A return value of 0 would mean no waiting is
 	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
@@ -47,10 +48,61 @@ type Bucket interface {
 	GetConfig() *configs.BucketConfig
 }
 
+type ActivityReporter interface {
+	ActivityDetected() bool
+	ReportActivity()
+}
+
+type ActivityChannel chan bool
+
+func NewActivityChannel() ActivityChannel {
+	return ActivityChannel(make(chan bool, 1))
+}
+
+func (m ActivityChannel) ReportActivity() {
+	select {
+	case m <- true:
+	// reported activity
+	default:
+	// Already reported
+	}
+}
+
+func (m ActivityChannel) ActivityDetected() bool {
+	select {
+	case <- m:
+		return true
+	default:
+		return false
+	}
+}
+
 type namespace struct {
 	cfg           *configs.NamespaceConfig
-	defaultBucket Bucket
 	buckets       map[string]Bucket
+	defaultBucket Bucket
+	sync.RWMutex // Embedded mutex
+}
+
+func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
+	if freq == 0 {
+		return
+	}
+
+	t := time.Tick(freq)
+
+	keepRunning := true
+	for ; keepRunning; {
+		// Wait for a tick
+		_ = <-t
+		// Check for activity since last run
+		keepRunning = bucket.ActivityDetected()
+	}
+
+	// Remove this bucket.
+	ns.Lock()
+	defer ns.Unlock()
+	delete(ns.buckets, bucketName)
 }
 
 // BucketFactory creates buckets.
@@ -64,11 +116,7 @@ type BucketFactory interface {
 
 // NewBucketContainer creates a new bucket container.
 func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *BucketContainer) {
-	// TODO(manik) start bucket refiller
-	// TODO(manik) start bucket reaper
 	bc = &BucketContainer{cfg: cfg, bf: bf, namespaces: make(map[string]*namespace)}
-	bc.Lock()
-	defer bc.Unlock()
 
 	if cfg.GlobalDefaultBucket != nil {
 		bc.defaultBucket = bf.NewBucket(GLOBAL_NAMESPACE, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket)
@@ -81,7 +129,7 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 		}
 
 		for bucketName, bucketCfg := range nsCfg.Buckets {
-			nsp.buckets[bucketName] = bf.NewBucket(nsName, bucketName, bucketCfg)
+			bc.createNewNamedBucketFromCfg(nsName, bucketName, nsp, bucketCfg)
 		}
 
 		bc.namespaces[nsName] = nsp
@@ -90,30 +138,29 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 }
 
 // FindBucket locates a bucket for a given name and namespace.
-func (tb *BucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket) {
-	ns := tb.namespaces[namespace]
+func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket) {
+	ns := bc.namespaces[namespace]
 	if ns == nil {
 		// Namespace doesn't exist. Use default bucket if possible.
-		bucket = tb.defaultBucket
+		bucket = bc.defaultBucket
 	} else {
 
 		// Check if the precise bucket exists.
-		tb.RLock()
+		ns.RLock()
 		bucket = ns.buckets[bucketName]
-		tb.RUnlock()
+		ns.RUnlock()
 
 		if bucket == nil {
 			if ns.cfg.DynamicBucketTemplate != nil {
 				// Double-checked locking is safe in Golang, since acquiring locks (read or write)
 				// have the same effect as volatile in Java, causing a memory fence being crossed.
-				tb.Lock()
-				defer tb.Unlock()
+				ns.Lock()
+				defer ns.Unlock()
 				// need to check if an instance has been created concurrently.
 				bucket = ns.buckets[bucketName]
 				if bucket == nil {
 					// TODO(manik) check dynamic bucket count
-					bucket = tb.bf.NewBucket(namespace, bucketName, ns.cfg.DynamicBucketTemplate)
-					ns.buckets[bucketName] = bucket
+					bucket = bc.createNewNamedBucket(namespace, bucketName, ns)
 				}
 			} else {
 				// Try a default for the namespace.
@@ -122,9 +169,30 @@ func (tb *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 		}
 	}
 
+	if bucket != nil {
+		bucket.ReportActivity()
+	}
+
 	return
 }
 
 func FullyQualifiedName(namespace, bucketName string) string {
 	return fmt.Sprintf("%v:%v", namespace, bucketName)
+}
+
+func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
+	bCfg := ns.cfg.Buckets[bucketName]
+	if bCfg == nil {
+		bCfg = ns.cfg.DynamicBucketTemplate
+	}
+
+	return bc.createNewNamedBucketFromCfg(namespace, bucketName, ns, bCfg)
+
+}
+func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *configs.BucketConfig) Bucket {
+	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg)
+	ns.buckets[bucketName] = bucket
+	bucket.ReportActivity()
+	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
+	return bucket
 }

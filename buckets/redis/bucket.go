@@ -40,6 +40,7 @@ type redisBucket struct {
 	maxTokensToAccumulate       int64
 	tokensNextAvblNanosRedisKey string
 	accumulatedTokensRedisKey   string
+	buckets.ActivityChannel
 }
 
 type BucketFactory struct {
@@ -75,14 +76,15 @@ func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 
 func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	return &redisBucket{
-		cfg: cfg,
-		namespace: namespace,
-		name: bucketName,
-		factory: bf,
-		nanosBetweenTokens: int64(1e9 / cfg.FillRate),
-		maxTokensToAccumulate: int64(cfg.Size),
-		tokensNextAvblNanosRedisKey: toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
-		accumulatedTokensRedisKey: toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)}
+		cfg,
+		namespace,
+		bucketName,
+		bf,
+		int64(1e9 / cfg.FillRate),
+		int64(cfg.Size),
+		toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
+		toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX),
+		buckets.NewActivityChannel()}
 }
 
 func toRedisKey(namespace, bucketName, suffix string) string {
@@ -129,8 +131,9 @@ func (b *redisBucket) Take(requested int, maxWaitTime time.Duration) (waitTime t
 		// TODO(manik) see if we can re-implement using INCR?
 
 		// "Claim" tokens by writing variables back to Redis and releasing lock.
-		m.Set(b.tokensNextAvblNanosRedisKey, tokensNextAvailableNanos, 0)
-		m.Set(b.accumulatedTokensRedisKey, accumulatedTokens, 0)
+		expiry := time.Duration(b.cfg.MaxIdleMillis) * time.Millisecond
+		m.Set(b.tokensNextAvblNanosRedisKey, tokensNextAvailableNanos, expiry)
+		m.Set(b.accumulatedTokensRedisKey, accumulatedTokens, expiry)
 	}
 
 	return

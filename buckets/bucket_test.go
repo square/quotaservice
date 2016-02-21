@@ -16,6 +16,7 @@
 
 // Package buckets defines interfaces for abstractions of token buckets.
 package buckets
+
 import (
 	"testing"
 	"github.com/maniksurtani/quotaservice/configs"
@@ -23,12 +24,20 @@ import (
 )
 
 // Mock objects
-type mockBucket struct{
+type mockBucket struct {
 	namespace, bucketName string
 }
 
-func (b *mockBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {return 0}
-func (b *mockBucket) GetConfig() *configs.BucketConfig {return nil}
+func (b *mockBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
+	return 0
+}
+func (b *mockBucket) GetConfig() *configs.BucketConfig {
+	return nil
+}
+func (b *mockBucket) ActivityDetected() bool {
+	return true
+}
+func (b *mockBucket) ReportActivity() {}
 
 type mockBucketFactory struct{}
 
@@ -36,7 +45,6 @@ func (bf mockBucketFactory) Init(cfg *configs.ServiceConfig) {}
 func (bf mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig) Bucket {
 	return &mockBucket{namespace: namespace, bucketName: bucketName}
 }
-
 
 var cfg = func() *configs.ServiceConfig {
 	c := configs.NewDefaultServiceConfig()
