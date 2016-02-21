@@ -95,6 +95,7 @@ func (b *redisBucket) Take(requested int, maxWaitTime time.Duration) (waitTime t
 	tokensRequested := int64(requested)
 	// Start a Redis "transaction"
 	client := b.factory.client
+	// TODO(manik) detect failed clients and reconnect
 	m := client.Multi()
 	defer m.Exec(func() error {
 		return nil
