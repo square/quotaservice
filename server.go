@@ -31,7 +31,7 @@ import (
 type Server interface {
 	Start() (bool, error)
 	Stop() (bool, error)
-	GetMetrics() metrics.Metrics
+	Metrics() metrics.Metrics
 	SetLogger(logger logging.Logger)
 	SetClustering(clustering clustering.Clustering)
 }
@@ -127,7 +127,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 	return
 }
 
-func (s *server) GetMetrics() metrics.Metrics {
+func (s *server) Metrics() metrics.Metrics {
 	return s.metrics
 }
 

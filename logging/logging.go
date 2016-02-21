@@ -39,8 +39,8 @@ func SetLogger(l Logger) {
 	logger = l
 }
 
-// GetLogger gets the logger to be used
-func GetLogger() Logger {
+// CurrentLogger gets the logger to be used
+func CurrentLogger() Logger {
 	return logger
 }
 

@@ -51,7 +51,7 @@ func (g *GrpcEndpoint) Start() {
 		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", g.port, err))
 	}
 
-	grpclog.SetLogger(logging.GetLogger())
+	grpclog.SetLogger(logging.CurrentLogger())
 	g.grpcServer = grpc.NewServer()
 	// Each service should be registered
 	qspb.RegisterQuotaServiceServer(g.grpcServer, g)
