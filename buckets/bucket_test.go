@@ -31,7 +31,7 @@ type mockBucket struct {
 func (b *mockBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
 	return 0
 }
-func (b *mockBucket) GetConfig() *configs.BucketConfig {
+func (b *mockBucket) Config() *configs.BucketConfig {
 	return nil
 }
 func (b *mockBucket) ActivityDetected() bool {

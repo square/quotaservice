@@ -45,7 +45,7 @@ type Bucket interface {
 	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
 	// within the max time limit specified.
 	Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration)
-	GetConfig() *configs.BucketConfig
+	Config() *configs.BucketConfig
 }
 
 type ActivityReporter interface {

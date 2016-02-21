@@ -164,6 +164,6 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 	return
 }
 
-func (b *redisBucket) GetConfig() *configs.BucketConfig {
+func (b *redisBucket) Config() *configs.BucketConfig {
 	return b.cfg
 }

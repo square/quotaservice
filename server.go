@@ -114,7 +114,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 		return
 	}
 
-	dur := time.Millisecond * time.Duration(b.GetConfig().WaitTimeoutMillis)
+	dur := time.Millisecond * time.Duration(b.Config().WaitTimeoutMillis)
 	waitTimeNanos := b.Take(tokensRequested, dur).Nanoseconds()
 	waitTime = (waitTimeNanos % 1e9) / 1e6
 

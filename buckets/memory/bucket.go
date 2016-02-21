@@ -60,6 +60,6 @@ func (b *tokenBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime t
 	return
 }
 
-func (b *tokenBucket) GetConfig() *configs.BucketConfig {
+func (b *tokenBucket) Config() *configs.BucketConfig {
 	return b.cfg
 }
