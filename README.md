@@ -1,5 +1,6 @@
 # Quota Service
 
+[![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE)
 ![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")
 
 # Overview
