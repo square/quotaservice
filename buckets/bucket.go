@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	GLOBAL_NAMESPACE = "___GLOBAL___"
+	GLOBAL_NAMESPACE    = "___GLOBAL___"
 	DEFAULT_BUCKET_NAME = "___DEFAULT_BUCKET___"
 )
 
@@ -64,13 +64,13 @@ func (m ActivityChannel) ReportActivity() {
 	case m <- true:
 	// reported activity
 	default:
-	// Already reported
+		// Already reported
 	}
 }
 
 func (m ActivityChannel) ActivityDetected() bool {
 	select {
-	case <- m:
+	case <-m:
 		return true
 	default:
 		return false
@@ -81,7 +81,7 @@ type namespace struct {
 	cfg           *configs.NamespaceConfig
 	buckets       map[string]Bucket
 	defaultBucket Bucket
-	sync.RWMutex // Embedded mutex
+	sync.RWMutex  // Embedded mutex
 }
 
 func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
@@ -92,7 +92,7 @@ func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration)
 	t := time.Tick(freq)
 
 	keepRunning := true
-	for ; keepRunning; {
+	for keepRunning {
 		// Wait for a tick
 		_ = <-t
 		// Check for activity since last run
@@ -125,7 +125,7 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 	for nsName, nsCfg := range cfg.Namespaces {
 		nsp := &namespace{cfg: nsCfg, buckets: make(map[string]Bucket)}
 		if nsCfg.DefaultBucket != nil {
-			nsp.defaultBucket = bf.NewBucket(nsName, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket)
+			nsp.defaultBucket = bf.NewBucket(nsName, DEFAULT_BUCKET_NAME, nsCfg.DefaultBucket)
 		}
 
 		for bucketName, bucketCfg := range nsCfg.Buckets {
@@ -193,6 +193,6 @@ func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()
-	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
+	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
 	return bucket
 }

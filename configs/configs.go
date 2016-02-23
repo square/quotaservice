@@ -15,26 +15,28 @@
  */
 
 package configs
+
 import (
-	"io/ioutil"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/yaml.v2"
-	"io"
 )
 
 type ServiceConfig struct {
-	AdminPort             int `yaml:"admin_port"`
-	MetricsEnabled        bool `yaml:"metrics_enabled"`
-	FillerFrequencyMillis int `yaml:"filler_frequency_millis"`
-	GlobalDefaultBucket   *BucketConfig `yaml:"global_default_bucket,flow"`
+	AdminEnabled          bool                        `yaml:"admin_enabled"`
+	AdminPort             int                         `yaml:"admin_port"`
+	MetricsEnabled        bool                        `yaml:"metrics_enabled"`
+	FillerFrequencyMillis int                         `yaml:"filler_frequency_millis"`
+	GlobalDefaultBucket   *BucketConfig               `yaml:"global_default_bucket,flow"`
 	Namespaces            map[string]*NamespaceConfig `yaml:",flow"`
 }
 
 type NamespaceConfig struct {
-	DefaultBucket         *BucketConfig `yaml:"default_bucket,flow"`
-	DynamicBucketTemplate *BucketConfig `yaml:"dynamic_bucket_template,flow"`
-	MaxDynamicBuckets     int `yaml:"max_dynamic_buckets"`
+	DefaultBucket         *BucketConfig            `yaml:"default_bucket,flow"`
+	DynamicBucketTemplate *BucketConfig            `yaml:"dynamic_bucket_template,flow"`
+	MaxDynamicBuckets     int                      `yaml:"max_dynamic_buckets"`
 	Buckets               map[string]*BucketConfig `yaml:",flow"`
 }
 
@@ -73,8 +75,10 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 	cfg.GlobalDefaultBucket = nil
 	yaml.Unmarshal(bytes, cfg)
 
-	// Apply defaults
-	// TODO(manik) there must be a better way to apply defaults when parsing YAML!
+	return ApplyDefaults(cfg)
+}
+
+func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
 	applyBucketDefaults(cfg.GlobalDefaultBucket)
 
 	for name, ns := range cfg.Namespaces {
@@ -101,11 +105,11 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		AdminPort: 8080,
-		MetricsEnabled: true,
+		AdminPort:             8080,
+		MetricsEnabled:        true,
 		FillerFrequencyMillis: 1000,
-		GlobalDefaultBucket: NewDefaultBucketConfig(),
-		Namespaces: make(map[string]*NamespaceConfig)}
+		GlobalDefaultBucket:   NewDefaultBucketConfig(),
+		Namespaces:            make(map[string]*NamespaceConfig)}
 }
 
 func NewDefaultNamespaceConfig() *NamespaceConfig {

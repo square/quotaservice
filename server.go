@@ -45,7 +45,7 @@ type server struct {
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
 	metrics         metrics.Metrics
-	clustering 		clustering.Clustering
+	clustering      clustering.Clustering
 }
 
 // NewFromFile creates a new quotaservice server.
@@ -54,10 +54,13 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
 	s := &server{
-		cfgs: config,
-		adminServer: admin.NewAdminServer(config.AdminPort),
+		cfgs:          config,
 		bucketFactory: bucketFactory,
-		rpcEndpoints: rpcEndpoints}
+		rpcEndpoints:  rpcEndpoints}
+
+	if config.AdminEnabled {
+		s.adminServer = admin.NewAdminServer(config.AdminPort)
+	}
 
 	// TODO(manik): Metrics? Monitoring? Naming...
 	if config.MetricsEnabled {
@@ -75,8 +78,11 @@ func (s *server) Start() (bool, error) {
 	// Initialize buckets
 	s.bucketFactory.Init(s.cfgs)
 	s.bucketContainer = buckets.NewBucketContainer(s.cfgs, s.bucketFactory)
-	// Start the admin server
-	s.adminServer.Start()
+
+	if s.cfgs.AdminEnabled {
+		// Start the admin server
+		s.adminServer.Start()
+	}
 
 	// Start the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
@@ -95,8 +101,10 @@ func (s *server) Start() (bool, error) {
 func (s *server) Stop() (bool, error) {
 	s.currentStatus = lifecycle.Stopped
 
-	// Stop the admin server
-	s.adminServer.Stop()
+	if s.cfgs.AdminEnabled {
+		// Stop the admin server
+		s.adminServer.Stop()
+	}
 
 	// Stop the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
@@ -110,7 +118,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 	b := s.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
-		err = newError(fmt.Sprintf("No such bucket %v:%v in namespace %v", namespace, name), ER_NO_SUCH_BUCKET)
+		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_SUCH_BUCKET)
 		return
 	}
 
@@ -119,7 +127,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 	waitTime = (waitTimeNanos % 1e9) / 1e6
 
 	if waitTime < 0 {
-		err = newError(fmt.Sprintf("Timed out waiting on %v:%v in ", namespace, name), ER_TIMED_OUT_WAITING)
+		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMED_OUT_WAITING)
 	} else {
 		granted = tokensRequested
 	}
@@ -138,5 +146,3 @@ func (s *server) SetLogger(logger logging.Logger) {
 func (s *server) SetClustering(clustering clustering.Clustering) {
 	s.clustering = clustering
 }
-
-

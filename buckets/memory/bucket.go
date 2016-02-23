@@ -34,8 +34,9 @@ func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
 }
 
 func (bf BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+	logging.Printf("Configuring %v", buckets.FullyQualifiedName(namespace, bucketName))
 	// fill rate is tokens-per-second.
-	dur := time.Nanosecond * time.Duration(1e9 / cfg.FillRate)
+	dur := time.Nanosecond * time.Duration(1e9/cfg.FillRate)
 	logging.Printf("Creating bucket for name %v with fill duration %v and capacity %v", buckets.FullyQualifiedName(namespace, bucketName), dur, cfg.Size)
 	bucket := &tokenBucket{buckets.NewActivityChannel(), cfg, tokenbucket.New(dur, float64(cfg.Size))}
 	return bucket
