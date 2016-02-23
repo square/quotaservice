@@ -47,10 +47,11 @@ type BucketFactory struct {
 	m           *sync.RWMutex // Embed a lock.
 	client      *redis.Client
 	initialized bool
+	redisOpts   *redis.Options
 }
 
-func NewBucketFactory() *BucketFactory {
-	return &BucketFactory{initialized: false, m: &sync.RWMutex{}}
+func NewBucketFactory(redisOpts *redis.Options) *BucketFactory {
+	return &BucketFactory{initialized: false, m: &sync.RWMutex{}, redisOpts: redisOpts}
 }
 
 func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
@@ -62,12 +63,7 @@ func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 			bf.initialized = true
 			logging.Print("Establishing connection to Redis")
 			// Set up connection to Redis
-			// TODO(manik) read cfgs from config
-			bf.client = redis.NewClient(&redis.Options{
-				Addr:     "localhost:6379",
-				Password: "", // no password set
-				DB:       0, // use default DB
-			})
+			bf.client = redis.NewClient(bf.redisOpts)
 
 			logging.Printf("Connection established. Time on server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0) / 1000, 0))
 		}
