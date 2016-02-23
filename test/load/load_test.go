@@ -41,7 +41,7 @@ func BenchmarkQuotaRequests(b *testing.B) {
 	req := &qspb.AllowRequest{
 		Namespace: proto.String("test.namespace"),
 		Name: proto.String("one"),
-		NumTokensRequested: proto.Int(1)}
+		NumTokensRequested: proto.Int64(1)}
 	b.ResetTimer()
 	b.SetParallelism(8)
 	b.RunParallel(

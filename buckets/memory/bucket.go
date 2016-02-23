@@ -51,8 +51,8 @@ type tokenBucket struct {
 	tb  *tokenbucket.TokenBucket
 }
 
-func (b *tokenBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
-	waitTime = b.tb.Take(int64(numTokens))
+func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
+	waitTime = b.tb.Take(numTokens)
 	if waitTime > maxWaitTime && maxWaitTime > 0 {
 		waitTime = -1
 	}

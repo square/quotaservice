@@ -46,7 +46,7 @@ type Bucket interface {
 	// the number of tokens becomes available. A return value of 0 would mean no waiting is
 	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
 	// within the max time limit specified.
-	Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration)
+	Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration)
 	Config() *configs.BucketConfig
 }
 

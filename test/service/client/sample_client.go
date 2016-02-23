@@ -40,7 +40,7 @@ func main() {
 	req := &qspb.AllowRequest{
 		Namespace: proto.String("test.namespace"),
 		Name: proto.String("one"),
-		NumTokensRequested: proto.Int(1)}
+		NumTokensRequested: proto.Int64(1)}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {
 		fmt.Printf("Caught error %v", err)

@@ -87,8 +87,7 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 	return fmt.Sprintf("%v:%v:%v", namespace, bucketName, suffix)
 }
 
-func (b *redisBucket) Take(requested int, maxWaitTime time.Duration) (waitTime time.Duration) {
-	tokensRequested := int64(requested)
+func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime time.Duration) {
 	// Start a Redis "transaction"
 	client := b.factory.client
 	// TODO(manik) detect failed clients and reconnect
@@ -113,8 +112,8 @@ func (b *redisBucket) Take(requested int, maxWaitTime time.Duration) (waitTime t
 	}
 
 	waitTime = time.Duration(tokensNextAvailableNanos - currentTimeNanos) * time.Nanosecond
-	accumulatedTokensUsed := min(accumulatedTokens, tokensRequested)
-	tokensToWaitFor := int64(tokensRequested) - accumulatedTokensUsed
+	accumulatedTokensUsed := min(accumulatedTokens, requested)
+	tokensToWaitFor := requested - accumulatedTokensUsed
 	futureWaitNanos := tokensToWaitFor * b.nanosBetweenTokens
 
 	// Is waitTime too long?

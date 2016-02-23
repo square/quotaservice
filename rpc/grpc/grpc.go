@@ -69,7 +69,7 @@ func (g *GrpcEndpoint) Stop() {
 func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
 	// TODO(manik) validate inputs
-	granted, wait, err := g.qs.Allow(*req.Namespace, *req.Name, int(*req.NumTokensRequested))
+	granted, wait, err := g.qs.Allow(*req.Namespace, *req.Name, *req.NumTokensRequested)
 	var status qspb.AllowResponse_Status;
 
 	if err != nil {
@@ -87,7 +87,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 		}
 	} else {
 		status = qspb.AllowResponse_OK
-		rsp.NumTokensGranted = proto.Int(granted)
+		rsp.NumTokensGranted = proto.Int64(granted)
 		rsp.WaitMillis = proto.Int64(wait)
 	}
 	rsp.Status = &status

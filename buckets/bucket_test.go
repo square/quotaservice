@@ -28,7 +28,7 @@ type mockBucket struct {
 	namespace, bucketName string
 }
 
-func (b *mockBucket) Take(numTokens int, maxWaitTime time.Duration) (waitTime time.Duration) {
+func (b *mockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
 	return 0
 }
 func (b *mockBucket) Config() *configs.BucketConfig {

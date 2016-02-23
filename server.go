@@ -101,7 +101,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error) {
+func (s *server) Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime int64, err error) {
 	b := s.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {

@@ -26,7 +26,7 @@ const (
 )
 
 type QuotaService interface {
-	Allow(namespace string, name string, tokensRequested int) (granted int, waitTime int64, err error)
+	Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime int64, err error)
 }
 
 type QuotaServiceError struct {
