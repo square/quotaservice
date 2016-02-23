@@ -25,8 +25,6 @@ import (
 )
 
 type ServiceConfig struct {
-	AdminEnabled          bool                        `yaml:"admin_enabled"`
-	AdminPort             int                         `yaml:"admin_port"`
 	MetricsEnabled        bool                        `yaml:"metrics_enabled"`
 	FillerFrequencyMillis int                         `yaml:"filler_frequency_millis"`
 	GlobalDefaultBucket   *BucketConfig               `yaml:"global_default_bucket,flow"`
@@ -105,7 +103,6 @@ func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
 
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		AdminPort:             8080,
 		MetricsEnabled:        true,
 		FillerFrequencyMillis: 1000,
 		GlobalDefaultBucket:   NewDefaultBucketConfig(),

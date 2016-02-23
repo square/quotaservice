@@ -26,6 +26,7 @@ import (
 	"github.com/maniksurtani/quotaservice/clustering"
 	"github.com/maniksurtani/quotaservice/metrics"
 	"time"
+	"net/http"
 )
 
 type Server interface {
@@ -34,13 +35,13 @@ type Server interface {
 	Metrics() metrics.Metrics
 	SetLogger(logger logging.Logger)
 	SetClustering(clustering clustering.Clustering)
+	ServeAdminConsole(mux *http.ServeMux)
 }
 
 type server struct {
 	cfgs            *configs.ServiceConfig
 	currentStatus   lifecycle.Status
 	stopper         *chan int
-	adminServer     *admin.AdminServer
 	bucketContainer *buckets.BucketContainer
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
@@ -57,10 +58,6 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 		cfgs:          config,
 		bucketFactory: bucketFactory,
 		rpcEndpoints:  rpcEndpoints}
-
-	if config.AdminEnabled {
-		s.adminServer = admin.NewAdminServer(config.AdminPort)
-	}
 
 	// TODO(manik): Metrics? Monitoring? Naming...
 	if config.MetricsEnabled {
@@ -79,11 +76,6 @@ func (s *server) Start() (bool, error) {
 	s.bucketFactory.Init(s.cfgs)
 	s.bucketContainer = buckets.NewBucketContainer(s.cfgs, s.bucketFactory)
 
-	if s.cfgs.AdminEnabled {
-		// Start the admin server
-		s.adminServer.Start()
-	}
-
 	// Start the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
 		rpcServer.Init(s)
@@ -100,11 +92,6 @@ func (s *server) Start() (bool, error) {
 
 func (s *server) Stop() (bool, error) {
 	s.currentStatus = lifecycle.Stopped
-
-	if s.cfgs.AdminEnabled {
-		// Stop the admin server
-		s.adminServer.Stop()
-	}
 
 	// Stop the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
@@ -133,6 +120,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 	}
 
 	return
+}
+
+func (s *server) ServeAdminConsole(mux *http.ServeMux) {
+	admin.ServeAdminConsole(s, mux)
 }
 
 func (s *server) Metrics() metrics.Metrics {

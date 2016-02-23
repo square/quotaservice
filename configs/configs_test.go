@@ -15,14 +15,14 @@
  */
 
 package configs
+
 import (
 	"testing"
 	"github.com/maniksurtani/quotaservice/test"
 )
 
 func TestConfig(t *testing.T) {
-	yaml := `admin_port: 1234
-metrics_enabled: false
+	yaml := `metrics_enabled: false
 filler_frequency_millis: 12345
 namespaces:
   no_default_no_dynamic:
@@ -46,9 +46,6 @@ namespaces:
 `
 
 	cfg := readConfigFromBytes([]byte(yaml))
-	if cfg.AdminPort != 1234 {
-		t.Fatal("Expected admin_port to be 1234")
-	}
 
 	if cfg.MetricsEnabled {
 		t.Fatal("Metrics should not be enabled")

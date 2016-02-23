@@ -20,25 +20,16 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice/metrics"
 )
 
-type AdminServer struct {
-	port int
+type Administrable interface {
+	Metrics() metrics.Metrics
 }
 
-func NewAdminServer(port int) *AdminServer {
-	s := AdminServer{port: port}
-	return &s
-}
-
-func (a *AdminServer) Start() {
-	logging.Printf("Starting admin console on port %v", a.port)
-	http.HandleFunc("/", handler)
-	go http.ListenAndServe(fmt.Sprintf(":%v", a.port), nil)
-}
-
-func (a *AdminServer) Stop() {
-	logging.Print("Stopping admin console")
+func ServeAdminConsole(a Administrable, mux *http.ServeMux) {
+	logging.Print("Serving admin console")
+	mux.HandleFunc("/", handler)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
