@@ -21,18 +21,46 @@ import (
 	"net/http"
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/metrics"
+	"github.com/maniksurtani/quotaservice/buckets"
+	"github.com/maniksurtani/quotaservice/configs"
+	"strings"
 )
 
 type Administrable interface {
 	Metrics() metrics.Metrics
+	Configs() *configs.ServiceConfig
+	BucketContainer() *buckets.BucketContainer
 }
 
 func ServeAdminConsole(a Administrable, mux *http.ServeMux) {
 	logging.Print("Serving admin console")
-	mux.HandleFunc("/", handler)
+	mux.Handle("/", &handler{a})
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "A future admin console")
+type handler struct {
+	a Administrable
 }
 
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-type", "text/html")
+	fmt.Fprintf(w, `
+		<HTML>
+			<BODY>
+				<H1>A Future Admin Console</H1>
+				For now, here's some information:
+				<H3>Configuration</H3>
+				%v
+				<H3>Active buckets</H3>
+				%v
+			</BODY>
+		</HTML>
+	`, toHtml(h.a.Configs()), toHtml(h.a.BucketContainer()))
+}
+
+func toHtml(s interface{}) string {
+	return fmt.Sprintf(`
+<DIV><PRE>
+%v
+</PRE></DIV>
+	`, strings.Replace(fmt.Sprintf("%v", s), "\n", "<BR />", -1))
+}

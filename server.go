@@ -122,6 +122,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int) (gran
 	return
 }
 
+
 func (s *server) ServeAdminConsole(mux *http.ServeMux) {
 	admin.ServeAdminConsole(s, mux)
 }
@@ -136,4 +137,13 @@ func (s *server) SetLogger(logger logging.Logger) {
 
 func (s *server) SetClustering(clustering clustering.Clustering) {
 	s.clustering = clustering
+}
+
+// Implements admin.Administrable
+func (s *server) Configs() *configs.ServiceConfig {
+	return s.cfgs
+}
+
+func (s *server) BucketContainer() *buckets.BucketContainer {
+	return s.bucketContainer
 }

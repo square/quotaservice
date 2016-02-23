@@ -22,10 +22,12 @@ import (
 	"time"
 	"sync"
 	"fmt"
+	"bytes"
+	"sort"
 )
 
 const (
-	GLOBAL_NAMESPACE    = "___GLOBAL___"
+	GLOBAL_NAMESPACE = "___GLOBAL___"
 	DEFAULT_BUCKET_NAME = "___DEFAULT_BUCKET___"
 )
 
@@ -64,7 +66,7 @@ func (m ActivityChannel) ReportActivity() {
 	case m <- true:
 	// reported activity
 	default:
-		// Already reported
+	// Already reported
 	}
 }
 
@@ -81,7 +83,7 @@ type namespace struct {
 	cfg           *configs.NamespaceConfig
 	buckets       map[string]Bucket
 	defaultBucket Bucket
-	sync.RWMutex  // Embedded mutex
+	sync.RWMutex // Embedded mutex
 }
 
 func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
@@ -112,6 +114,10 @@ type BucketFactory interface {
 
 	// NewBucket creates a new bucket.
 	NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) Bucket
+}
+
+func FullyQualifiedName(namespace, bucketName string) string {
+	return fmt.Sprintf("%v:%v", namespace, bucketName)
 }
 
 // NewBucketContainer creates a new bucket container.
@@ -176,10 +182,6 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 	return
 }
 
-func FullyQualifiedName(namespace, bucketName string) string {
-	return fmt.Sprintf("%v:%v", namespace, bucketName)
-}
-
 func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
 	bCfg := ns.cfg.Buckets[bucketName]
 	if bCfg == nil {
@@ -189,10 +191,52 @@ func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns
 	return bc.createNewNamedBucketFromCfg(namespace, bucketName, ns, bCfg)
 
 }
+
 func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *configs.BucketConfig) Bucket {
 	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()
-	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
+	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
 	return bucket
+}
+
+func (bc *BucketContainer) String() string {
+	var buffer bytes.Buffer
+	if bc.defaultBucket != nil {
+		buffer.WriteString("Global default present\n\n")
+	}
+
+	sortedNamespaces := make([]string, len(bc.namespaces))
+	i := 0
+	for nsName, _ := range bc.namespaces {
+		sortedNamespaces[i] = nsName
+		i++
+	}
+
+	sort.Strings(sortedNamespaces)
+
+	for _, nsName := range sortedNamespaces{
+		ns := bc.namespaces[nsName]
+		buffer.WriteString(fmt.Sprintf(" * Namespace: %v\n", nsName))
+		if ns.defaultBucket != nil {
+			buffer.WriteString("   + Default present\n")
+		}
+
+		// Sort buckets
+		sortedBuckets := make([]string, len(ns.buckets))
+		j := 0
+		for bName, _ := range ns.buckets {
+			sortedBuckets[j] = bName
+			j++
+		}
+
+		sort.Strings(sortedBuckets)
+
+		for _, bName := range sortedBuckets {
+			buffer.WriteString(fmt.Sprintf("   + %v\n", bName))
+		}
+		buffer.WriteString("\n")
+	}
+
+	return buffer.String()
 }
