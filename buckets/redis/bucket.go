@@ -38,6 +38,7 @@ type redisBucket struct {
 	factory               *BucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
+	maxIdleTimeMillis     string
 	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
 	buckets.ActivityChannel
 }
@@ -61,16 +62,19 @@ func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 
 		if !bf.initialized {
 			bf.initialized = true
-			logging.Print("Establishing connection to Redis")
 			// Set up connection to Redis
 			bf.client = redis.NewClient(bf.redisOpts)
-			logging.Printf("Connection established. Time on server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0) / 1000, 0))
+			logging.Printf("Connection established. Time on Redis server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0), 0))
 			bf.scriptSHA = loadScript(bf.client)
 		}
 	}
 }
 
 func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+	idle := "0"
+	if cfg.MaxIdleMillis > 0 {
+		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
+	}
 	return &redisBucket{
 		cfg,
 		namespace,
@@ -78,6 +82,7 @@ func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 		bf,
 		strconv.FormatInt(int64(1e9) / int64(cfg.FillRate), 10),
 		strconv.FormatInt(int64(cfg.Size), 10),
+		idle,
 		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
 			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
 		buckets.NewActivityChannel()}
@@ -88,13 +93,20 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 }
 
 func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime time.Duration) {
-	currentTimeNanos := fmt.Sprintf("%v", time.Now().UnixNano())
+	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 	args := []string{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
-		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10)}
+		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
+		b.maxIdleTimeMillis}
 
 	res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
-	waitTimeNanos := res.Val().(int64)
-	waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
+	switch waitTimeNanos := res.Val().(type) {
+	case int64:
+		waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
+	default:
+		logging.Printf("Unknown response '%v' of type %T. Full result %v",
+			waitTimeNanos, waitTimeNanos, res)
+	}
+
 	return
 }
 
@@ -115,15 +127,14 @@ func (b *redisBucket) Config() *configs.BucketConfig {
 
 func loadScript(c *redis.Client) (sha string) {
 	lua := `
-	local zero = tonumber("0")
 	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
 	if not tokensNextAvailableNanos then
-		tokensNextAvailableNanos = zero
+		tokensNextAvailableNanos = 0
 	end
 
 	local accumulatedTokens = redis.call("GET", KEYS[2])
 	if not accumulatedTokens then
-		accumulatedTokens = zero
+		accumulatedTokens = 0
 	end
 
 	local currentTimeNanos = tonumber(ARGV[1])
@@ -131,7 +142,8 @@ func loadScript(c *redis.Client) (sha string) {
 	local maxTokensToAccumulate = tonumber(ARGV[3])
 	local requested = tonumber(ARGV[4])
 	local maxWaitTime = tonumber(ARGV[5])
-	local freshTokens = zero
+	local lifespan = tonumber(ARGV[6])
+	local freshTokens = 0
 
 	if currentTimeNanos > tokensNextAvailableNanos then
 		freshTokens = math.floor((currentTimeNanos - tokensNextAvailableNanos) / nanosBetweenTokens)
@@ -150,8 +162,13 @@ func loadScript(c *redis.Client) (sha string) {
 		tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
 		accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
 
-		redis.call("SET", KEYS[1], tokensNextAvailableNanos)
-		redis.call("SET", KEYS[2], math.floor(accumulatedTokens))
+		if lifespan > 0 then
+			redis.call("SET", KEYS[1], tokensNextAvailableNanos, "PX", lifespan)
+			redis.call("SET", KEYS[2], math.floor(accumulatedTokens), "PX", lifespan)
+		else
+			redis.call("SET", KEYS[1], tokensNextAvailableNanos)
+			redis.call("SET", KEYS[2], math.floor(accumulatedTokens))
+		end
 	end
 
 	return waitTime
