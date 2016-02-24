@@ -115,14 +115,15 @@ func (b *redisBucket) Config() *configs.BucketConfig {
 
 func loadScript(c *redis.Client) (sha string) {
 	lua := `
+	local zero = tonumber("0")
 	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
 	if not tokensNextAvailableNanos then
-		tokensNextAvailableNanos = tonumber("0")
+		tokensNextAvailableNanos = zero
 	end
 
 	local accumulatedTokens = redis.call("GET", KEYS[2])
 	if not accumulatedTokens then
-		accumulatedTokens = tonumber("0")
+		accumulatedTokens = zero
 	end
 
 	local currentTimeNanos = tonumber(ARGV[1])
@@ -130,7 +131,7 @@ func loadScript(c *redis.Client) (sha string) {
 	local maxTokensToAccumulate = tonumber(ARGV[3])
 	local requested = tonumber(ARGV[4])
 	local maxWaitTime = tonumber(ARGV[5])
-	local freshTokens = tonumber("0")
+	local freshTokens = zero
 
 	if currentTimeNanos > tokensNextAvailableNanos then
 		freshTokens = math.floor((currentTimeNanos - tokensNextAvailableNanos) / nanosBetweenTokens)
