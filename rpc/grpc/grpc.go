@@ -86,9 +86,13 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 			return nil, err
 		}
 	} else {
-		status = qspb.AllowResponse_OK
+		if wait > 0 {
+			status = qspb.AllowResponse_OK_WAIT
+		} else {
+			status = qspb.AllowResponse_OK
+		}
 		rsp.NumTokensGranted = proto.Int64(granted)
-		rsp.WaitMillis = proto.Int64(wait)
+		rsp.WaitMillis = proto.Int64(wait.Nanoseconds())
 	}
 	rsp.Status = &status
 	return rsp, nil

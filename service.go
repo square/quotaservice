@@ -15,18 +15,22 @@
  */
 
 package quotaservice
-import "errors"
+
+import (
+	"errors"
+	"time"
+)
 
 type ErrorReason int
 
 const (
-	ER_NO_SUCH_BUCKET  ErrorReason = iota
+	ER_NO_SUCH_BUCKET ErrorReason = iota
 	ER_TIMED_OUT_WAITING
 	ER_REJECTED
 )
 
 type QuotaService interface {
-	Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime int64, err error)
+	Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime time.Duration, err error)
 }
 
 type QuotaServiceError struct {

@@ -101,7 +101,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime int64, err error) {
+func (s *server) Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime time.Duration, err error) {
 	b := s.bucketContainer.FindBucket(namespace, name)
 	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
@@ -110,10 +110,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64) (gr
 	}
 
 	dur := time.Millisecond * time.Duration(b.Config().WaitTimeoutMillis)
-	waitTimeNanos := b.Take(tokensRequested, dur).Nanoseconds()
-	waitTime = (waitTimeNanos % 1e9) / 1e6
+	waitTime = b.Take(tokensRequested, dur)
 
-	if waitTime < 0 {
+	if waitTime < 0 && dur > 0 {
+		waitTime = 0
 		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMED_OUT_WAITING)
 	} else {
 		granted = tokensRequested
@@ -121,7 +121,6 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64) (gr
 
 	return
 }
-
 
 func (s *server) ServeAdminConsole(mux *http.ServeMux) {
 	admin.ServeAdminConsole(s, mux)
