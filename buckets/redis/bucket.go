@@ -32,14 +32,13 @@ const (
 )
 
 type redisBucket struct {
-	cfg                         *configs.BucketConfig
-	namespace                   string
-	name                        string
-	factory                     *BucketFactory
-	nanosBetweenTokens          int64
-	maxTokensToAccumulate       int64
-	tokensNextAvblNanosRedisKey string
-	accumulatedTokensRedisKey   string
+	cfg                   *configs.BucketConfig
+	namespace             string
+	name                  string
+	factory               *BucketFactory
+	nanosBetweenTokens    string
+	maxTokensToAccumulate string
+	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
 	buckets.ActivityChannel
 }
 
@@ -48,6 +47,7 @@ type BucketFactory struct {
 	client      *redis.Client
 	initialized bool
 	redisOpts   *redis.Options
+	scriptSHA   string
 }
 
 func NewBucketFactory(redisOpts *redis.Options) *BucketFactory {
@@ -64,8 +64,8 @@ func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 			logging.Print("Establishing connection to Redis")
 			// Set up connection to Redis
 			bf.client = redis.NewClient(bf.redisOpts)
-
 			logging.Printf("Connection established. Time on server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0) / 1000, 0))
+			bf.scriptSHA = loadScript(bf.client)
 		}
 	}
 }
@@ -76,10 +76,10 @@ func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 		namespace,
 		bucketName,
 		bf,
-		int64(1e9 / cfg.FillRate),
-		int64(cfg.Size),
-		toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
-		toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX),
+		strconv.FormatInt(int64(1e9) / int64(cfg.FillRate), 10),
+		strconv.FormatInt(int64(cfg.Size), 10),
+		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
+			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
 		buckets.NewActivityChannel()}
 }
 
@@ -88,64 +88,14 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 }
 
 func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime time.Duration) {
-	// Start a Redis "transaction"
-	client := b.factory.client
-	// TODO(manik) detect failed clients and reconnect
-	m := client.Multi()
-	defer m.Exec(func() error {
-		return nil
-	})
+	currentTimeNanos := fmt.Sprintf("%v", time.Now().UnixNano())
+	args := []string{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
+		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10)}
 
-	currentTimeNanos := time.Now().UnixNano()
-	cachedVals := m.MGet(b.tokensNextAvblNanosRedisKey, b.accumulatedTokensRedisKey)
-
-	tokensNextAvailableNanos := toInt64(cachedVals.Val()[0], 0)
-	accumulatedTokens := toInt64(cachedVals.Val()[1], 0)
-
-	if currentTimeNanos > tokensNextAvailableNanos {
-		// Accumulate fresh tokens.
-		freshTokens := (currentTimeNanos - tokensNextAvailableNanos) / b.nanosBetweenTokens
-
-		// Never exceed maxTokensToAccumulate
-		accumulatedTokens = min(b.maxTokensToAccumulate, accumulatedTokens + freshTokens)
-		tokensNextAvailableNanos = currentTimeNanos
-	}
-
-	waitTime = time.Duration(tokensNextAvailableNanos - currentTimeNanos) * time.Nanosecond
-	accumulatedTokensUsed := min(accumulatedTokens, requested)
-	tokensToWaitFor := requested - accumulatedTokensUsed
-	futureWaitNanos := tokensToWaitFor * b.nanosBetweenTokens
-
-	// Is waitTime too long?
-	if waitTime > 0 && waitTime > maxWaitTime && maxWaitTime > 0 {
-		// Don't "claim" any tokens.
-		waitTime = time.Duration(-1)
-	} else {
-		tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
-		accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
-
-		// TODO(manik) see if we can re-implement using INCR?
-
-		// "Claim" tokens by writing variables back to Redis and releasing lock.
-		expiry := time.Duration(b.cfg.MaxIdleMillis) * time.Millisecond
-		m.Set(b.tokensNextAvblNanosRedisKey, tokensNextAvailableNanos, expiry)
-		m.Set(b.accumulatedTokensRedisKey, accumulatedTokens, expiry)
-	}
-
+	res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
+	waitTimeNanos := res.Val().(int64)
+	waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
 	return
-}
-
-func min(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
-func max(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
 }
 
 func toInt64(s interface{}, defaultValue int64) (v int64) {
@@ -161,4 +111,52 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 
 func (b *redisBucket) Config() *configs.BucketConfig {
 	return b.cfg
+}
+
+func loadScript(c *redis.Client) (sha string) {
+	lua := `
+	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
+	if not tokensNextAvailableNanos then
+		tokensNextAvailableNanos = tonumber("0")
+	end
+
+	local accumulatedTokens = redis.call("GET", KEYS[2])
+	if not accumulatedTokens then
+		accumulatedTokens = tonumber("0")
+	end
+
+	local currentTimeNanos = tonumber(ARGV[1])
+	local nanosBetweenTokens = tonumber(ARGV[2])
+	local maxTokensToAccumulate = tonumber(ARGV[3])
+	local requested = tonumber(ARGV[4])
+	local maxWaitTime = tonumber(ARGV[5])
+	local freshTokens = tonumber("0")
+
+	if currentTimeNanos > tokensNextAvailableNanos then
+		freshTokens = math.floor((currentTimeNanos - tokensNextAvailableNanos) / nanosBetweenTokens)
+		accumulatedTokens = math.min(maxTokensToAccumulate, accumulatedTokens + freshTokens)
+		tokensNextAvailableNanos = currentTimeNanos
+	end
+
+	local waitTime = tokensNextAvailableNanos - currentTimeNanos
+	local accumulatedTokensUsed = math.min(accumulatedTokens, requested)
+	local tokensToWaitFor = requested - accumulatedTokensUsed
+	local futureWaitNanos = tokensToWaitFor * nanosBetweenTokens
+
+	if waitTime > 0 and waitTime > maxWaitTime and maxWaitTime > 0 then
+    	waitTime = -1
+	else
+		tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
+		accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
+
+		redis.call("SET", KEYS[1], tokensNextAvailableNanos)
+		redis.call("SET", KEYS[2], math.floor(accumulatedTokens))
+	end
+
+	return waitTime
+	`
+	s := c.ScriptLoad(lua)
+	sha = s.Val()
+	logging.Printf("Loaded LUA script into Redis; script SHA %v", sha)
+	return
 }
