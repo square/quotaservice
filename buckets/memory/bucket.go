@@ -26,23 +26,23 @@ import (
 	"github.com/hotei/tokenbucket"
 )
 
-type BucketFactory struct {
+type bucketFactory struct {
 }
 
-func (bf BucketFactory) Init(cfg *configs.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
 	// A no-op
 }
 
-func (bf BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	// fill rate is tokens-per-second.
-	dur := time.Nanosecond * time.Duration(1e9/cfg.FillRate)
+	dur := time.Nanosecond * time.Duration(1e9 / cfg.FillRate)
 	logging.Printf("Creating bucket for name %v with fill duration %v and capacity %v", buckets.FullyQualifiedName(namespace, bucketName), dur, cfg.Size)
 	bucket := &tokenBucket{buckets.NewActivityChannel(), cfg, tokenbucket.New(dur, float64(cfg.Size))}
 	return bucket
 }
 
 func NewBucketFactory() buckets.BucketFactory {
-	return &BucketFactory{}
+	return &bucketFactory{}
 }
 
 type tokenBucket struct {

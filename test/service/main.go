@@ -38,7 +38,7 @@ func main() {
 	cfg.Namespaces["test.namespace2"].DefaultBucket = configs.NewDefaultBucketConfig()
 	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = configs.NewDefaultBucketConfig()
 
-	server := quotaservice.New(cfg, memory.BucketFactory{}, grpc.New(10990))
+	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New(10990))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	server.Start()

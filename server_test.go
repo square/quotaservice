@@ -31,12 +31,12 @@ func (d *dummyEndpoint) Stop() {}
 
 func TestWithNoRpcs(t *testing.T) {
 	test.ExpectingPanic(t, func() {
-		New(configs.NewDefaultServiceConfig(), &memory.BucketFactory{})
+		New(configs.NewDefaultServiceConfig(), memory.NewBucketFactory())
 	})
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(configs.NewDefaultServiceConfig(), &memory.BucketFactory{}, &dummyEndpoint{})
+	s := New(configs.NewDefaultServiceConfig(), memory.NewBucketFactory(), &dummyEndpoint{})
 	s.Start()
 	defer s.Stop()
 

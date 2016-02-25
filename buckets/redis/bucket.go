@@ -35,7 +35,7 @@ type redisBucket struct {
 	cfg                   *configs.BucketConfig
 	namespace             string
 	name                  string
-	factory               *BucketFactory
+	factory               *bucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
 	maxIdleTimeMillis     string
@@ -43,7 +43,7 @@ type redisBucket struct {
 	buckets.ActivityChannel
 }
 
-type BucketFactory struct {
+type bucketFactory struct {
 	m           *sync.RWMutex // Embed a lock.
 	client      *redis.Client
 	initialized bool
@@ -51,11 +51,11 @@ type BucketFactory struct {
 	scriptSHA   string
 }
 
-func NewBucketFactory(redisOpts *redis.Options) *BucketFactory {
-	return &BucketFactory{initialized: false, m: &sync.RWMutex{}, redisOpts: redisOpts}
+func NewBucketFactory(redisOpts *redis.Options) buckets.BucketFactory {
+	return &bucketFactory{initialized: false, m: &sync.RWMutex{}, redisOpts: redisOpts}
 }
 
-func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
 	if !bf.initialized {
 		bf.m.Lock()
 		defer bf.m.Unlock()
@@ -70,7 +70,7 @@ func (bf *BucketFactory) Init(cfg *configs.ServiceConfig) {
 	}
 }
 
-func (bf *BucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
