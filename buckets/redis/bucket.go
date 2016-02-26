@@ -174,7 +174,7 @@ func loadScript(c *redis.Client) (sha string) {
 
 	local accumulatedTokens = redis.call("GET", KEYS[2])
 	if not accumulatedTokens then
-		accumulatedTokens = 0
+		accumulatedTokens = maxTokensToAccumulate
 	end
 
 	local currentTimeNanos = tonumber(ARGV[1])
