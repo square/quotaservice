@@ -13,8 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-// Package memory presents an in-memory token bucket representation based on
-// http://github.com/hotei/tokenbucket
 package memory
 
 import (

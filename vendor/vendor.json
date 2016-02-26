@@ -13,11 +13,6 @@
 			"revisionTime": "2015-12-07T15:07:14+11:00"
 		},
 		{
-			"path": "github.com/hotei/tokenbucket",
-			"revision": "eb2fc421a32d7b83621e40928c68eaba8df05b42",
-			"revisionTime": "2015-05-01T16:15:57-04:00"
-		},
-		{
 			"path": "golang.org/x/net/context",
 			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
 			"revisionTime": "2015-12-19T16:51:57+06:00"
