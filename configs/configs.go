@@ -25,9 +25,9 @@ import (
 )
 
 type ServiceConfig struct {
-	MetricsEnabled        bool                        `yaml:"metrics_enabled"`
-	GlobalDefaultBucket   *BucketConfig               `yaml:"global_default_bucket,flow"`
-	Namespaces            map[string]*NamespaceConfig `yaml:",flow"`
+	MetricsEnabled      bool                        `yaml:"metrics_enabled"`
+	GlobalDefaultBucket *BucketConfig               `yaml:"global_default_bucket,flow"`
+	Namespaces          map[string]*NamespaceConfig `yaml:",flow"`
 }
 
 type NamespaceConfig struct {
@@ -41,8 +41,8 @@ type BucketConfig struct {
 	Size              int64
 	FillRate          int64 `yaml:"fill_rate"`
 	WaitTimeoutMillis int64 `yaml:"wait_timeout_millis"`
-	// TODO(manik) add max debt
 	MaxIdleMillis     int64 `yaml:"max_idle_millis"`
+	MaxDebtMillis     int64 `yaml:"max_debt_millis"`
 }
 
 func (b *BucketConfig) String() string {
@@ -113,7 +113,7 @@ func NewDefaultNamespaceConfig() *NamespaceConfig {
 }
 
 func NewDefaultBucketConfig() *BucketConfig {
-	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1}
+	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1, MaxDebtMillis: 10000}
 }
 
 func applyBucketDefaults(b *BucketConfig) {
@@ -132,6 +132,10 @@ func applyBucketDefaults(b *BucketConfig) {
 
 		if b.MaxIdleMillis == 0 {
 			b.MaxIdleMillis = -1
+		}
+
+		if b.MaxDebtMillis == 0 {
+			b.MaxDebtMillis = 10000
 		}
 	}
 }
