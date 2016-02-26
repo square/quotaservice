@@ -26,7 +26,6 @@ import (
 
 type ServiceConfig struct {
 	MetricsEnabled        bool                        `yaml:"metrics_enabled"`
-	FillerFrequencyMillis int                         `yaml:"filler_frequency_millis"`
 	GlobalDefaultBucket   *BucketConfig               `yaml:"global_default_bucket,flow"`
 	Namespaces            map[string]*NamespaceConfig `yaml:",flow"`
 }
@@ -42,6 +41,7 @@ type BucketConfig struct {
 	Size              int64
 	FillRate          int64 `yaml:"fill_rate"`
 	WaitTimeoutMillis int64 `yaml:"wait_timeout_millis"`
+	// TODO(manik) add max debt
 	MaxIdleMillis     int64 `yaml:"max_idle_millis"`
 }
 
@@ -104,7 +104,6 @@ func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
 		MetricsEnabled:        true,
-		FillerFrequencyMillis: 1000,
 		GlobalDefaultBucket:   NewDefaultBucketConfig(),
 		Namespaces:            make(map[string]*NamespaceConfig)}
 }

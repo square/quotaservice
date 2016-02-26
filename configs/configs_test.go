@@ -51,10 +51,6 @@ namespaces:
 		t.Fatal("Metrics should not be enabled")
 	}
 
-	if cfg.FillerFrequencyMillis != 12345 {
-		t.Fatal("Expected filler_frequency_millis to be 12345")
-	}
-
 	if cfg.GlobalDefaultBucket != nil {
 		t.Fatal("Did not configure a global default bucket")
 	}
