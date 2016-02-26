@@ -29,6 +29,7 @@ import (
 const (
 	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
 	ACCUMULATED_TOKENS_SUFFIX = "AT"
+	RETRIES = 3
 )
 
 type redisBucket struct {
@@ -62,12 +63,16 @@ func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
 
 		if !bf.initialized {
 			bf.initialized = true
-			// Set up connection to Redis
-			bf.client = redis.NewClient(bf.redisOpts)
-			logging.Printf("Connection established. Time on Redis server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0), 0))
-			bf.scriptSHA = loadScript(bf.client)
+			bf.connectToRedis()
 		}
 	}
+}
+
+func (bf *bucketFactory) connectToRedis() {
+	// Set up connection to Redis
+	bf.client = redis.NewClient(bf.redisOpts)
+	logging.Printf("Connection established. Time on Redis server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0), 0))
+	bf.scriptSHA = loadScript(bf.client)
 }
 
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
@@ -98,13 +103,26 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		b.maxIdleTimeMillis}
 
-	res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
-	switch waitTimeNanos := res.Val().(type) {
-	case int64:
-		waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
-	default:
-		logging.Printf("Unknown response '%v' of type %T. Full result %v",
-			waitTimeNanos, waitTimeNanos, res)
+	keepTrying := true
+	for attempt := 0; keepTrying && attempt < RETRIES; attempt++ {
+		res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
+		switch waitTimeNanos := res.Val().(type) {
+		case int64:
+			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
+			keepTrying = false
+		default:
+			if res.Err() != nil && res.Err().Error() == "redis: client is closed" {
+				b.factory.connectToRedis()
+			} else {
+				keepTrying = false
+				panic(fmt.Sprintf("Unknown response '%v' of type %T. Full result %+v",
+					waitTimeNanos, waitTimeNanos, res))
+			}
+		}
+	}
+
+	if keepTrying {
+		panic(fmt.Sprintf("Couldn't reconnect to Redis, even after %v attempts", RETRIES))
 	}
 
 	return
@@ -123,6 +141,11 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 
 func (b *redisBucket) Config() *configs.BucketConfig {
 	return b.cfg
+}
+
+func checkScriptExists(c *redis.Client, sha string) bool {
+	r := c.ScriptExists(sha)
+	return r.Val()[0]
 }
 
 func loadScript(c *redis.Client) (sha string) {
