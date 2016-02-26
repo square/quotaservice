@@ -100,7 +100,7 @@ func assertNamespace(t *testing.T, namespace string, ns *NamespaceConfig, numBuc
 	}
 }
 
-func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMillis, maxIdleMillis int) {
+func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMillis, maxIdleMillis int64) {
 	if b == nil {
 		t.Fatal("Bucket doesn't exist")
 	}

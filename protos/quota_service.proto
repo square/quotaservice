@@ -26,7 +26,8 @@ service QuotaService {
 message AllowRequest {
   optional string namespace = 1;
   optional string name = 2;
-  optional int64 num_tokens_requested = 3; // Defaults to 1
+  optional int64 num_tokens_requested = 3; // Defaults to 1.
+  optional int64 max_wait_millis_override = 4; // Defaults to -1, which assumes server-side defaults.
 }
 
 message AllowResponse {
@@ -34,9 +35,10 @@ message AllowResponse {
     OK = 1;
     OK_WAIT = 2;
     REJECTED = 3;
+    FAILED = 4;
   }
 
   optional Status status = 1;
   optional int64 num_tokens_granted = 2;
-  optional int64 wait_millis = 3; // Defaults to 0
+  optional int64 wait_millis = 3; // Defaults to 0.
 }

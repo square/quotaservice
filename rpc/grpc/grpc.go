@@ -68,8 +68,24 @@ func (g *GrpcEndpoint) Stop() {
 
 func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
-	// TODO(manik) validate inputs
-	granted, wait, err := g.qs.Allow(*req.Namespace, *req.Name, *req.NumTokensRequested)
+	if invalid(req) {
+		s := qspb.AllowResponse_FAILED
+		rsp.Status = &s
+		return rsp, nil
+	}
+
+	// TODO(manik) make names and namespaces case insensitive
+	var numTokensRequested int64 = 1
+	if req.NumTokensRequested != nil {
+		numTokensRequested = req.GetNumTokensRequested()
+	}
+
+	var maxWaitMillisOverride int64 = -1
+	if req.MaxWaitMillisOverride != nil {
+		maxWaitMillisOverride = req.GetMaxWaitMillisOverride()
+	}
+
+	granted, wait, err := g.qs.Allow(req.GetNamespace(), req.GetName(), numTokensRequested, maxWaitMillisOverride)
 	var status qspb.AllowResponse_Status;
 
 	if err != nil {
@@ -83,7 +99,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 				status = qspb.AllowResponse_REJECTED
 			}
 		} else {
-			return nil, err
+			status = qspb.AllowResponse_FAILED
 		}
 	} else {
 		if wait > 0 {
@@ -96,4 +112,9 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 	}
 	rsp.Status = &status
 	return rsp, nil
+}
+
+func invalid(req *qspb.AllowRequest) bool {
+	// Negative tokens are allowed!
+	return req.GetName() != "" && req.GetNamespace() != "" && (req.NumTokensRequested == nil || req.GetNumTokensRequested() != 0)
 }

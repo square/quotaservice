@@ -59,7 +59,6 @@ func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpc
 		bucketFactory: bucketFactory,
 		rpcEndpoints:  rpcEndpoints}
 
-	// TODO(manik): Metrics? Monitoring? Naming...
 	if config.MetricsEnabled {
 		s.metrics = metrics.New()
 	}
@@ -101,15 +100,21 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime time.Duration, err error) {
+func (s *server) Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error) {
 	b := s.bucketContainer.FindBucket(namespace, name)
-	// TODO(manik) Fix contracts, searching for buckets, etc.
 	if b == nil {
 		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_SUCH_BUCKET)
 		return
 	}
 
-	dur := time.Millisecond * time.Duration(b.Config().WaitTimeoutMillis)
+	// Timeout
+	dur := time.Millisecond
+	if maxWaitMillisOverride > -1 && maxWaitMillisOverride < b.Config().WaitTimeoutMillis {
+		dur *= time.Duration(maxWaitMillisOverride)
+	} else {
+		dur *= time.Duration(b.Config().WaitTimeoutMillis)
+	}
+
 	waitTime = b.Take(tokensRequested, dur)
 
 	if waitTime < 0 && dur > 0 {

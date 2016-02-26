@@ -30,7 +30,7 @@ const (
 )
 
 type QuotaService interface {
-	Allow(namespace string, name string, tokensRequested int64) (granted int64, waitTime time.Duration, err error)
+	Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error)
 }
 
 type QuotaServiceError struct {

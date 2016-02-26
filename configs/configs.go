@@ -39,10 +39,10 @@ type NamespaceConfig struct {
 }
 
 type BucketConfig struct {
-	Size              int
-	FillRate          int `yaml:"fill_rate"`
-	WaitTimeoutMillis int `yaml:"wait_timeout_millis"`
-	MaxIdleMillis     int `yaml:"max_idle_millis"`
+	Size              int64
+	FillRate          int64 `yaml:"fill_rate"`
+	WaitTimeoutMillis int64 `yaml:"wait_timeout_millis"`
+	MaxIdleMillis     int64 `yaml:"max_idle_millis"`
 }
 
 func (b *BucketConfig) String() string {
