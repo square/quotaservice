@@ -45,7 +45,7 @@ func setUp() {
 	for impl, factory := range factories {
 		factory.Init(cfg)
 		fullyQualifiedName := buckets.FullyQualifiedName(impl, impl)
-		testBuckets[fullyQualifiedName] = factory.NewBucket(impl, impl, configs.NewDefaultBucketConfig())
+		testBuckets[fullyQualifiedName] = factory.NewBucket(impl, impl, configs.NewDefaultBucketConfig(), false)
 	}
 }
 

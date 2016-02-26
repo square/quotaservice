@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"bytes"
 	"sort"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 const (
@@ -114,7 +115,7 @@ type BucketFactory interface {
 	Init(cfg *configs.ServiceConfig)
 
 	// NewBucket creates a new bucket.
-	NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) Bucket
+	NewBucket(namespace, bucketName string, cfg *configs.BucketConfig, dyn bool) Bucket
 }
 
 func FullyQualifiedName(namespace, bucketName string) string {
@@ -126,17 +127,17 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 	bc = &BucketContainer{cfg: cfg, bf: bf, namespaces: make(map[string]*namespace)}
 
 	if cfg.GlobalDefaultBucket != nil {
-		bc.defaultBucket = bf.NewBucket(GLOBAL_NAMESPACE, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket)
+		bc.defaultBucket = bf.NewBucket(GLOBAL_NAMESPACE, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket, false)
 	}
 
 	for nsName, nsCfg := range cfg.Namespaces {
 		nsp := &namespace{cfg: nsCfg, buckets: make(map[string]Bucket)}
 		if nsCfg.DefaultBucket != nil {
-			nsp.defaultBucket = bf.NewBucket(nsName, DEFAULT_BUCKET_NAME, nsCfg.DefaultBucket)
+			nsp.defaultBucket = bf.NewBucket(nsName, DEFAULT_BUCKET_NAME, nsCfg.DefaultBucket, false)
 		}
 
 		for bucketName, bucketCfg := range nsCfg.Buckets {
-			bc.createNewNamedBucketFromCfg(nsName, bucketName, nsp, bucketCfg)
+			bc.createNewNamedBucketFromCfg(nsName, bucketName, nsp, bucketCfg, false)
 		}
 
 		bc.namespaces[nsName] = nsp
@@ -184,24 +185,35 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 
 func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
 	bCfg := ns.cfg.Buckets[bucketName]
+	dyn := false
 	if bCfg == nil {
-		// Dynamic. Check thresholds.
-		//if ns.cfg.MaxDynamicBuckets > 0 && ns.cfg.MaxDynamicBuckets < bc.countDynamicBuckets(namespace) {
-		//	// TODO(manik) disallow bucket creation
-		//}
+		// Dynamic.
+		numDynamicBuckets := bc.countDynamicBuckets(namespace)
+		if  numDynamicBuckets >= ns.cfg.MaxDynamicBuckets && ns.cfg.MaxDynamicBuckets > 0 {
+			logging.Printf("Bucket %v:%v numDynamicBuckets=%v maxDynamicBuckets=%v. Not creating more dynamic buckets.",
+				namespace, bucketName, numDynamicBuckets, ns.cfg.MaxDynamicBuckets)
+			return nil
+		}
+
+		dyn = true
 		bCfg = ns.cfg.DynamicBucketTemplate
 	}
 
-	return bc.createNewNamedBucketFromCfg(namespace, bucketName, ns, bCfg)
+	return bc.createNewNamedBucketFromCfg(namespace, bucketName, ns, bCfg, dyn)
 }
 
 func (bc *BucketContainer) countDynamicBuckets(namespace string) int {
-	// TODO(manik) implement me
-	return 100
+	c := 0
+	for _, b := range bc.namespaces[namespace].buckets {
+		if b.Dynamic() {
+			c++
+		}
+	}
+	return c
 }
 
-func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *configs.BucketConfig) Bucket {
-	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg)
+func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *configs.BucketConfig, dyn bool) Bucket {
+	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg, dyn)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()
 	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)

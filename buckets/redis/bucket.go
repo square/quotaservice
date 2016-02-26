@@ -87,13 +87,14 @@ func (bf *bucketFactory) connectToRedis() {
 	bf.scriptSHA = loadScript(bf.client)
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig, dyn bool) buckets.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
 	}
+
 	rb := &redisBucket{
-		false,
+		dyn,
 		cfg,
 		namespace,
 		bucketName,
