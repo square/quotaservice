@@ -15,6 +15,7 @@
  */
 
 package grpc
+
 import (
 	"net"
 	"fmt"
@@ -30,14 +31,14 @@ import (
 
 // gRPC-backed implementation of an RPC endpoint
 type GrpcEndpoint struct {
-	port          int
+	hostport      string
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
 	qs            quotaservice.QuotaService
 }
 
-func New(port int) *GrpcEndpoint {
-	return &GrpcEndpoint{port: port}
+func New(hostport string) *GrpcEndpoint {
+	return &GrpcEndpoint{hostport: hostport}
 }
 
 func (g *GrpcEndpoint) Init(qs quotaservice.QuotaService) {
@@ -45,10 +46,10 @@ func (g *GrpcEndpoint) Init(qs quotaservice.QuotaService) {
 }
 
 func (g *GrpcEndpoint) Start() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", g.port))
+	lis, err := net.Listen("tcp", g.hostport)
 	if err != nil {
-		logging.Fatalf("Cannot start server on port %v. Error %v", g.port, err)
-		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", g.port, err))
+		logging.Fatalf("Cannot start server on port %v. Error %v", g.hostport, err)
+		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", g.hostport, err))
 	}
 
 	grpclog.SetLogger(logging.CurrentLogger())
@@ -57,9 +58,8 @@ func (g *GrpcEndpoint) Start() {
 	qspb.RegisterQuotaServiceServer(g.grpcServer, g)
 	go g.grpcServer.Serve(lis)
 	g.currentStatus = lifecycle.Started
-	logging.Printf("Starting server on port %v", g.port)
+	logging.Printf("Starting server on %v", g.hostport)
 	logging.Printf("Server status: %v", g.currentStatus)
-
 }
 
 func (g *GrpcEndpoint) Stop() {
@@ -69,12 +69,12 @@ func (g *GrpcEndpoint) Stop() {
 func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
 	rsp := new(qspb.AllowResponse)
 	if invalid(req) {
+		logging.Printf("Invalid request %+v", req)
 		s := qspb.AllowResponse_FAILED
 		rsp.Status = &s
 		return rsp, nil
 	}
 
-	// TODO(manik) make names and namespaces case insensitive
 	var numTokensRequested int64 = 1
 	if req.NumTokensRequested != nil {
 		numTokensRequested = req.GetNumTokensRequested()
@@ -99,6 +99,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 				status = qspb.AllowResponse_REJECTED
 			}
 		} else {
+			logging.Printf("Caught error %v", err)
 			status = qspb.AllowResponse_FAILED
 		}
 	} else {
@@ -116,5 +117,5 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 
 func invalid(req *qspb.AllowRequest) bool {
 	// Negative tokens are allowed!
-	return req.GetName() != "" && req.GetNamespace() != "" && (req.NumTokensRequested == nil || req.GetNumTokensRequested() != 0)
+	return req.GetName() == "" || req.GetNamespace() == "" || (req.NumTokensRequested != nil && req.GetNumTokensRequested() == 0)
 }

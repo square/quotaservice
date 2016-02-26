@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"bytes"
 	"sort"
+	"strings"
 )
 
 const (
@@ -120,8 +121,24 @@ func FullyQualifiedName(namespace, bucketName string) string {
 	return fmt.Sprintf("%v:%v", namespace, bucketName)
 }
 
+func uppercaseNames(cfg *configs.ServiceConfig) {
+	upcasedNamespaces := make(map [string]*configs.NamespaceConfig, len(cfg.Namespaces))
+
+	for n, nc := range cfg.Namespaces {
+		upcasedNamespaces[strings.ToUpper(n)] = nc
+		upcasedBuckets := make(map [string]*configs.BucketConfig, len(nc.Buckets))
+		for b, bc := range nc.Buckets {
+			upcasedBuckets[strings.ToUpper(b)] = bc
+		}
+		nc.Buckets = upcasedBuckets
+	}
+
+	cfg.Namespaces = upcasedNamespaces
+}
+
 // NewBucketContainer creates a new bucket container.
 func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *BucketContainer) {
+	uppercaseNames(cfg)
 	bc = &BucketContainer{cfg: cfg, bf: bf, namespaces: make(map[string]*namespace)}
 
 	if cfg.GlobalDefaultBucket != nil {

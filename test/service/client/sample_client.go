@@ -39,7 +39,7 @@ func main() {
 
 	req := &qspb.AllowRequest{
 		Namespace: proto.String("test.namespace"),
-		Name: proto.String("one"),
+		Name: proto.String("abc"),
 		NumTokensRequested: proto.Int64(1)}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {

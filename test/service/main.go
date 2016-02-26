@@ -38,7 +38,7 @@ func main() {
 	cfg.Namespaces["test.namespace2"].DefaultBucket = configs.NewDefaultBucketConfig()
 	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = configs.NewDefaultBucketConfig()
 
-	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New(10990))
+	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
 	// server.SetLogging( ... some custom logger ... );
 	// server.SetClustering( ... some custom clustering ... )
 	server.Start()
@@ -46,7 +46,7 @@ func main() {
 	// Serve Admin Console
 	sm := http.NewServeMux()
 	server.ServeAdminConsole(sm)
-	http.ListenAndServe(":8080", sm)
+	http.ListenAndServe("localhost:8080", sm)
 
 	// Block until SIGTERM, SIGKILL or SIGINT
 	sigs := make(chan os.Signal, 1)
