@@ -50,6 +50,7 @@ type Bucket interface {
 	Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration)
 	Config() *configs.BucketConfig
 	Dynamic() bool
+	Destroy()
 }
 
 type ActivityReporter interface {
@@ -107,6 +108,7 @@ func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration)
 	ns.Lock()
 	defer ns.Unlock()
 	delete(ns.buckets, bucketName)
+	bucket.Destroy()
 }
 
 // BucketFactory creates buckets.
@@ -218,6 +220,10 @@ func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	bucket.ReportActivity()
 	go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
 	return bucket
+}
+
+func (bc *BucketContainer) Exists(namespace, name string) bool {
+	return bc.namespaces[namespace] != nil && bc.namespaces[namespace].buckets[name] != nil
 }
 
 func (bc *BucketContainer) String() string {

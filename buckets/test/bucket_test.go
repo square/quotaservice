@@ -62,11 +62,7 @@ func TestTokenAcquisition(t *testing.T) {
 		}
 
 		// Consume all tokens. This should work too.
-		if fqn == "redis:redis" {
-			wait = bucket.Take(100, 0)
-		} else {
-			wait = bucket.Take(98, 0)
-		}
+		wait = bucket.Take(100, 0)
 
 		if wait != 0 {
 			t.Fatalf("Expecting 0 wait. Was %v", wait)

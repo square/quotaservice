@@ -107,11 +107,6 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
 		buckets.NewActivityChannel()}
 
-	if bucketName != buckets.DEFAULT_BUCKET_NAME {
-		ns := bf.cfg.Namespaces[namespace]
-		rb.dynamic = ns != nil && ns.Buckets[bucketName] == nil
-	}
-
 	return rb
 }
 
@@ -168,6 +163,10 @@ func (b *redisBucket) Config() *configs.BucketConfig {
 
 func (b *redisBucket) Dynamic() bool {
 	return b.dynamic
+}
+
+func (b *redisBucket) Destroy() {
+	// No-op
 }
 
 func checkScriptExists(c *redis.Client, sha string) bool {

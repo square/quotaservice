@@ -43,6 +43,8 @@ func (b *mockBucket) ReportActivity() {}
 func (b *mockBucket) Dynamic() bool {
 	return b.dyn
 }
+func (b *mockBucket) Destroy() {}
+
 
 type mockBucketFactory struct{}
 
