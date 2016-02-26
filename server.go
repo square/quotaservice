@@ -27,7 +27,6 @@ import (
 	"github.com/maniksurtani/quotaservice/metrics"
 	"time"
 	"net/http"
-	"strings"
 )
 
 type Server interface {
@@ -101,10 +100,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(ns string, nm string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error) {
-	namespace := strings.ToUpper(ns)
-	name := strings.ToUpper(nm)
-
+func (s *server) Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error) {
 	b := s.bucketContainer.FindBucket(namespace, name)
 	if b == nil {
 		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_SUCH_BUCKET)

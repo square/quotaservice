@@ -38,6 +38,7 @@ func (b *mockBucket) ActivityDetected() bool {
 	return true
 }
 func (b *mockBucket) ReportActivity() {}
+func (b *mockBucket) Dynamic() bool {return false}
 
 type mockBucketFactory struct{}
 
@@ -72,43 +73,43 @@ func TestFallbackToGlobalDefaultBucket(t *testing.T) {
 }
 
 func TestFallbackToDefaultBucket(t *testing.T) {
-	b := container.FindBucket("X", "NONEXISTENT")
+	b := container.FindBucket("x", "nonexistent_bucket")
 	if b == nil {
 		t.Fatal("Should fall back to default bucket.")
 	}
 
-	if b != container.namespaces["X"].defaultBucket {
+	if b != container.namespaces["x"].defaultBucket {
 		t.Fatal("Should fall back to default bucket.")
 	}
 }
 
 func TestDynamicBucket(t *testing.T) {
-	b := container.FindBucket("Y", "NEW")
+	b := container.FindBucket("y", "new")
 	if b == nil {
 		t.Fatal("Should create new bucket.")
 	}
 
-	if b != container.namespaces["Y"].buckets["NEW"] {
+	if b != container.namespaces["y"].buckets["new"] {
 		t.Fatal("Should create new bucket.")
 	}
 }
 
 func TestBucketNamespaces(t *testing.T) {
-	bx := container.FindBucket("X", "A")
+	bx := container.FindBucket("x", "a")
 	if bx == nil {
 		t.Fatal("Should create new bucket.")
 	}
 
-	if bx != container.namespaces["X"].buckets["A"] {
+	if bx != container.namespaces["x"].buckets["a"] {
 		t.Fatal("Should create new bucket.")
 	}
 
-	by := container.FindBucket("Y", "A")
+	by := container.FindBucket("y", "a")
 	if by == nil {
 		t.Fatal("Should create new bucket.")
 	}
 
-	if by != container.namespaces["Y"].buckets["A"] {
+	if by != container.namespaces["y"].buckets["a"] {
 		t.Fatal("Should create new bucket.")
 	}
 

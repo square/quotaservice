@@ -17,6 +17,8 @@
 // http://github.com/hotei/tokenbucket
 package memory
 
+// TODO(manik) re-implement using same algo as Redis impl
+
 import (
 	"time"
 
@@ -27,17 +29,22 @@ import (
 )
 
 type bucketFactory struct {
+	cfg *configs.ServiceConfig
 }
 
 func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
-	// A no-op
+	bf.cfg = cfg
 }
 
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig) buckets.Bucket {
 	// fill rate is tokens-per-second.
 	dur := time.Nanosecond * time.Duration(1e9 / cfg.FillRate)
 	logging.Printf("Creating bucket for name %v with fill duration %v and capacity %v", buckets.FullyQualifiedName(namespace, bucketName), dur, cfg.Size)
-	bucket := &tokenBucket{buckets.NewActivityChannel(), cfg, tokenbucket.New(dur, float64(cfg.Size))}
+	bucket := &tokenBucket{buckets.NewActivityChannel(), false, cfg, tokenbucket.New(dur, float64(cfg.Size))}
+	if bucketName != buckets.DEFAULT_BUCKET_NAME {
+		ns := bf.cfg.Namespaces[namespace]
+		bucket.dynamic = ns != nil && ns.Buckets[bucketName] == nil
+	}
 	return bucket
 }
 
@@ -47,8 +54,9 @@ func NewBucketFactory() buckets.BucketFactory {
 
 type tokenBucket struct {
 	buckets.ActivityChannel
-	cfg *configs.BucketConfig
-	tb  *tokenbucket.TokenBucket
+	dynamic bool
+	cfg     *configs.BucketConfig
+	tb      *tokenbucket.TokenBucket
 }
 
 func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
@@ -62,4 +70,8 @@ func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime
 
 func (b *tokenBucket) Config() *configs.BucketConfig {
 	return b.cfg
+}
+
+func (b *tokenBucket) Dynamic() bool {
+	return b.dynamic
 }

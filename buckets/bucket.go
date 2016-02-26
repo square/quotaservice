@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"bytes"
 	"sort"
-	"strings"
 )
 
 const (
@@ -49,6 +48,7 @@ type Bucket interface {
 	// within the max time limit specified.
 	Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration)
 	Config() *configs.BucketConfig
+	Dynamic() bool
 }
 
 type ActivityReporter interface {
@@ -121,24 +121,8 @@ func FullyQualifiedName(namespace, bucketName string) string {
 	return fmt.Sprintf("%v:%v", namespace, bucketName)
 }
 
-func uppercaseNames(cfg *configs.ServiceConfig) {
-	upcasedNamespaces := make(map [string]*configs.NamespaceConfig, len(cfg.Namespaces))
-
-	for n, nc := range cfg.Namespaces {
-		upcasedNamespaces[strings.ToUpper(n)] = nc
-		upcasedBuckets := make(map [string]*configs.BucketConfig, len(nc.Buckets))
-		for b, bc := range nc.Buckets {
-			upcasedBuckets[strings.ToUpper(b)] = bc
-		}
-		nc.Buckets = upcasedBuckets
-	}
-
-	cfg.Namespaces = upcasedNamespaces
-}
-
 // NewBucketContainer creates a new bucket container.
 func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *BucketContainer) {
-	uppercaseNames(cfg)
 	bc = &BucketContainer{cfg: cfg, bf: bf, namespaces: make(map[string]*namespace)}
 
 	if cfg.GlobalDefaultBucket != nil {
@@ -182,7 +166,6 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 				// need to check if an instance has been created concurrently.
 				bucket = ns.buckets[bucketName]
 				if bucket == nil {
-					// TODO(manik) check dynamic bucket count
 					bucket = bc.createNewNamedBucket(namespace, bucketName, ns)
 				}
 			} else {
@@ -202,11 +185,19 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
 	bCfg := ns.cfg.Buckets[bucketName]
 	if bCfg == nil {
+		// Dynamic. Check thresholds.
+		//if ns.cfg.MaxDynamicBuckets > 0 && ns.cfg.MaxDynamicBuckets < bc.countDynamicBuckets(namespace) {
+		//	// TODO(manik) disallow bucket creation
+		//}
 		bCfg = ns.cfg.DynamicBucketTemplate
 	}
 
 	return bc.createNewNamedBucketFromCfg(namespace, bucketName, ns, bCfg)
+}
 
+func (bc *BucketContainer) countDynamicBuckets(namespace string) int {
+	// TODO(manik) implement me
+	return 100
 }
 
 func (bc *BucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *configs.BucketConfig) Bucket {

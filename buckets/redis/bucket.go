@@ -29,10 +29,12 @@ import (
 const (
 	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
 	ACCUMULATED_TOKENS_SUFFIX = "AT"
+	// TODO(manik) make this configurable
 	RETRIES = 3
 )
 
 type redisBucket struct {
+	dynamic				  bool
 	cfg                   *configs.BucketConfig
 	namespace             string
 	name                  string
@@ -45,7 +47,8 @@ type redisBucket struct {
 }
 
 type bucketFactory struct {
-	m           *sync.RWMutex // Embed a lock.
+	cfg 		*configs.ServiceConfig
+	m           *sync.RWMutex
 	client      *redis.Client
 	initialized bool
 	redisOpts   *redis.Options
@@ -63,6 +66,7 @@ func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
 
 		if !bf.initialized {
 			bf.initialized = true
+			bf.cfg = cfg
 			bf.connectToRedis()
 		}
 	}
@@ -80,7 +84,8 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
 	}
-	return &redisBucket{
+	rb := &redisBucket{
+		false,
 		cfg,
 		namespace,
 		bucketName,
@@ -91,6 +96,13 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
 			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
 		buckets.NewActivityChannel()}
+
+	if bucketName != buckets.DEFAULT_BUCKET_NAME {
+		ns := bf.cfg.Namespaces[namespace]
+		rb.dynamic = ns != nil && ns.Buckets[bucketName] == nil
+	}
+
+	return rb
 }
 
 func toRedisKey(namespace, bucketName, suffix string) string {
@@ -143,12 +155,17 @@ func (b *redisBucket) Config() *configs.BucketConfig {
 	return b.cfg
 }
 
+func (b *redisBucket) Dynamic() bool {
+	return b.dynamic
+}
+
 func checkScriptExists(c *redis.Client, sha string) bool {
 	r := c.ScriptExists(sha)
 	return r.Val()[0]
 }
 
 func loadScript(c *redis.Client) (sha string) {
+	// TODO(manik) handle max debt
 	lua := `
 	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
 	if not tokensNextAvailableNanos then
