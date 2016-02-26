@@ -29,7 +29,7 @@ import (
 
 var factories = map[string]buckets.BucketFactory{
 	"memory": memory.NewBucketFactory(),
-	"redis": redis.NewBucketFactory(&r.Options{Addr: "localhost:6379"})}
+	"redis": redis.NewBucketFactory(&r.Options{Addr: "localhost:6379"}, 2)}
 
 var testBuckets map[string]buckets.Bucket = make(map[string]buckets.Bucket)
 

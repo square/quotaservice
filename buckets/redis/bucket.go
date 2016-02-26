@@ -29,12 +29,10 @@ import (
 const (
 	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
 	ACCUMULATED_TOKENS_SUFFIX = "AT"
-	// TODO(manik) make this configurable
-	RETRIES = 3
 )
 
 type redisBucket struct {
-	dynamic				  bool
+	dynamic               bool
 	cfg                   *configs.BucketConfig
 	namespace             string
 	name                  string
@@ -42,21 +40,31 @@ type redisBucket struct {
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
 	maxIdleTimeMillis     string
+	maxDebtNanos          string
 	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
 	buckets.ActivityChannel
 }
 
 type bucketFactory struct {
-	cfg 		*configs.ServiceConfig
-	m           *sync.RWMutex
-	client      *redis.Client
-	initialized bool
-	redisOpts   *redis.Options
-	scriptSHA   string
+	cfg               *configs.ServiceConfig
+	m                 *sync.RWMutex
+	client            *redis.Client
+	initialized       bool
+	redisOpts         *redis.Options
+	scriptSHA         string
+	connectionRetries int
 }
 
-func NewBucketFactory(redisOpts *redis.Options) buckets.BucketFactory {
-	return &bucketFactory{initialized: false, m: &sync.RWMutex{}, redisOpts: redisOpts}
+func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) buckets.BucketFactory {
+	if connectionRetries < 1 {
+		connectionRetries = 1
+	}
+
+	return &bucketFactory{
+		initialized: false,
+		m: &sync.RWMutex{},
+		redisOpts: redisOpts,
+		connectionRetries: connectionRetries}
 }
 
 func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
@@ -90,9 +98,10 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 		namespace,
 		bucketName,
 		bf,
-		strconv.FormatInt(int64(1e9) / int64(cfg.FillRate), 10),
-		strconv.FormatInt(int64(cfg.Size), 10),
+		strconv.FormatInt(1e9 / cfg.FillRate, 10),
+		strconv.FormatInt(cfg.Size, 10),
 		idle,
+		strconv.FormatInt(cfg.MaxDebtMillis * 1e6, 10), // Convert millis to nanos
 		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
 			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
 		buckets.NewActivityChannel()}
@@ -113,10 +122,10 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 	args := []string{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
-		b.maxIdleTimeMillis}
+		b.maxIdleTimeMillis, b.maxDebtNanos}
 
 	keepTrying := true
-	for attempt := 0; keepTrying && attempt < RETRIES; attempt++ {
+	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
 		res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
 		switch waitTimeNanos := res.Val().(type) {
 		case int64:
@@ -134,7 +143,8 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime
 	}
 
 	if keepTrying {
-		panic(fmt.Sprintf("Couldn't reconnect to Redis, even after %v attempts", RETRIES))
+		panic(fmt.Sprintf("Couldn't reconnect to Redis, even after %v attempts",
+			b.factory.connectionRetries))
 	}
 
 	return
@@ -165,7 +175,6 @@ func checkScriptExists(c *redis.Client, sha string) bool {
 }
 
 func loadScript(c *redis.Client) (sha string) {
-	// TODO(manik) handle max debt
 	lua := `
 	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
 	if not tokensNextAvailableNanos then
@@ -183,6 +192,7 @@ func loadScript(c *redis.Client) (sha string) {
 	local requested = tonumber(ARGV[4])
 	local maxWaitTime = tonumber(ARGV[5])
 	local lifespan = tonumber(ARGV[6])
+	local maxDebtNanos = tonumber(ARGV[7])
 	local freshTokens = 0
 
 	if currentTimeNanos > tokensNextAvailableNanos then
@@ -196,12 +206,12 @@ func loadScript(c *redis.Client) (sha string) {
 	local tokensToWaitFor = requested - accumulatedTokensUsed
 	local futureWaitNanos = tokensToWaitFor * nanosBetweenTokens
 
-	if waitTime > 0 and waitTime > maxWaitTime and maxWaitTime > 0 then
+	tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
+	accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
+
+	if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime and maxWaitTime > 0) then
     	waitTime = -1
 	else
-		tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
-		accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
-
 		if lifespan > 0 then
 			redis.call("SET", KEYS[1], tokensNextAvailableNanos, "PX", lifespan)
 			redis.call("SET", KEYS[2], math.floor(accumulatedTokens), "PX", lifespan)

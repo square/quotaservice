@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
-	factory = NewBucketFactory(&redis.Options{Addr: "localhost:6379"})
+	factory = NewBucketFactory(&redis.Options{Addr: "localhost:6379"}, 2)
 	factory.Init(cfg)
 	bucket = factory.NewBucket("redis", "redis", configs.NewDefaultBucketConfig()).(*redisBucket)
 }
