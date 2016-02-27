@@ -181,6 +181,8 @@ func loadScript(c *redis.Client) (sha string) {
 		tokensNextAvailableNanos = 0
 	end
 
+	local maxTokensToAccumulate = tonumber(ARGV[3])
+
 	local accumulatedTokens = redis.call("GET", KEYS[2])
 	if not accumulatedTokens then
 		accumulatedTokens = maxTokensToAccumulate
@@ -188,7 +190,6 @@ func loadScript(c *redis.Client) (sha string) {
 
 	local currentTimeNanos = tonumber(ARGV[1])
 	local nanosBetweenTokens = tonumber(ARGV[2])
-	local maxTokensToAccumulate = tonumber(ARGV[3])
 	local requested = tonumber(ARGV[4])
 	local maxWaitTime = tonumber(ARGV[5])
 	local lifespan = tonumber(ARGV[6])
