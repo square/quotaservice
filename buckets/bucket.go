@@ -49,7 +49,11 @@ type Bucket interface {
 	// within the max time limit specified.
 	Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration)
 	Config() *configs.BucketConfig
+	// Dynamic indicates whether a bucket is a dynamic one, or one that is statically defined in
+	// configuration.
 	Dynamic() bool
+	// Destroy indicates that a bucket has been removed from the BucketContainer, is no longer
+	// reachable, and should clean up any resources it may have open.
 	Destroy()
 }
 
@@ -58,12 +62,17 @@ type ActivityReporter interface {
 	ReportActivity()
 }
 
+// ActivityChannel is a channel that should be embedded into all bucket implementations. It should
+// be constructed using NewActivityChannel(), and activity should be reported on the bucket instance
+// using ActivityChannel.ReportActivity(), to ensure it isn't assumed to be inactive and removed
+// after a period of time.
 type ActivityChannel chan bool
 
 func NewActivityChannel() ActivityChannel {
 	return ActivityChannel(make(chan bool, 1))
 }
 
+// ReportActivity indicates that an ActivityChannel is active. This method doesn't block.
 func (m ActivityChannel) ReportActivity() {
 	select {
 	case m <- true:
@@ -73,6 +82,8 @@ func (m ActivityChannel) ReportActivity() {
 	}
 }
 
+// ActivityDetected tells you if activity has been detected since the last time this method was
+// called.
 func (m ActivityChannel) ActivityDetected() bool {
 	select {
 	case <-m:
@@ -89,6 +100,8 @@ type namespace struct {
 	sync.RWMutex // Embedded mutex
 }
 
+// watch watches a bucket for activity, deleting the bucket if no activity has been detected after
+// a given duration.
 func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
 	if freq == 0 {
 		return
@@ -147,7 +160,12 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 	return
 }
 
-// FindBucket locates a bucket for a given name and namespace.
+// FindBucket locates a bucket for a given name and namespace. If the namespace doesn't exist, and
+// if a global default bucket is configured, it will be used. If the namespace is available but the
+// named bucket doesn't exist, it will either use a namespace-scoped default bucket if available, or
+// a dynamic bucket is created if enabled (and space for more dynamic buckets is available). If all
+// fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
+// buckets or re-create statically defined buckets that have been invalidated.
 func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket) {
 	ns := bc.namespaces[namespace]
 	if ns == nil {
@@ -185,6 +203,8 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 	return
 }
 
+// createNewNamedBucket creates a new, named bucket. May return nil if the named bucket is dynamic,
+// and the namespace has already reached its maxDynamicBuckets setting.
 func (bc *BucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
 	bCfg := ns.cfg.Buckets[bucketName]
 	dyn := false

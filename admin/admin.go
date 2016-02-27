@@ -26,12 +26,14 @@ import (
 	"strings"
 )
 
+// Administrable defines something that can be administered via this package.
 type Administrable interface {
 	Metrics() metrics.Metrics
 	Configs() *configs.ServiceConfig
 	BucketContainer() *buckets.BucketContainer
 }
 
+// ServeAdminConsole serves up an admin console for an Administrable over a http server.
 func ServeAdminConsole(a Administrable, mux *http.ServeMux) {
 	logging.Print("Serving admin console")
 	mux.Handle("/", &handler{a})

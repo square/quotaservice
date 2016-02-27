@@ -13,6 +13,8 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+// Package redis implements token buckets backed by Redis, inspired by the algorithms used in Guava's
+// RateLimiter library - https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/RateLimiter.java
 package redis
 
 import (
@@ -26,16 +28,16 @@ import (
 	"strconv"
 )
 
+// Suffixes for Redis keys
 const (
 	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
 	ACCUMULATED_TOKENS_SUFFIX = "AT"
 )
 
+// redisBucket is threadsafe since it delegates concurrency to the Redis instance.
 type redisBucket struct {
 	dynamic               bool
 	cfg                   *configs.BucketConfig
-	namespace             string
-	name                  string
 	factory               *bucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
@@ -96,8 +98,6 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 	rb := &redisBucket{
 		dyn,
 		cfg,
-		namespace,
-		bucketName,
 		bf,
 		strconv.FormatInt(1e9 / cfg.FillRate, 10),
 		strconv.FormatInt(cfg.Size, 10),
@@ -174,6 +174,8 @@ func checkScriptExists(c *redis.Client, sha string) bool {
 	return r.Val()[0]
 }
 
+// loadScript loads the LUA script into Redis. The LUA script contains the token bucket algorithm
+// which is executed atomically in Redis. Once the script is loaded, it is invoked using its SHA.
 func loadScript(c *redis.Client) (sha string) {
 	lua := `
 	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))

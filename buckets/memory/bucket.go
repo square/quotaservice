@@ -13,6 +13,8 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+// Package memory implements token buckets in memory, inspired by the algorithms used in Guava's
+// RateLimiter library - https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/RateLimiter.java
 package memory
 
 import (
@@ -52,6 +54,11 @@ func NewBucketFactory() buckets.BucketFactory {
 	return &bucketFactory{}
 }
 
+// tokenBucket is a single-threaded implementation. A single goroutine updates the values of
+// tokensNextAvailable and accumulatedTokens. When requesting tokens, Take() puts a request on
+// the waitTimer channel, and listens on the response channel in the request for a result. The
+// goroutine is shut down when Destroy() is called on this bucket. In-flight requests will be
+// served, but new requests will not.
 type tokenBucket struct {
 	buckets.ActivityChannel
 	dynamic           bool
@@ -64,6 +71,8 @@ type tokenBucket struct {
 	closer            chan struct{}
 }
 
+// waitTimeReq is a request that you put on the channel for the waitTimer goroutine to pick up and
+// process.
 type waitTimeReq struct {
 	requested, maxWaitTimeNanos int64
 	response                    chan int64

@@ -13,7 +13,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-
+// Package grpc implements the Endpoint interface using gRPC. See http://grpc.io for more details.
 package grpc
 
 import (
@@ -27,17 +27,22 @@ import (
 	qspb "github.com/maniksurtani/quotaservice/protos"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/golang/protobuf/proto"
+	"strings"
 )
 
-// gRPC-backed implementation of an RPC endpoint
 type GrpcEndpoint struct {
 	hostport      string
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
 	qs            quotaservice.QuotaService
 }
-
+// New creates a new GrpcEndpoint, listening on hostport. Hostport is a string in the form
+// "host:port"
 func New(hostport string) *GrpcEndpoint {
+	if !strings.Contains(hostport, ":") {
+		panic(fmt.Sprintf("hostport should be in the format 'host:port', but is currently %v",
+			hostport))
+	}
 	return &GrpcEndpoint{hostport: hostport}
 }
 
