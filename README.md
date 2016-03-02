@@ -1,5 +1,7 @@
 # Quota Service
 
+[![Join the chat at https://gitter.im/maniksurtani/quotaservice](https://badges.gitter.im/maniksurtani/quotaservice.svg)](https://gitter.im/maniksurtani/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE)
 ![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")
 
