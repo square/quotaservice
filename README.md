@@ -81,65 +81,55 @@ A general purpose rate limiter should restrict the rate at which an application 
 
 ## Architecture
 
-![Sequence Diagram](/resources/sequences.png?raw=true)
+### Scenario 1
+Quotas set up for `Pinky` to call into `TheBrain` in the Quota Service.
 
-Scenario 1: quotas set up for Service A and B in the Quota service.
+![Sequence Diagram](/resources/sequences_1.png?raw=true)
 
-* Service A asks the Quota Service for permission to call into Service B.
+* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* The Quota Service responds with the token requested, and status of `OK`.
+* `Pinky` makes the call into `TheBrain`.
 
-* The Quota Service responds with the permission requested.
+### Scenario 2
+Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, but no tokens immediately available.
 
-* Service A makes the call into Service B.
+![Sequence Diagram](/resources/sequences_2.png?raw=true)
 
-Scenario 2: quotas **_not_** set up for Service A and B in the Quota service.
+* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* The Quota Service returns with status `OK_WAIT` and the number of millis to wait, indicating that the client has to wait before proceeding.
+* `Pinky` waits, then makes the call into `TheBrain`.
 
-* Service A asks the Quota Service for permission to call into Service B.
+### Scenario 3
+Quotas **_not_** set up for `Pinky` to call into `TheBrain` in the Quota Service.
 
-* Service A -> Service B’s namespace does not have a default bucket or allows for dynamic buckets.
+![Sequence Diagram](/resources/sequences_3.png?raw=true)
 
-* The Quota Service responds with a rejection message.
+* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* Namespace `Pinky_TheBrain` does not have a default bucket or allows for dynamic buckets.
+* The Quota Service responds with a rejection message (status `REJECT`)
+* `Pinky` uses client-side defaults to call into `TheBrain` and logs/alerts accordingly.
 
-* Service A uses client-side defaults to call into Service B
+### Scenario 4
+Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, but no tokens available for a long while.
 
-* Service A admins alerted that quotas have not been set up and defaults are being used.
+![Sequence Diagram](/resources/sequences_4.png?raw=true)
 
-Scenario 3: quotas set up for Service A and B in the Quota service, but none immediately available.
-
-* Service A asks the Quota Service for permission to call into Service B.
-
-* The Quota Service returns with an OK_WAIT status and the number of millis to wait, indicating that the client has to wait before proceeding.
-
-* Service A makes the call into Service B.
-
-Scenario 4: quotas set up for Service A and B in the Quota service, but none available for a while.
-
-* Service A asks the Quota Service for permission to call into Service B.
-
+* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
 * No quota immediately available.
-
-* Time before more quota is available exceeds maxWaitTime
-
-    * maxWaitTime is configured per bucket, and can be overridden per request.
-
-* The Quota Service does not claim tickets, responds with a REJECTED status.
-
-* Service A **_does not_** makes the call into Service B.
+* Time before more quota is available exceeds `maxWaitTime`
+    * `maxWaitTime` is configured per bucket, and can be overridden per request.
+* The Quota Service does not claim tokens, responds with status `REJECTED`.
+* `Pinky` **_does not_** makes the call into `TheBrain`.
 
 ## Tokens and Token Buckets
 
-For each service-to-service call, the quota service maintains a [token bucket](https://en.wikipedia.org/wiki/Token_bucket). Tokens are
-
-added to the token bucket at a fixed rate (see detailed algorithm below). Handling an AllowRequest involves:
+For each service-to-service call, the quota service maintains a [token bucket](https://en.wikipedia.org/wiki/Token_bucket). Tokens are added to the token bucket at a fixed rate (see detailed algorithm below). Handling an `AllowRequest` involves:
 
 1. Locating the appropriate token bucket, or creating one if dynamic buckets are allowed.
-
-2. Acquiring a token from it.
-
-3. If no tokens are available, the request will respond with a wait time, after which a token will be available, and claim a future for this token - provided the wait time is below a configured maximum.
-
-4. Maximum wait times are configured on each bucket, but can be overridden in the AllowRequest, however overridden maximum wait times cannot exceed a configured maximum for the bucket.
-
-5. If the wait time exceeds the maximum, no future tokens are claimed, and a rejected response is returned.
+1. Acquiring a token from it.
+1. If no tokens are available, the request will respond with a wait time, after which a token will be available, and claim a future for this token - provided the wait time is below a configured maximum.
+1. Maximum wait times are configured on each bucket, but can be overridden in the `AllowRequest`, however overridden maximum wait times cannot exceed a configured maximum for the bucket.
+1. If the wait time exceeds the maximum, no future tokens are claimed, and a rejected response is returned.
 
 Token buckets have a fixed size. If a token bucket is full, no additional tokens are added.
 
@@ -506,4 +496,3 @@ Smart clients allow for periodic, asynchronous communication with the quota serv
 [Resilience by Design](https://www.youtube.com/watch?v=MEgyGamo79I) - a talk by Ben Christensen on Resilience by Design, and the motivation behind Hystrix
 
 [Hierarchical Token Buckets](http://luxik.cdi.cz/~devik/qos/htb/manual/theory.htm)
-
