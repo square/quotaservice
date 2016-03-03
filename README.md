@@ -222,7 +222,7 @@ The preference is to use a named bucket as possible. For example, given an `Allo
 
 1. `Pinky_TheBrain:UserService_getUser`
 
-2. Create a dynamic bucket in the `Pinky_TheBrain`` namespace, if allowed.
+2. Create a dynamic bucket in the `Pinky_TheBrain` namespace, if allowed.
 
 3. Use a default bucket in the `Pinky_TheBrain` namespace, if allowed.
 
