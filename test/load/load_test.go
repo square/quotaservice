@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"golang.org/x/net/context"
 	"testing"
-	qspb "github.com/maniksurtani/quotaservice/protos"
+	pb "github.com/maniksurtani/quotaservice/protos"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -23,9 +23,9 @@ func BenchmarkQuotaRequests(b *testing.B) {
 	}
 	defer conn.Close()
 
-	client := qspb.NewQuotaServiceClient(conn)
+	client := pb.NewQuotaServiceClient(conn)
 
-	req := &qspb.AllowRequest{
+	req := &pb.AllowRequest{
 		Namespace: proto.String("test.namespace"),
 		Name: proto.String("one"),
 		NumTokensRequested: proto.Int64(1)}

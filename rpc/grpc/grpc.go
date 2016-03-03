@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice"
-	qspb "github.com/maniksurtani/quotaservice/protos"
+	pb "github.com/maniksurtani/quotaservice/protos"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/golang/protobuf/proto"
 	"strings"
@@ -47,7 +47,7 @@ func (g *GrpcEndpoint) Start() {
 	grpclog.SetLogger(logging.CurrentLogger())
 	g.grpcServer = grpc.NewServer()
 	// Each service should be registered
-	qspb.RegisterQuotaServiceServer(g.grpcServer, g)
+	pb.RegisterQuotaServiceServer(g.grpcServer, g)
 	go g.grpcServer.Serve(lis)
 	g.currentStatus = lifecycle.Started
 	logging.Printf("Starting server on %v", g.hostport)
@@ -58,11 +58,11 @@ func (g *GrpcEndpoint) Stop() {
 	g.currentStatus = lifecycle.Stopped
 }
 
-func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb.AllowResponse, error) {
-	rsp := new(qspb.AllowResponse)
+func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.AllowResponse, error) {
+	rsp := new(pb.AllowResponse)
 	if invalid(req) {
 		logging.Printf("Invalid request %+v", req)
-		s := qspb.AllowResponse_FAILED
+		s := pb.AllowResponse_FAILED
 		rsp.Status = &s
 		return rsp, nil
 	}
@@ -78,27 +78,27 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 	}
 
 	granted, wait, err := g.qs.Allow(req.GetNamespace(), req.GetName(), numTokensRequested, maxWaitMillisOverride)
-	var status qspb.AllowResponse_Status;
+	var status pb.AllowResponse_Status;
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
 			switch qsErr.Reason {
 			case quotaservice.ER_NO_SUCH_BUCKET:
-				status = qspb.AllowResponse_REJECTED
+				status = pb.AllowResponse_REJECTED
 			case quotaservice.ER_REJECTED:
-				status = qspb.AllowResponse_REJECTED
+				status = pb.AllowResponse_REJECTED
 			case quotaservice.ER_TIMED_OUT_WAITING:
-				status = qspb.AllowResponse_REJECTED
+				status = pb.AllowResponse_REJECTED
 			}
 		} else {
 			logging.Printf("Caught error %v", err)
-			status = qspb.AllowResponse_FAILED
+			status = pb.AllowResponse_FAILED
 		}
 	} else {
 		if wait > 0 {
-			status = qspb.AllowResponse_OK_WAIT
+			status = pb.AllowResponse_OK_WAIT
 		} else {
-			status = qspb.AllowResponse_OK
+			status = pb.AllowResponse_OK
 		}
 		rsp.NumTokensGranted = proto.Int64(granted)
 		rsp.WaitMillis = proto.Int64(wait.Nanoseconds())
@@ -107,7 +107,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *qspb.AllowRequest) (*qspb
 	return rsp, nil
 }
 
-func invalid(req *qspb.AllowRequest) bool {
+func invalid(req *pb.AllowRequest) bool {
 	// Negative tokens are allowed!
 	return req.GetName() == "" || req.GetNamespace() == "" || (req.NumTokensRequested != nil && req.GetNumTokensRequested() == 0)
 }
