@@ -509,14 +509,11 @@ The quota service clients will expose the following metrics:
 
 Smart clients allow for periodic, asynchronous communication with the quota service to request for tokens in batches, and always make use of a client-side token bucket when rate-limiting.
 
-**_// TODO(manik) Complete this section_**
+***// TODO(manik)** Complete this section*
 
 # Bibliography
 
-[Guava RateLimiter](http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/RateLimiter.html)
-
-[Hystrix](https://github.com/Netflix/Hystrix)
-
-[Resilience by Design](https://www.youtube.com/watch?v=MEgyGamo79I) - a talk by Ben Christensen on Resilience by Design, and the motivation behind Hystrix
-
-[Hierarchical Token Buckets](http://luxik.cdi.cz/~devik/qos/htb/manual/theory.htm)
+* [Guava RateLimiter](http://docs.guava-libraries.googlecode.com/git/javadoc/com/google/common/util/concurrent/RateLimiter.html)
+* [Hystrix](https://github.com/Netflix/Hystrix)
+* [Resilience by Design](https://www.youtube.com/watch?v=MEgyGamo79I) - a talk by Ben Christensen on Resilience by Design, and the motivation behind Hystrix
+* [Hierarchical Token Buckets](http://luxik.cdi.cz/~devik/qos/htb/manual/theory.htm)
