@@ -5,15 +5,14 @@ package quotaservice
 
 import (
 	"fmt"
-	"github.com/maniksurtani/quotaservice/configs"
+	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/buckets"
+	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/admin"
-	"github.com/maniksurtani/quotaservice/clustering"
 	"github.com/maniksurtani/quotaservice/metrics"
-	"time"
 	"net/http"
+	"time"
 )
 
 type Server interface {
@@ -21,7 +20,6 @@ type Server interface {
 	Stop() (bool, error)
 	Metrics() metrics.Metrics
 	SetLogger(logger logging.Logger)
-	SetClustering(clustering clustering.Clustering)
 	ServeAdminConsole(mux *http.ServeMux)
 }
 
@@ -33,7 +31,6 @@ type server struct {
 	bucketFactory   buckets.BucketFactory
 	rpcEndpoints    []RpcEndpoint
 	metrics         metrics.Metrics
-	clustering      clustering.Clustering
 }
 
 // NewFromFile creates a new quotaservice server.
@@ -124,10 +121,6 @@ func (s *server) Metrics() metrics.Metrics {
 
 func (s *server) SetLogger(logger logging.Logger) {
 	logging.SetLogger(logger)
-}
-
-func (s *server) SetClustering(clustering clustering.Clustering) {
-	s.clustering = clustering
 }
 
 // Implements admin.Administrable

@@ -5,13 +5,13 @@ package main
 
 import (
 	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/buckets/memory"
+	"github.com/maniksurtani/quotaservice/configs"
+	"github.com/maniksurtani/quotaservice/rpc/grpc"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"github.com/maniksurtani/quotaservice/rpc/grpc"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/configs"
-	"net/http"
 )
 
 func main() {
@@ -26,8 +26,6 @@ func main() {
 	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = configs.NewDefaultBucketConfig()
 
 	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
-	// server.SetLogging( ... some custom logger ... );
-	// server.SetClustering( ... some custom clustering ... )
 	server.Start()
 
 	// Serve Admin Console
@@ -46,4 +44,3 @@ func main() {
 	<-shutdown
 	server.Stop()
 }
-
