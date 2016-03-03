@@ -43,30 +43,20 @@ The quota service and clients are all completely open source, under the Apache S
 
 In order of priority.
 
-**Phase 1** ![Status](https://img.shields.io/badge/status-complete-green.svg)
+![Status](https://img.shields.io/badge/status-complete-green.svg)
 
 * Provide service that maintains in-memory data structures tracking quotas.
-
 * Statically configure the service via a YAML configuration file.
-
 * Explicit calls to the quota service's API on whether an RPC should be allowed to proceed or not. Services are expected to use this API *before* actually making the RPC it needs to make.
-
 * Weighted quotas.
 
-**Phase 2** ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
-
+![Status](https://img.shields.io/badge/status-WIP-blue.svg)
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
-
 * Naïve client(s) that integrate with gRPC.
-
 * Expose metrics on the server, tracking rates of denials/throttling.
 
-**Phase 3** ![Status](https://img.shields.io/badge/status-outstanding-orange.svg)
-
+![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
 * Smart client, with client-side buckets and asynchronous, bulk token updates from the quota service.
-
-**Additional work** ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
-
 * REST/HTTP endpoint.
 * Allow for bursting (hard limits vs soft limits)
 * Sharded back-end
@@ -76,19 +66,15 @@ In order of priority.
 A general purpose rate limiter should restrict the rate at which an application makes use of a shared resource such as a database or service. Different usage patterns exist, including:
 
 * Simple rate limiting where all usage is treated equal. The calling application acquires a single token for a named service and if the token is granted, the application proceeds using the service.
-
     * Example: when trying to restrict the rate of SQL queries to a database from a specific service.
 
 * Weighted rate limiting, where all usage is not considered to be equal. The calling application acquires a number of tokens for a named service, based on how expensive the call is considered to be.
-
     * Example: when some SQL queries are proportionately more expensive than other, similar queries, perhaps based on the `LIMIT` clause restricting the number of records retrieved.
 
 * Dynamically named shared resources. Same as above, except that quotas for resources are created and destroyed on the fly, based on a template.
-
     * Example: when trying to restrict logins from a given IP address.
 
 * After-the-fact quota consumption updates. Same as simple rate limiting, except that a single token is modeled around a unit of cost. For example, a millisecond of processing time. A calling application would acquire a single token to perform a task, and after performing the task, would update the quota service with the actual number of "tokens" used. After-the-fact updates could be batched to reduce network calls.
-
     * Example: when trying to limit requests to the amount of parallelism available on a shared resource.
 
 # Eng Design: The Service
