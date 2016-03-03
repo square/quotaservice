@@ -85,25 +85,40 @@ func (s *server) Stop() (bool, error) {
 }
 
 func (s *server) Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error) {
-	b := s.bucketContainer.FindBucket(namespace, name)
+	b, e := s.bucketContainer.FindBucket(namespace, name)
+	if e != nil {
+		// Attempted to create a dynamic bucket and failed.
+		err = newError(fmt.Sprintf("Cannot create dynamic bucket %v:%v.", namespace, name),
+			ER_TOO_MANY_BUCKETS)
+		return
+
+	}
+
 	if b == nil {
-		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_SUCH_BUCKET)
+		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_BUCKET)
+		return
+	}
+
+	if b.Config().MaxTokensPerRequest < tokensRequested {
+		err = newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
+			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
+			ER_TOO_MANY_TOKENS_REQUESTED)
 		return
 	}
 
 	// Timeout
-	dur := time.Millisecond
+	maxWaitTime := time.Millisecond
 	if maxWaitMillisOverride > -1 && maxWaitMillisOverride < b.Config().WaitTimeoutMillis {
-		dur *= time.Duration(maxWaitMillisOverride)
+		maxWaitTime *= time.Duration(maxWaitMillisOverride)
 	} else {
-		dur *= time.Duration(b.Config().WaitTimeoutMillis)
+		maxWaitTime *= time.Duration(b.Config().WaitTimeoutMillis)
 	}
 
-	waitTime = b.Take(tokensRequested, dur)
+	waitTime = b.Take(tokensRequested, maxWaitTime)
 
-	if waitTime < 0 && dur > 0 {
+	if waitTime < 0 && maxWaitTime > 0 {
 		waitTime = 0
-		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMED_OUT_WAITING)
+		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
 	} else {
 		granted = tokensRequested
 	}

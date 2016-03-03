@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"sort"
 	"github.com/maniksurtani/quotaservice/logging"
+	"errors"
 )
 
 const (
@@ -153,7 +154,7 @@ func NewBucketContainer(cfg *configs.ServiceConfig, bf BucketFactory) (bc *Bucke
 // a dynamic bucket is created if enabled (and space for more dynamic buckets is available). If all
 // fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
 // buckets or re-create statically defined buckets that have been invalidated.
-func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket) {
+func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket, err error) {
 	ns := bc.namespaces[namespace]
 	if ns == nil {
 		// Namespace doesn't exist. Use default bucket if possible.
@@ -175,6 +176,10 @@ func (bc *BucketContainer) FindBucket(namespace string, bucketName string) (buck
 				bucket = ns.buckets[bucketName]
 				if bucket == nil {
 					bucket = bc.createNewNamedBucket(namespace, bucketName, ns)
+					if bucket == nil {
+						err = errors.New("Cannot create dynamic bucket")
+						return
+					}
 				}
 			} else {
 				// Try a default for the namespace.

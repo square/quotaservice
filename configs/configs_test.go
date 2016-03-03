@@ -26,6 +26,7 @@ namespaces:
       fill_rate: 999
       wait_timeout_millis: 8888
       max_idle_millis: 30000
+      max_tokens_per_request: 5
   only_default:
     default_bucket:
       fill_rate: 800
@@ -51,20 +52,20 @@ namespaces:
 	ns := cfg.Namespaces[namespace]
 
 	assertNamespace(t, namespace, ns, 2, false, false, 0)
-	assertBucket(t, ns.Buckets["one"], 100, 321, 9999, 20000, 30000)
-	assertBucket(t, ns.Buckets["with_defaults"], 100, 50, 1000, -1, 10000)
+	assertBucket(t, ns.Buckets["one"], 100, 321, 9999, 20000, 30000, 321)
+	assertBucket(t, ns.Buckets["with_defaults"], 100, 50, 1000, -1, 10000, 50)
 
 	namespace = "only_dynamic"
 	ns = cfg.Namespaces[namespace]
 
 	assertNamespace(t, namespace, ns, 0, false, true, 50)
-	assertBucket(t, ns.DynamicBucketTemplate, 100, 999, 8888, 30000, 10000)
+	assertBucket(t, ns.DynamicBucketTemplate, 100, 999, 8888, 30000, 10000, 5)
 
 	namespace = "only_default"
 	ns = cfg.Namespaces[namespace]
 
 	assertNamespace(t, namespace, ns, 0, true, false, 0)
-	assertBucket(t, ns.DefaultBucket, 100, 800, 7777, 40000, 10000)
+	assertBucket(t, ns.DefaultBucket, 100, 800, 7777, 40000, 10000, 800)
 }
 
 func assertNamespace(t *testing.T, namespace string, ns *NamespaceConfig, numBuckets int, expectDefault, expectDynamic bool, maxDynamic int) {
@@ -85,7 +86,7 @@ func assertNamespace(t *testing.T, namespace string, ns *NamespaceConfig, numBuc
 	}
 }
 
-func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMillis, maxIdleMillis, maxDebtMillis int64) {
+func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMillis, maxIdleMillis, maxDebtMillis, maxTokensPerRequest int64) {
 	if b == nil {
 		t.Fatal("Bucket doesn't exist")
 	}
@@ -107,6 +108,10 @@ func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMill
 
 	if b.Size != size {
 		t.Fatalf("Expected bucket size of %v; was %v", size, b.Size)
+	}
+
+	if b.MaxTokensPerRequest != maxTokensPerRequest {
+		t.Fatalf("Expected max tokens per request of %v; was %v", maxTokensPerRequest, b.MaxTokensPerRequest)
 	}
 }
 

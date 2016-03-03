@@ -63,7 +63,8 @@ var cfg = func() *configs.ServiceConfig {
 var container = NewBucketContainer(cfg, &mockBucketFactory{})
 
 func TestFallbackToGlobalDefaultBucket(t *testing.T) {
-	b := container.FindBucket("nonexistent_namespace", "nonexistent_bucket")
+	b, _ := container.FindBucket("nonexistent_namespace", "nonexistent_bucket")
+
 	if b == nil {
 		t.Fatal("Should fall back to default bucket.")
 	}
@@ -74,7 +75,7 @@ func TestFallbackToGlobalDefaultBucket(t *testing.T) {
 }
 
 func TestFallbackToDefaultBucket(t *testing.T) {
-	b := container.FindBucket("x", "nonexistent_bucket")
+	b, _ := container.FindBucket("x", "nonexistent_bucket")
 	if b == nil {
 		t.Fatal("Should fall back to default bucket.")
 	}
@@ -85,7 +86,7 @@ func TestFallbackToDefaultBucket(t *testing.T) {
 }
 
 func TestDynamicBucket(t *testing.T) {
-	b := container.FindBucket("y", "new")
+	b, _ := container.FindBucket("y", "new")
 	if b == nil {
 		t.Fatal("Should create new bucket.")
 	}
@@ -96,7 +97,7 @@ func TestDynamicBucket(t *testing.T) {
 }
 
 func TestBucketNamespaces(t *testing.T) {
-	bx := container.FindBucket("x", "a")
+	bx, _ := container.FindBucket("x", "a")
 	if bx == nil {
 		t.Fatal("Should create new bucket.")
 	}
@@ -105,7 +106,7 @@ func TestBucketNamespaces(t *testing.T) {
 		t.Fatal("Should create new bucket.")
 	}
 
-	by := container.FindBucket("y", "a")
+	by, _ := container.FindBucket("y", "a")
 	if by == nil {
 		t.Fatal("Should create new bucket.")
 	}

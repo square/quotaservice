@@ -27,7 +27,7 @@ func TestGC(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			for j := 0; j < 10; j++ {
 				bName := strconv.Itoa(j)
-				b := container.FindBucket("n", bName)
+				b, _ := container.FindBucket("n", bName)
 				if b == nil {
 					t.Fatalf("Failed looking for bucket %v on impl %v", bName, impl)
 				}
@@ -40,7 +40,7 @@ func TestGC(t *testing.T) {
 		}
 
 		// Time out.
-		time.Sleep(time.Duration(cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis) * time.Millisecond * 5)
+		time.Sleep(time.Duration(cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis) * time.Millisecond * 4)
 
 		// GC should happen here after sleep.
 		for i := 0; i < 10; i++ {

@@ -62,7 +62,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 	rsp := new(pb.AllowResponse)
 	if invalid(req) {
 		logging.Printf("Invalid request %+v", req)
-		s := pb.AllowResponse_FAILED
+		s := pb.AllowResponse_REJECTED_INVALID_REQUEST
 		rsp.Status = &s
 		return rsp, nil
 	}
@@ -82,17 +82,10 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
-			switch qsErr.Reason {
-			case quotaservice.ER_NO_SUCH_BUCKET:
-				status = pb.AllowResponse_REJECTED
-			case quotaservice.ER_REJECTED:
-				status = pb.AllowResponse_REJECTED
-			case quotaservice.ER_TIMED_OUT_WAITING:
-				status = pb.AllowResponse_REJECTED
-			}
+			status = toPBStatus(qsErr)
 		} else {
 			logging.Printf("Caught error %v", err)
-			status = pb.AllowResponse_FAILED
+			status = pb.AllowResponse_REJECTED_SERVER_ERROR
 		}
 	} else {
 		if wait > 0 {
@@ -110,4 +103,21 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 func invalid(req *pb.AllowRequest) bool {
 	// Negative tokens are allowed!
 	return req.GetName() == "" || req.GetNamespace() == "" || (req.NumTokensRequested != nil && req.GetNumTokensRequested() == 0)
+}
+
+func toPBStatus(qsErr quotaservice.QuotaServiceError) (r pb.AllowResponse_Status) {
+	switch qsErr.Reason {
+	case quotaservice.ER_NO_BUCKET:
+		r = pb.AllowResponse_REJECTED_NO_BUCKET
+	case quotaservice.ER_TOO_MANY_BUCKETS:
+		r = pb.AllowResponse_REJECTED_TOO_MANY_BUCKETS
+	case quotaservice.ER_TOO_MANY_TOKENS_REQUESTED:
+		r = pb.AllowResponse_REJECTED_TOO_MANY_TOKENS_REQUESTED
+	case quotaservice.ER_TIMEOUT:
+		r = pb.AllowResponse_REJECTED_TIMEOUT
+	default:
+		r = pb.AllowResponse_REJECTED_SERVER_ERROR
+	}
+
+	return
 }

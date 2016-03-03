@@ -11,9 +11,17 @@ import (
 type ErrorReason int
 
 const (
-	ER_NO_SUCH_BUCKET ErrorReason = iota
-	ER_TIMED_OUT_WAITING
-	ER_REJECTED
+// Tokens not  available within max wait time
+	ER_TIMEOUT ErrorReason = iota
+
+// No valid bucket
+	ER_NO_BUCKET
+
+// Dynamic bucket couldn't be created
+	ER_TOO_MANY_BUCKETS
+
+// Too many tokens requested
+	ER_TOO_MANY_TOKENS_REQUESTED
 )
 
 // QuotaService is the interface used by RPC subsystems when fielding remote requests for quotas.

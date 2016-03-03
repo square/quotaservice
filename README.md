@@ -319,10 +319,13 @@ message AllowRequest {
 
 message AllowResponse {
  enum Status {
-   OK = 1;
-   OK_WAIT = 2;
-   REJECTED = 3;
-   FAILED = 4;
+   OK = 1;                        // Tokens granted
+   OK_WAIT = 2;                   // Tokens granted, but wait time set
+   REJECTED_TIMEOUT = 3;          // Tokens not  available within max wait time
+   REJECTED_NO_BUCKET = 4;        // No valid bucket
+   REJECTED_TOO_MANY_BUCKETS = 5; // Dynamic bucket couldn't be created
+   REJECTED_TOO_MANY_TOKENS_REQUESTED = 6;
+   REJECTED_SERVER_ERROR = 7;  
  }
 
  optional Status status = 1;

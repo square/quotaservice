@@ -26,11 +26,12 @@ type NamespaceConfig struct {
 }
 
 type BucketConfig struct {
-	Size              int64
-	FillRate          int64 `yaml:"fill_rate"`
-	WaitTimeoutMillis int64 `yaml:"wait_timeout_millis"`
-	MaxIdleMillis     int64 `yaml:"max_idle_millis"`
-	MaxDebtMillis     int64 `yaml:"max_debt_millis"`
+	Size                int64
+	FillRate            int64 `yaml:"fill_rate"`
+	WaitTimeoutMillis   int64 `yaml:"wait_timeout_millis"`
+	MaxIdleMillis       int64 `yaml:"max_idle_millis"`
+	MaxDebtMillis       int64 `yaml:"max_debt_millis"`
+	MaxTokensPerRequest int64 `yaml:"max_tokens_per_request"`
 }
 
 func (b *BucketConfig) String() string {
@@ -124,6 +125,10 @@ func applyBucketDefaults(b *BucketConfig) {
 
 		if b.MaxDebtMillis == 0 {
 			b.MaxDebtMillis = 10000
+		}
+
+		if b.MaxTokensPerRequest == 0 {
+			b.MaxTokensPerRequest = b.FillRate
 		}
 	}
 }
