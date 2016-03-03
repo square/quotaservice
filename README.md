@@ -37,7 +37,7 @@ A [gRPC client interceptor](https://github.com/grpc/grpc-java/blob/master/core/s
 
 ## Open Source
 
-The quota service and clients are all completely open source, under the Apache Software Foundation License v2.0 (ASLv2).
+The quota service and clients are all completely open source, under the Apache Software Foundation License v2.0 (ASLv2). See [LICENSE](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE) for details.
 
 # Goals
 
