@@ -14,13 +14,6 @@ NO_COLOUR="\033[0m"
 
 echo "${PURPLE}Inspecting your commit.${NO_COLOUR}"
 
-function fail {
-    reason=$1
-    echo "${RED}${reason}${NO_COLOUR}"
-    echo "${RED}Refusing to commit.${NO_COLOUR}"
-    exit 1
-}
-
 runtests=""
 
 for f in $files ; do
@@ -30,10 +23,11 @@ for f in $files ; do
 done
 
 if [ $runtests ] ; then 
-  go test -v $(go list ./... | grep -v /vendor/)
+	go test -v $(go list ./... | grep -v /vendor/) > /tmp/qstests.out 2>&1
 
   if [ $? -ne 0 ] ; then
-    echo "${RED}${reason}${NO_COLOUR}"
+    cat /tmp/qstests.out | perl -pe 's/--- /\n/' | grep -e '^FAIL'
+    echo
     echo "${RED}Refusing to commit.${NO_COLOUR}"
     exit 1
   fi
