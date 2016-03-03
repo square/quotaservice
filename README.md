@@ -145,7 +145,7 @@ Token buckets have a fixed size. If a token bucket is full, no additional tokens
 
 ### Naming and wildcards
 
-A token bucket has a name and a namespace to which it belongs. Namespaces have defaults that can be applied to named buckets. Namespaces can also be configured to allow dynamically created buckets from a template. Names and namespaces are case-sensitive. Valid characters for names and namespaces are those that match this regexp: [a-zA-Z0-9_]+
+A token bucket has a name and a namespace to which it belongs. Namespaces have defaults that can be applied to named buckets. Namespaces can also be configured to allow dynamically created buckets from a template. Names and namespaces are case-sensitive. Valid characters for names and namespaces are those that match this regexp: `[a-zA-Z0-9_]+`.
 
 #### Example 1: S2S RPCs
 
