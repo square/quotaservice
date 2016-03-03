@@ -2,7 +2,7 @@
 [![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE)
 ![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")
 [![GoDoc](https://godoc.org/github.com/maniksurtani/quotaservice?status.png)](https://godoc.org/github.com/maniksurtani/quotaservice)
-![Project Status](https://img.shields.io/badge/status-alpha-red.svg)
+![Project Status](https://img.shields.io/badge/status-beta-orange.svg)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/maniksurtani/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Overview
@@ -43,7 +43,7 @@ The quota service and clients are all completely open source, under the Apache S
 
 In order of priority.
 
-**Phase 1 (Complete)**
+**Phase 1** ![Status](https://img.shields.io/badge/status-complete-green.svg)
 
 * Provide service that maintains in-memory data structures tracking quotas.
 
@@ -53,7 +53,7 @@ In order of priority.
 
 * Weighted quotas.
 
-**Phase 2 (Work in progress)**
+**Phase 2** ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
 
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 
@@ -61,11 +61,11 @@ In order of priority.
 
 * Expose metrics on the server, tracking rates of denials/throttling.
 
-**Phase 3 (Outstanding)**
+**Phase 3** ![Status](https://img.shields.io/badge/status-outstanding-orange.svg)
 
 * Smart client, with client-side buckets and asynchronous, bulk token updates from the quota service.
 
-**Additional work (Unscheduled)**
+**Additional work** ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
 
 * REST/HTTP endpoint.
 * Allow for bursting (hard limits vs soft limits)
@@ -427,6 +427,8 @@ The following configuration elements need to be provided to the quota service:
     * Max debt millis - the maximum amount of time in the future a request can pre-reserve tokens (default: `10000`)
     * Max tokens per request (default: `fill_rate`)
 
+See the GoDocs on [`configs.ServiceConfig`](https://godoc.org/github.com/maniksurtani/quotaservice/configs#ServiceConfig) for more details.
+
 ## Service-level objectives
 
 ### Load testing the prototype
@@ -437,21 +439,13 @@ A prototype of the quota service, currently deployed in staging, backed by a sin
 Completed 1,519,404 iterations, mean 947.051µs each, at 135,040 requests/sec.
 
 Latency at percentiles:
-
   50 th percentile: 884.735µs
-
   75 th percentile: 983.039µs
-
   90 th percentile: 1.114111ms
-
   95 th percentile: 1.179647ms
-
   99 th percentile: 2.031615ms
-
   99.9 th percentile: 6.553599ms
-
   99.99 th percentile: 209.715199ms
-
 Test time 10m0.114231921s
 ```
 
@@ -465,21 +459,13 @@ The same prototype was pushed harder, with greater load, yielding the following 
 Completed 5,895,093 iterations, mean 2.235415ms each, at 228,864 requests/sec.
 
 Latency at percentiles:
-
   50 th percentile: 1.114111ms
-
   75 th percentile: 1.310719ms
-
   90 th percentile: 1.966079ms
-
   95 th percentile: 3.801087ms
-
   99 th percentile: 25.165823ms
-
   99.9 th percentile: 142.606335ms
-
   99.99 th percentile: 318.767103ms
-
 Test time 10m1.060592248s
 ```
 
