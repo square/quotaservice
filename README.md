@@ -86,7 +86,7 @@ Quotas set up for `Pinky` to call into `TheBrain` in the Quota Service.
 
 ![Sequence Diagram](/resources/sequences_1.png?raw=true)
 
-* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* `Pinky` asks the Quota Service for a token to call into `TheBrain`.
 * The Quota Service responds with the token requested, and status of `OK`.
 * `Pinky` makes the call into `TheBrain`.
 
@@ -95,7 +95,7 @@ Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, but no t
 
 ![Sequence Diagram](/resources/sequences_2.png?raw=true)
 
-* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* `Pinky` asks the Quota Service for a token to call into `TheBrain`.
 * The Quota Service returns with status `OK_WAIT` and the number of millis to wait, indicating that the client has to wait before proceeding.
 * `Pinky` waits, then makes the call into `TheBrain`.
 
@@ -114,12 +114,33 @@ Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, but no t
 
 ![Sequence Diagram](/resources/sequences_4.png?raw=true)
 
-* `Pinky` asks the Quota Service for a token to call into `TheBrain` (namespace `Pinky_TheBrain`).
+* `Pinky` asks the Quota Service for a token to call into `TheBrain`.
 * No quota immediately available.
 * Time before more quota is available exceeds `maxWaitTime`
     * `maxWaitTime` is configured per bucket, and can be overridden per request.
 * The Quota Service does not claim tokens, responds with status `REJECTED`.
 * `Pinky` **_does not_** makes the call into `TheBrain`.
+
+### Scenario 5
+Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, pre-fetching tokens.
+
+![Sequence Diagram](/resources/sequences_5.png?raw=true)
+
+* `Pinky` asks the Quota Service for 10 tokens to call into `TheBrain`.
+* The Quota Service responds with the tokens requested, and status of `OK`.
+* `Pinky` uses the tokens to make calls into `TheBrain`, using 1 token each time.
+* When `Pinky` runs out of tokens, it asks the Quota Service for more tokens.
+
+### Scenario 6
+Quotas set up for `Pinky` to call into `TheBrain` in the Quota service, post-accounting.
+
+![Sequence Diagram](/resources/sequences_6.png?raw=true)
+
+* Buckets set up so that 1 token == number of millis taken to perform a task.
+* `Pinky` asks the Quota Service for a token to call into `TheBrain`.
+* The Quota Service responds with the token requested, and status of `OK`.
+* `Pinky` uses the tokens to make calls into `TheBrain`, measuring how long the call takes.
+* After the call, `Pinky` asks the Quota Service for `time_taken_in_millis` tokens, as post-accounting for the call just completed.
 
 ## Tokens and Token Buckets
 
