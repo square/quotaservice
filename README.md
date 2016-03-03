@@ -509,7 +509,7 @@ The quota service clients will expose the following metrics:
 
 Smart clients allow for periodic, asynchronous communication with the quota service to request for tokens in batches, and always make use of a client-side token bucket when rate-limiting.
 
-***// TODO(manik)** Complete this section*
+_**// TODO(manik)** Complete this section_
 
 # Bibliography
 
