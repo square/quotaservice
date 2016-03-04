@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"sync"
 )
 
 func main() {
@@ -35,12 +36,14 @@ func main() {
 
 	// Block until SIGTERM, SIGKILL or SIGINT
 	sigs := make(chan os.Signal, 1)
-	shutdown := make(chan bool, 1)
+	var shutdown sync.WaitGroup
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
+
 	go func() {
 		<-sigs
-		shutdown <- true
+		shutdown.Done()
 	}()
-	<-shutdown
+
+	shutdown.Wait()
 	server.Stop()
 }

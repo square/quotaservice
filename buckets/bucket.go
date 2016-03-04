@@ -91,19 +91,22 @@ type namespace struct {
 // watch watches a bucket for activity, deleting the bucket if no activity has been detected after
 // a given duration.
 func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
-	if freq == 0 {
+	if freq <= 0 {
 		return
 	}
 
-	t := time.Tick(freq)
+	t := time.NewTicker(freq)
 
-	keepRunning := true
-	for keepRunning {
+	for {
 		// Wait for a tick
-		_ = <-t
+		<-t.C
 		// Check for activity since last run
-		keepRunning = bucket.ActivityDetected()
+		if !bucket.ActivityDetected() {
+			break
+		}
 	}
+
+	t.Stop()
 
 	// Remove this bucket.
 	ns.Lock()

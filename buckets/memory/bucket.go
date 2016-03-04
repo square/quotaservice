@@ -118,15 +118,14 @@ func min(x, y int64) int64 {
 }
 
 func (b *tokenBucket) waitTimeLoop() {
-	keepRunning := true
-	for ; keepRunning; {
+	for {
 		select {
 		case req := <-b.waitTimer:
-			w := b.calcWaitTime(req.requested, req.maxWaitTimeNanos)
-			req.response <- w
+			req.response <- b.calcWaitTime(req.requested, req.maxWaitTimeNanos)
 		case <-b.closer:
-			keepRunning = false
 			logging.Printf("Garbage collecting bucket %v", b.fullName)
+			// TODO(manik) properly notify goroutines who are currently trying to write to waitTimer
+			return
 		}
 	}
 }
@@ -141,5 +140,5 @@ func (b *tokenBucket) Dynamic() bool {
 
 func (b *tokenBucket) Destroy() {
 	// Signal the waitTimeLoop to exit
-	b.closer <- struct{}{}
+	close(b.closer)
 }
