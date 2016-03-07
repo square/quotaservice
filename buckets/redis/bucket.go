@@ -6,37 +6,37 @@
 package redis
 
 import (
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/buckets"
-	"time"
-	"sync"
-	"gopkg.in/redis.v3"
 	"fmt"
-	"github.com/maniksurtani/quotaservice/logging"
 	"strconv"
+	"sync"
+	"time"
+
+	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/logging"
+	"gopkg.in/redis.v3"
 )
 
 // Suffixes for Redis keys
 const (
 	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
-	ACCUMULATED_TOKENS_SUFFIX = "AT"
+	ACCUMULATED_TOKENS_SUFFIX     = "AT"
 )
 
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
 type redisBucket struct {
 	dynamic               bool
-	cfg                   *configs.BucketConfig
+	cfg                   *quotaservice.BucketConfig
 	factory               *bucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
 	maxIdleTimeMillis     string
 	maxDebtNanos          string
 	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
-	buckets.ActivityChannel
+	quotaservice.ActivityChannel
 }
 
 type bucketFactory struct {
-	cfg               *configs.ServiceConfig
+	cfg               *quotaservice.ServiceConfig
 	m                 *sync.RWMutex
 	client            *redis.Client
 	initialized       bool
@@ -45,19 +45,19 @@ type bucketFactory struct {
 	connectionRetries int
 }
 
-func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) buckets.BucketFactory {
+func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaservice.BucketFactory {
 	if connectionRetries < 1 {
 		connectionRetries = 1
 	}
 
 	return &bucketFactory{
-		initialized: false,
-		m: &sync.RWMutex{},
-		redisOpts: redisOpts,
+		initialized:       false,
+		m:                 &sync.RWMutex{},
+		redisOpts:         redisOpts,
 		connectionRetries: connectionRetries}
 }
 
-func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *quotaservice.ServiceConfig) {
 	if !bf.initialized {
 		bf.m.Lock()
 		defer bf.m.Unlock()
@@ -77,7 +77,7 @@ func (bf *bucketFactory) connectToRedis() {
 	bf.scriptSHA = loadScript(bf.client)
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig, dyn bool) buckets.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *quotaservice.BucketConfig, dyn bool) quotaservice.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
@@ -87,13 +87,13 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 		dyn,
 		cfg,
 		bf,
-		strconv.FormatInt(1e9 / cfg.FillRate, 10),
+		strconv.FormatInt(1e9/cfg.FillRate, 10),
 		strconv.FormatInt(cfg.Size, 10),
 		idle,
-		strconv.FormatInt(cfg.MaxDebtMillis * 1e6, 10), // Convert millis to nanos
+		strconv.FormatInt(cfg.MaxDebtMillis*1e6, 10), // Convert millis to nanos
 		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
 			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
-		buckets.NewActivityChannel()}
+		quotaservice.NewActivityChannel()}
 
 	return rb
 }
@@ -145,7 +145,7 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 	return
 }
 
-func (b *redisBucket) Config() *configs.BucketConfig {
+func (b *redisBucket) Config() *quotaservice.BucketConfig {
 	return b.cfg
 }
 

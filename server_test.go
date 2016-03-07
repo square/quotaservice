@@ -5,29 +5,22 @@ package quotaservice
 
 import (
 	"testing"
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/test"
 )
 
-type dummyEndpoint struct {}
-func (d *dummyEndpoint) Init(qs QuotaService) {}
-func (d *dummyEndpoint) Start() {}
-func (d *dummyEndpoint) Stop() {}
+type mockEndpoint struct{}
 
+func (d *mockEndpoint) Init(qs QuotaService) {}
+func (d *mockEndpoint) Start() {}
+func (d *mockEndpoint) Stop() {}
 
 func TestWithNoRpcs(t *testing.T) {
-	test.ExpectingPanic(t, func() {
-		New(configs.NewDefaultServiceConfig(), memory.NewBucketFactory())
+	ExpectingPanic(t, func() {
+		New(NewDefaultServiceConfig(), &mockBucketFactory{})
 	})
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(configs.NewDefaultServiceConfig(), memory.NewBucketFactory(), &dummyEndpoint{})
+	s := New(NewDefaultServiceConfig(), &mockBucketFactory{}, &mockEndpoint{})
 	s.Start()
 	defer s.Stop()
-
-	if s.Metrics() == nil {
-		t.Fatal("Expected a Metrics instance")
-	}
 }

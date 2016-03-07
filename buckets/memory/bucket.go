@@ -8,28 +8,27 @@ package memory
 import (
 	"time"
 
-	"github.com/maniksurtani/quotaservice/buckets"
-	"github.com/maniksurtani/quotaservice/configs"
+	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
 )
 
 type bucketFactory struct {
-	cfg *configs.ServiceConfig
+	cfg *quotaservice.ServiceConfig
 }
 
-func (bf *bucketFactory) Init(cfg *configs.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *quotaservice.ServiceConfig) {
 	bf.cfg = cfg
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.BucketConfig, dyn bool) buckets.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *quotaservice.BucketConfig, dyn bool) quotaservice.Bucket {
 	// fill rate is tokens-per-second.
 	bucket := &tokenBucket{
-		ActivityChannel: buckets.NewActivityChannel(),
+		ActivityChannel: quotaservice.NewActivityChannel(),
 		dynamic: dyn,
 		cfg: cfg,
 		nanosBetweenTokens: 1e9 / cfg.FillRate,
 		accumulatedTokens: cfg.Size, // Start full
-		fullName: buckets.FullyQualifiedName(namespace, bucketName),
+		fullName: quotaservice.FullyQualifiedName(namespace, bucketName),
 		waitTimer: make(chan *waitTimeReq),
 		closer: make(chan struct{})}
 
@@ -38,7 +37,7 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *configs.Bu
 	return bucket
 }
 
-func NewBucketFactory() buckets.BucketFactory {
+func NewBucketFactory() quotaservice.BucketFactory {
 	return &bucketFactory{}
 }
 
@@ -48,9 +47,9 @@ func NewBucketFactory() buckets.BucketFactory {
 // goroutine is shut down when Destroy() is called on this bucket. In-flight requests will be
 // served, but new requests will not.
 type tokenBucket struct {
-	buckets.ActivityChannel
+	quotaservice.ActivityChannel
 	dynamic           bool
-	cfg               *configs.BucketConfig
+	cfg               *quotaservice.BucketConfig
 	nanosBetweenTokens,
 	tokensNextAvailableNanos,
 	accumulatedTokens int64
@@ -130,7 +129,7 @@ func (b *tokenBucket) waitTimeLoop() {
 	}
 }
 
-func (b *tokenBucket) Config() *configs.BucketConfig {
+func (b *tokenBucket) Config() *quotaservice.BucketConfig {
 	return b.cfg
 }
 

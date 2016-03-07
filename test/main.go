@@ -6,7 +6,6 @@ package main
 import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/configs"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
 	"net/http"
 	"os"
@@ -16,15 +15,15 @@ import (
 )
 
 func main() {
-	cfg := configs.NewDefaultServiceConfig()
-	cfg.Namespaces["test.namespace"] = configs.NewDefaultNamespaceConfig()
-	cfg.Namespaces["test.namespace"].DynamicBucketTemplate = configs.NewDefaultBucketConfig()
+	cfg := quotaservice.NewDefaultServiceConfig()
+	cfg.Namespaces["test.namespace"] = quotaservice.NewDefaultNamespaceConfig()
+	cfg.Namespaces["test.namespace"].DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
 	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.Size = 100000000000
 	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.FillRate = 100000000
-	cfg.Namespaces["test.namespace"].Buckets["xyz"] = configs.NewDefaultBucketConfig()
-	cfg.Namespaces["test.namespace2"] = configs.NewDefaultNamespaceConfig()
-	cfg.Namespaces["test.namespace2"].DefaultBucket = configs.NewDefaultBucketConfig()
-	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = configs.NewDefaultBucketConfig()
+	cfg.Namespaces["test.namespace"].Buckets["xyz"] = quotaservice.NewDefaultBucketConfig()
+	cfg.Namespaces["test.namespace2"] = quotaservice.NewDefaultNamespaceConfig()
+	cfg.Namespaces["test.namespace2"].DefaultBucket = quotaservice.NewDefaultBucketConfig()
+	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = quotaservice.NewDefaultBucketConfig()
 
 	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
 	server.Start()

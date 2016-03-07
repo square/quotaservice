@@ -2,13 +2,12 @@
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
 // Package buckets defines interfaces for abstractions of token buckets.
-package buckets
+package quotaservice
 
 import (
-	"testing"
-	"github.com/maniksurtani/quotaservice/configs"
-	"time"
 	"strconv"
+	"testing"
+	"time"
 )
 
 // Mock objects
@@ -20,7 +19,7 @@ type mockBucket struct {
 func (b *mockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
 	return 0
 }
-func (b *mockBucket) Config() *configs.BucketConfig {
+func (b *mockBucket) Config() *BucketConfig {
 	return nil
 }
 func (b *mockBucket) ActivityDetected() bool {
@@ -32,35 +31,34 @@ func (b *mockBucket) Dynamic() bool {
 }
 func (b *mockBucket) Destroy() {}
 
-
 type mockBucketFactory struct{}
 
-func (bf mockBucketFactory) Init(cfg *configs.ServiceConfig) {}
-func (bf mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *configs.BucketConfig, dyn bool) Bucket {
+func (bf mockBucketFactory) Init(cfg *ServiceConfig) {}
+func (bf mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *BucketConfig, dyn bool) Bucket {
 	return &mockBucket{namespace: namespace, bucketName: bucketName, dyn: dyn}
 }
 
-var cfg = func() *configs.ServiceConfig {
-	c := configs.NewDefaultServiceConfig()
-	c.GlobalDefaultBucket = configs.NewDefaultBucketConfig()
-	c.Namespaces["x"] = configs.NewDefaultNamespaceConfig()
-	c.Namespaces["x"].DefaultBucket = configs.NewDefaultBucketConfig()
-	c.Namespaces["x"].Buckets["a"] = configs.NewDefaultBucketConfig()
+var cfg = func() *ServiceConfig {
+	c := NewDefaultServiceConfig()
+	c.GlobalDefaultBucket = NewDefaultBucketConfig()
+	c.Namespaces["x"] = NewDefaultNamespaceConfig()
+	c.Namespaces["x"].DefaultBucket = NewDefaultBucketConfig()
+	c.Namespaces["x"].Buckets["a"] = NewDefaultBucketConfig()
 
-	c.Namespaces["y"] = configs.NewDefaultNamespaceConfig()
-	c.Namespaces["y"].DynamicBucketTemplate = configs.NewDefaultBucketConfig()
-	c.Namespaces["y"].Buckets["a"] = configs.NewDefaultBucketConfig()
+	c.Namespaces["y"] = NewDefaultNamespaceConfig()
+	c.Namespaces["y"].DynamicBucketTemplate = NewDefaultBucketConfig()
+	c.Namespaces["y"].Buckets["a"] = NewDefaultBucketConfig()
 
-	c.Namespaces["z"] = configs.NewDefaultNamespaceConfig()
+	c.Namespaces["z"] = NewDefaultNamespaceConfig()
 	c.Namespaces["z"].MaxDynamicBuckets = 5
-	c.Namespaces["z"].DynamicBucketTemplate = configs.NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["a"] = configs.NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["b"] = configs.NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["c"] = configs.NewDefaultBucketConfig()
+	c.Namespaces["z"].DynamicBucketTemplate = NewDefaultBucketConfig()
+	c.Namespaces["z"].Buckets["a"] = NewDefaultBucketConfig()
+	c.Namespaces["z"].Buckets["b"] = NewDefaultBucketConfig()
+	c.Namespaces["z"].Buckets["c"] = NewDefaultBucketConfig()
 	return c
 }()
 
-var container = NewBucketContainer(cfg, &mockBucketFactory{})
+var container = NewBucketContainer(cfg, &mockBucketFactory{}, &MockEmitter{})
 
 func TestFallbackToGlobalDefaultBucket(t *testing.T) {
 	b, _ := container.FindBucket("nonexistent_namespace", "nonexistent_bucket")

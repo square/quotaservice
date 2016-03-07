@@ -2,20 +2,25 @@
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
 // Package implements configs for the quotaservice
-package configs
+package quotaservice
 
 import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/yaml.v2"
 )
 
 type ServiceConfig struct {
-	MetricsEnabled      bool                        `yaml:"metrics_enabled"`
 	GlobalDefaultBucket *BucketConfig               `yaml:"global_default_bucket,flow"`
 	Namespaces          map[string]*NamespaceConfig `yaml:",flow"`
+}
+
+func (s *ServiceConfig) String() string {
+	return fmt.Sprintf("ServiceConfig{default: %v, namespaces: %v}",
+		s.GlobalDefaultBucket, s.Namespaces)
 }
 
 type NamespaceConfig struct {
@@ -92,9 +97,8 @@ func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
 
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		MetricsEnabled:        true,
-		GlobalDefaultBucket:   NewDefaultBucketConfig(),
-		Namespaces:            make(map[string]*NamespaceConfig)}
+		GlobalDefaultBucket: NewDefaultBucketConfig(),
+		Namespaces:          make(map[string]*NamespaceConfig)}
 }
 
 func NewDefaultNamespaceConfig() *NamespaceConfig {

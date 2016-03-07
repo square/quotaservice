@@ -4,17 +4,18 @@
 package grpc
 
 import (
-	"net"
 	"fmt"
+	"net"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/lifecycle"
+	"github.com/maniksurtani/quotaservice/logging"
+	pb "github.com/maniksurtani/quotaservice/protos"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"golang.org/x/net/context"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice"
-	pb "github.com/maniksurtani/quotaservice/protos"
-	"github.com/maniksurtani/quotaservice/lifecycle"
-	"github.com/golang/protobuf/proto"
-	"strings"
 )
 
 type GrpcEndpoint struct {
@@ -23,6 +24,7 @@ type GrpcEndpoint struct {
 	currentStatus lifecycle.Status
 	qs            quotaservice.QuotaService
 }
+
 // New creates a new GrpcEndpoint, listening on hostport. Hostport is a string in the form
 // "host:port"
 func New(hostport string) *GrpcEndpoint {
@@ -78,7 +80,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 	}
 
 	granted, wait, err := g.qs.Allow(req.GetNamespace(), req.GetName(), numTokensRequested, maxWaitMillisOverride)
-	var status pb.AllowResponse_Status;
+	var status pb.AllowResponse_Status
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {

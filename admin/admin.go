@@ -7,18 +7,15 @@ package admin
 import (
 	"fmt"
 	"net/http"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/metrics"
-	"github.com/maniksurtani/quotaservice/buckets"
-	"github.com/maniksurtani/quotaservice/configs"
 	"strings"
+
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 // Administrable defines something that can be administered via this package.
 type Administrable interface {
-	Metrics() metrics.Metrics
-	Configs() *configs.ServiceConfig
-	BucketContainer() *buckets.BucketContainer
+	Configs() fmt.Stringer
+	BucketContainer() fmt.Stringer
 }
 
 // ServeAdminConsole serves up an admin console for an Administrable over a http server.

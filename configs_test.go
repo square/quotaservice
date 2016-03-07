@@ -1,16 +1,14 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-package configs
+package quotaservice
 
 import (
 	"testing"
-	"github.com/maniksurtani/quotaservice/test"
 )
 
 func TestConfig(t *testing.T) {
-	yaml := `metrics_enabled: false
-namespaces:
+	yaml := `namespaces:
   no_default_no_dynamic:
     buckets:
       one:
@@ -35,10 +33,6 @@ namespaces:
 `
 
 	cfg := readConfigFromBytes([]byte(yaml))
-
-	if cfg.MetricsEnabled {
-		t.Fatal("Metrics should not be enabled")
-	}
 
 	if cfg.GlobalDefaultBucket != nil {
 		t.Fatal("Did not configure a global default bucket")
@@ -102,7 +96,7 @@ func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMill
 		t.Fatalf("Expected max_idle_millis of %v; was %v", maxIdleMillis, b.MaxIdleMillis)
 	}
 
-	if b.MaxDebtMillis!= maxDebtMillis {
+	if b.MaxDebtMillis != maxDebtMillis {
 		t.Fatalf("Expected max_debt_millis of %v; was %v", maxDebtMillis, b.MaxDebtMillis)
 	}
 
@@ -116,9 +110,7 @@ func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMill
 }
 
 func TestNonexistentFile(t *testing.T) {
-	test.ExpectingPanic(t, func() {
+	ExpectingPanic(t, func() {
 		_ = ReadConfigFromFile("/does/not/exist")
 	})
 }
-
-

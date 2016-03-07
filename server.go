@@ -5,48 +5,24 @@ package quotaservice
 
 import (
 	"fmt"
-	"github.com/maniksurtani/quotaservice/admin"
-	"github.com/maniksurtani/quotaservice/buckets"
-	"github.com/maniksurtani/quotaservice/configs"
-	"github.com/maniksurtani/quotaservice/lifecycle"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/metrics"
 	"net/http"
 	"time"
+
+	"github.com/maniksurtani/quotaservice/admin"
+	"github.com/maniksurtani/quotaservice/lifecycle"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
-type Server interface {
-	Start() (bool, error)
-	Stop() (bool, error)
-	Metrics() metrics.Metrics
-	SetLogger(logger logging.Logger)
-	ServeAdminConsole(mux *http.ServeMux)
-}
-
+// Implements the quotaservice.Server interface
 type server struct {
-	cfgs            *configs.ServiceConfig
+	cfgs            *ServiceConfig
 	currentStatus   lifecycle.Status
 	stopper         *chan int
-	bucketContainer *buckets.BucketContainer
-	bucketFactory   buckets.BucketFactory
+	bucketContainer *bucketContainer
+	bucketFactory   BucketFactory
 	rpcEndpoints    []RpcEndpoint
-	metrics         metrics.Metrics
-}
-
-// NewFromFile creates a new quotaservice server.
-func New(config *configs.ServiceConfig, bucketFactory buckets.BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
-	if len(rpcEndpoints) == 0 {
-		panic("Need at least 1 RPC endpoint to run the quota service.")
-	}
-	s := &server{
-		cfgs:          config,
-		bucketFactory: bucketFactory,
-		rpcEndpoints:  rpcEndpoints}
-
-	if config.MetricsEnabled {
-		s.metrics = metrics.New()
-	}
-	return s
+	listener        Listener
+	producer        *EventProducer
 }
 
 func (s *server) String() string {
@@ -54,19 +30,19 @@ func (s *server) String() string {
 }
 
 func (s *server) Start() (bool, error) {
+	// Set up listeners
+	if s.listener != nil {
+		s.producer = registerListener(s.listener)
+	}
 
 	// Initialize buckets
 	s.bucketFactory.Init(s.cfgs)
-	s.bucketContainer = buckets.NewBucketContainer(s.cfgs, s.bucketFactory)
+	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s)
 
 	// Start the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
 		rpcServer.Init(s)
 		rpcServer.Start()
-	}
-
-	if s.cfgs.MetricsEnabled {
-		s.metrics = metrics.New()
 	}
 
 	s.currentStatus = lifecycle.Started
@@ -90,12 +66,14 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		// Attempted to create a dynamic bucket and failed.
 		err = newError(fmt.Sprintf("Cannot create dynamic bucket %v:%v.", namespace, name),
 			ER_TOO_MANY_BUCKETS)
+		s.Emit(emitBucketMissed(namespace, name, true))
 		return
 
 	}
 
 	if b == nil {
 		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_BUCKET)
+		s.Emit(emitBucketMissed(namespace, name, true))
 		return
 	}
 
@@ -103,6 +81,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		err = newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
+		s.Emit(emitTooManyTokensRequested(namespace, name, true, tokensRequested))
 		return
 	}
 
@@ -119,8 +98,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	if waitTime < 0 && maxWaitTime > 0 {
 		waitTime = 0
 		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
+		s.Emit(emitTimedOut(namespace, name, true, tokensRequested))
 	} else {
 		granted = tokensRequested
+		s.Emit(emitTokensServed(namespace, name, true, tokensRequested, waitTime))
 	}
 
 	return
@@ -130,19 +111,31 @@ func (s *server) ServeAdminConsole(mux *http.ServeMux) {
 	admin.ServeAdminConsole(s, mux)
 }
 
-func (s *server) Metrics() metrics.Metrics {
-	return s.metrics
-}
-
 func (s *server) SetLogger(logger logging.Logger) {
+	if s.currentStatus == lifecycle.Started {
+		panic("Cannot set logger after server has started!")
+	}
 	logging.SetLogger(logger)
 }
 
+func (s *server) SetListener(listener Listener) {
+	if s.currentStatus == lifecycle.Started {
+		panic("Cannot add listener after server has started!")
+	}
+	s.listener = listener
+}
+
 // Implements admin.Administrable
-func (s *server) Configs() *configs.ServiceConfig {
+func (s *server) Configs() fmt.Stringer {
 	return s.cfgs
 }
 
-func (s *server) BucketContainer() *buckets.BucketContainer {
+func (s *server) BucketContainer() fmt.Stringer {
 	return s.bucketContainer
+}
+
+func (s *server) Emit(e Event) {
+	if s.producer != nil {
+		s.producer.Emit(e)
+	}
 }
