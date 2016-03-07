@@ -40,9 +40,10 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	cfg := quotaservice.NewDefaultServiceConfig()
 	cfg.Namespaces["n"] = quotaservice.NewDefaultNamespaceConfig()
 	cfg.Namespaces["n"].DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
-	// Times out every 5 seconds
-	cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis = 5000
-	container := quotaservice.NewBucketContainer(cfg, factory, &quotaservice.MockEmitter{})
+	// Times out every 250 millis.
+	cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis = 250
+	events := &quotaservice.MockEmitter{make(chan quotaservice.Event, 100)}
+	container := quotaservice.NewBucketContainer(cfg, factory, events)
 
 	// No GC should happen here as long as we are in use.
 	for i := 0; i < 10; i++ {
@@ -60,17 +61,40 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 		}
 	}
 
-	// Time out.
-	time.Sleep(time.Duration(cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis) * time.Millisecond * 4)
-
-	// GC should happen here after sleep.
+	bucketNames := make([]string, 10)
 	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
-			bName := strconv.Itoa(j)
-			// Check that the bucket has been GC'd
-			if container.Exists("n", bName) {
-				t.Fatalf("Bucket %v wasn't GC'd when it should have on impl %v", bName, impl)
-			}
+		bucketNames[i] = strconv.Itoa(i)
+	}
+
+	waitForGC(events.Events, "n", bucketNames)
+
+	for _, bName := range bucketNames {
+		// Check that the bucket has been GC'd
+		if container.Exists("n", bName) {
+			t.Fatalf("Bucket %v wasn't GC'd when it should have on impl %v", bName, impl)
+		}
+	}
+}
+
+func waitForGC(events chan quotaservice.Event, namespace string, buckets []string) {
+	bucketMap := make(map [string]bool)
+	for _, b := range buckets {
+		bucketMap[b] = true
+	}
+
+	for e := range events {
+		if e.EventType() == quotaservice.EVENT_BUCKET_REMOVED && e.Namespace() == namespace {
+			bucketMap[e.BucketName()] = false
+		}
+
+		// Scan bucketMap
+		unseenBuckets := false
+		for _, waiting := range bucketMap {
+			unseenBuckets = unseenBuckets || waiting
+		}
+
+		if !unseenBuckets {
+			return
 		}
 	}
 }

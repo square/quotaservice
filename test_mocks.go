@@ -80,10 +80,14 @@ func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg 
 	return b
 }
 
-type MockEmitter struct{}
+type MockEmitter struct{
+	Events chan Event
+}
 
-func (d *MockEmitter) Emit(e Event) {
-	// No-op
+func (m *MockEmitter) Emit(e Event) {
+	if m.Events != nil {
+		m.Events <- e
+	}
 }
 
 type MockEndpoint struct {
