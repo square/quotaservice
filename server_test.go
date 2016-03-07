@@ -7,20 +7,14 @@ import (
 	"testing"
 )
 
-type mockEndpoint struct{}
-
-func (d *mockEndpoint) Init(qs QuotaService) {}
-func (d *mockEndpoint) Start() {}
-func (d *mockEndpoint) Stop() {}
-
 func TestWithNoRpcs(t *testing.T) {
 	ExpectingPanic(t, func() {
-		New(NewDefaultServiceConfig(), &mockBucketFactory{})
+		New(NewDefaultServiceConfig(), &MockBucketFactory{})
 	})
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(NewDefaultServiceConfig(), &mockBucketFactory{}, &mockEndpoint{})
+	s := New(NewDefaultServiceConfig(), &MockBucketFactory{}, &MockEndpoint{})
 	s.Start()
 	defer s.Stop()
 }

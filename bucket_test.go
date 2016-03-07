@@ -7,55 +7,7 @@ package quotaservice
 import (
 	"strconv"
 	"testing"
-	"time"
 )
-
-// Mock objects
-type mockBucket struct {
-	retval                time.Duration
-	active                bool
-	namespace, bucketName string
-	dyn                   bool
-	cfg                   *BucketConfig
-}
-
-func (b *mockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
-	return b.retval
-}
-func (b *mockBucket) Config() *BucketConfig {
-	return b.cfg
-}
-func (b *mockBucket) ActivityDetected() bool {
-	return b.active
-}
-func (b *mockBucket) ReportActivity() {}
-func (b *mockBucket) Dynamic() bool {
-	return b.dyn
-}
-func (b *mockBucket) Destroy() {}
-
-type mockBucketFactory struct {
-	buckets map[string]*mockBucket
-}
-
-func (bf *mockBucketFactory) SetRetval(namespace, name string, d time.Duration) {
-	bf.buckets[FullyQualifiedName(namespace, name)].retval = d
-}
-
-func (bf *mockBucketFactory) MarkForGC(namespace, name string) {
-	bf.buckets[FullyQualifiedName(namespace, name)].active = false
-}
-
-func (bf *mockBucketFactory) Init(cfg *ServiceConfig) {}
-func (bf *mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *BucketConfig, dyn bool) Bucket {
-	b := &mockBucket{0, true, namespace, bucketName, dyn, cfg}
-	if bf.buckets == nil {
-		bf.buckets = make(map[string]*mockBucket)
-	}
-
-	bf.buckets[FullyQualifiedName(namespace, bucketName)] = b
-	return b
-}
 
 var cfg = func() *ServiceConfig {
 	c := NewDefaultServiceConfig()
@@ -86,7 +38,7 @@ var cfg = func() *ServiceConfig {
 	return c
 }()
 
-var container = NewBucketContainer(cfg, &mockBucketFactory{}, &MockEmitter{})
+var container, _, _ = NewBucketContainerWithMocks(cfg)
 
 func TestFallbackToGlobalDefaultBucket(t *testing.T) {
 	b, _ := container.FindBucket("nonexistent_namespace", "nonexistent_bucket")

@@ -247,7 +247,15 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 }
 
 func (bc *bucketContainer) Exists(namespace, name string) bool {
-	return bc.namespaces[namespace] != nil && bc.namespaces[namespace].buckets[name] != nil
+	ns := bc.namespaces[namespace]
+	if ns == nil {
+		panic("Namespace doesn't exist!")
+	}
+
+	ns.RLock()
+	defer ns.RUnlock()
+
+	return ns.buckets[name] != nil
 }
 
 func (bc *bucketContainer) String() string {

@@ -12,15 +12,7 @@ import (
 var s Server
 var qs QuotaService
 var events chan Event
-var mbf *mockBucketFactory
-
-type endpoint struct {
-	*mockEndpoint
-}
-
-func (e endpoint) Init(quotaService QuotaService) {
-	qs = quotaService
-}
+var mbf *MockBucketFactory
 
 func TestMain(m *testing.M) {
 	setUp()
@@ -47,13 +39,15 @@ func setUp() {
 	ns.AddBucket("b", b)
 	cfg.AddNamespace("nodyn", ns)
 
-	mbf = &mockBucketFactory{}
-	s = New(cfg, mbf, &endpoint{&mockEndpoint{}})
+	mbf = &MockBucketFactory{}
+	me := &MockEndpoint{}
+	s = New(cfg, mbf, me)
 	events = make(chan Event, 100)
 	s.SetListener(func(e Event) {
 		events <- e
 	})
 	s.Start()
+	qs = me.QuotaService
 	// New buckets would have been created. Clear all notifications.
 	clearEvents(1)
 }
@@ -69,17 +63,17 @@ func TestTooManyTokens(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	mbf.SetRetval("nodyn", "b", 2 * time.Minute)
+	mbf.SetWaitTime("nodyn", "b", 2 * time.Minute)
 	qs.Allow("nodyn", "b", 1, 1)
 	checkEvent("nodyn", "b", false, EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-events, t)
-	mbf.SetRetval("nodyn", "b", 0)
+	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
-	mbf.SetRetval("nodyn", "b", 2 * time.Nanosecond)
+	mbf.SetWaitTime("nodyn", "b", 2 * time.Nanosecond)
 	qs.Allow("nodyn", "b", 1, 0)
 	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2 * time.Nanosecond, <-events, t)
-	mbf.SetRetval("nodyn", "b", 0)
+	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestNoSuchBucket(t *testing.T) {
@@ -106,11 +100,11 @@ func TestBucketRemoval(t *testing.T) {
 	// GC thread should run every 100ms for this namespace. Make sure it runs at least once.
 	time.Sleep(300 * time.Millisecond)
 
-	mbf.MarkForGC("dyn", "b")
+	mbf.SetActive("dyn", "b", false)
 	checkEvent("dyn", "b", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
-	mbf.MarkForGC("dyn", "c")
+	mbf.SetActive("dyn", "c", false)
 	checkEvent("dyn", "c", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
-	mbf.MarkForGC("dyn", "d")
+	mbf.SetActive("dyn", "d", false)
 	checkEvent("dyn", "d", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
 }
 
