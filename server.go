@@ -66,14 +66,14 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		// Attempted to create a dynamic bucket and failed.
 		err = newError(fmt.Sprintf("Cannot create dynamic bucket %v:%v.", namespace, name),
 			ER_TOO_MANY_BUCKETS)
-		s.Emit(emitBucketMissed(namespace, name, true))
+		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
 
 	}
 
 	if b == nil {
 		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_BUCKET)
-		s.Emit(emitBucketMissed(namespace, name, true))
+		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
 	}
 
@@ -81,7 +81,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		err = newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
-		s.Emit(emitTooManyTokensRequested(namespace, name, true, tokensRequested))
+		s.Emit(newTooManyTokensRequestedEvent(namespace, name, true, tokensRequested))
 		return
 	}
 
@@ -98,10 +98,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	if waitTime < 0 && maxWaitTime > 0 {
 		waitTime = 0
 		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
-		s.Emit(emitTimedOut(namespace, name, true, tokensRequested))
+		s.Emit(newTimedOutEvent(namespace, name, true, tokensRequested))
 	} else {
 		granted = tokensRequested
-		s.Emit(emitTokensServed(namespace, name, true, tokensRequested, waitTime))
+		s.Emit(newTokensServedEvent(namespace, name, true, tokensRequested, waitTime))
 	}
 
 	return

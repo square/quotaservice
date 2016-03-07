@@ -105,7 +105,7 @@ func (t *tokenWaitEvent) WaitTime() time.Duration {
 	return t.waitTime
 }
 
-func emitTokensServed(namespace, bucketName string, dynamic bool, numTokens int64, waitTime time.Duration) Event {
+func newTokensServedEvent(namespace, bucketName string, dynamic bool, numTokens int64, waitTime time.Duration) Event {
 	return &tokenWaitEvent{
 		tokenEvent: &tokenEvent{
 			namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TIMEOUT_SERVING_TOKENS),
@@ -113,27 +113,27 @@ func emitTokensServed(namespace, bucketName string, dynamic bool, numTokens int6
 		waitTime: waitTime}
 }
 
-func emitTimedOut(namespace, bucketName string, dynamic bool, numTokens int64) Event {
+func newTimedOutEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
 	return &tokenEvent{
 		namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TIMEOUT_SERVING_TOKENS),
 		numTokens:  numTokens}
 }
 
-func emitTooManyTokensRequested(namespace, bucketName string, dynamic bool, numTokens int64) Event {
+func newTooManyTokensRequestedEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
 	return &tokenEvent{
 		namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TOO_MANY_TOKENS_REQUESTED),
 		numTokens:  numTokens}
 }
 
-func emitBucketMissed(namespace, bucketName string, dynamic bool) Event {
+func newBucketMissedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_MISS)
 }
 
-func emitBucketCreated(namespace, bucketName string, dynamic bool) Event {
+func newBucketCreatedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_CREATED)
 }
 
-func emitBucketRemoved(namespace, bucketName string, dynamic bool) Event {
+func newBucketRemovedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_REMOVED)
 }
 

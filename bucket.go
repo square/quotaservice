@@ -119,7 +119,7 @@ func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration)
 	ns.Lock()
 	defer ns.Unlock()
 	delete(ns.buckets, bucketName)
-	ns.n.Emit(emitBucketRemoved(ns.namespaceName, bucketName, bucket.Dynamic()))
+	ns.n.Emit(newBucketRemovedEvent(ns.namespaceName, bucketName, bucket.Dynamic()))
 	bucket.Destroy()
 }
 
@@ -238,7 +238,7 @@ func (bc *bucketContainer) countDynamicBuckets(namespace string) int {
 }
 
 func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *BucketConfig, dyn bool) Bucket {
-	bc.n.Emit(emitBucketCreated(namespace, bucketName, dyn))
+	bc.n.Emit(newBucketCreatedEvent(namespace, bucketName, dyn))
 	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg, dyn)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()
