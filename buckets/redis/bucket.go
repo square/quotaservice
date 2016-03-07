@@ -18,8 +18,8 @@ import (
 
 // Suffixes for Redis keys
 const (
-	TOKENS_NEXT_AVBL_NANOS_SUFFIX = "TNA"
-	ACCUMULATED_TOKENS_SUFFIX     = "AT"
+	tokensNextAvblNanosSuffix = "TNA"
+	accumulatedTokensSuffix = "AT"
 )
 
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
@@ -87,12 +87,12 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *quotaservi
 		dyn,
 		cfg,
 		bf,
-		strconv.FormatInt(1e9/cfg.FillRate, 10),
+		strconv.FormatInt(1e9 / cfg.FillRate, 10),
 		strconv.FormatInt(cfg.Size, 10),
 		idle,
-		strconv.FormatInt(cfg.MaxDebtMillis*1e6, 10), // Convert millis to nanos
-		[]string{toRedisKey(namespace, bucketName, TOKENS_NEXT_AVBL_NANOS_SUFFIX),
-			toRedisKey(namespace, bucketName, ACCUMULATED_TOKENS_SUFFIX)},
+		strconv.FormatInt(cfg.MaxDebtMillis * 1e6, 10), // Convert millis to nanos
+		[]string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix),
+			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)},
 		quotaservice.NewActivityChannel()}
 
 	return rb

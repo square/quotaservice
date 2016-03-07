@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	GLOBAL_NAMESPACE = "___GLOBAL___"
-	DEFAULT_BUCKET_NAME = "___DEFAULT_BUCKET___"
+	globalNamespace = "___GLOBAL___"
+	defaultBucketName = "___DEFAULT_BUCKET___"
 )
 
 // bucketContainer is a holder for configurations and bucket factories.
@@ -141,13 +141,13 @@ func NewBucketContainer(cfg *ServiceConfig, bf BucketFactory, n notifier) (bc *b
 	bc = &bucketContainer{cfg: cfg, bf: bf, n: n, namespaces: make(map[string]*namespace)}
 
 	if cfg.GlobalDefaultBucket != nil {
-		bc.defaultBucket = bf.NewBucket(GLOBAL_NAMESPACE, DEFAULT_BUCKET_NAME, cfg.GlobalDefaultBucket, false)
+		bc.defaultBucket = bf.NewBucket(globalNamespace, defaultBucketName, cfg.GlobalDefaultBucket, false)
 	}
 
 	for nsName, nsCfg := range cfg.Namespaces {
 		nsp := &namespace{n: n, namespaceName: nsName, cfg: nsCfg, buckets: make(map[string]Bucket)}
 		if nsCfg.DefaultBucket != nil {
-			nsp.defaultBucket = bf.NewBucket(nsName, DEFAULT_BUCKET_NAME, nsCfg.DefaultBucket, false)
+			nsp.defaultBucket = bf.NewBucket(nsName, defaultBucketName, nsCfg.DefaultBucket, false)
 		}
 
 		for bucketName, bucketCfg := range nsCfg.Buckets {
