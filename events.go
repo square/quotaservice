@@ -13,7 +13,6 @@ import (
 type EventType int
 
 const (
-// TODO(manik) do we need a maxDebtReached event?
 	EVENT_TOKENS_SERVED EventType = iota
 	EVENT_TIMEOUT_SERVING_TOKENS
 	EVENT_TOO_MANY_TOKENS_REQUESTED
@@ -22,23 +21,21 @@ const (
 	EVENT_BUCKET_REMOVED
 )
 
+var eventNames = []string{
+	EVENT_TOKENS_SERVED: "EVENT_TOKENS_SERVED",
+	EVENT_TIMEOUT_SERVING_TOKENS: "EVENT_TIMEOUT_SERVING_TOKENS",
+	EVENT_TOO_MANY_TOKENS_REQUESTED: "EVENT_TOO_MANY_TOKENS_REQUESTED",
+	EVENT_BUCKET_MISS: "EVENT_BUCKET_MISS",
+	EVENT_BUCKET_CREATED: "EVENT_BUCKET_CREATED",
+	EVENT_BUCKET_REMOVED: "EVENT_BUCKET_REMOVED"}
+
 func (et EventType) String() string {
-	switch et {
-	case EVENT_TOKENS_SERVED:
-		return "EVENT_TOKENS_SERVED"
-	case EVENT_TIMEOUT_SERVING_TOKENS:
-		return "EVENT_TIMEOUT_SERVING_TOKENS"
-	case EVENT_TOO_MANY_TOKENS_REQUESTED:
-		return "EVENT_TOO_MANY_TOKENS_REQUESTED"
-	case EVENT_BUCKET_MISS:
-		return "EVENT_BUCKET_MISS"
-	case EVENT_BUCKET_CREATED:
-		return "EVENT_BUCKET_CREATED"
-	case EVENT_BUCKET_REMOVED:
-		return "EVENT_BUCKET_REMOVED"
+	name := eventNames[et]
+	if name == "" {
+		panic(fmt.Sprintf("Don't know event %d", et))
 	}
 
-	panic(fmt.Sprintf("Don't know event %v", et))
+	return name
 }
 
 type Event interface {
