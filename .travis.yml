@@ -10,9 +10,7 @@ services:
 before_script:
   - go vet $(go list ./... | grep -v /vendor/)
 
-gobuild_args:
-  - -race
-  - -v
+gobuild_args: -race -v
 
 install:
   - export GO15VENDOREXPERIMENT=1
