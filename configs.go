@@ -29,9 +29,9 @@ func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *Serv
 	return s
 }
 
-func (s *ServiceConfig) applyDefaults() *ServiceConfig {
+func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
 	if s.GlobalDefaultBucket != nil {
-		s.GlobalDefaultBucket.applyDefaults()
+		s.GlobalDefaultBucket.ApplyDefaults()
 	}
 
 	for name, ns := range s.Namespaces {
@@ -45,15 +45,15 @@ func (s *ServiceConfig) applyDefaults() *ServiceConfig {
 		}
 
 		if ns.DefaultBucket != nil {
-			ns.DefaultBucket.applyDefaults()
+			ns.DefaultBucket.ApplyDefaults()
 		}
 
 		if ns.DynamicBucketTemplate != nil {
-			ns.DynamicBucketTemplate.applyDefaults()
+			ns.DynamicBucketTemplate.ApplyDefaults()
 		}
 
 		for _, b := range ns.Buckets {
-			b.applyDefaults()
+			b.ApplyDefaults()
 		}
 	}
 
@@ -85,7 +85,7 @@ func (b *BucketConfig) String() string {
 	return fmt.Sprint(*b)
 }
 
-func (b *BucketConfig) applyDefaults() *BucketConfig {
+func (b *BucketConfig) ApplyDefaults() *BucketConfig {
 	if b.Size == 0 {
 		b.Size = 100
 	}
@@ -137,7 +137,7 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 	cfg.GlobalDefaultBucket = nil
 	yaml.Unmarshal(bytes, cfg)
 
-	return cfg.applyDefaults()
+	return cfg.ApplyDefaults()
 }
 
 func NewDefaultServiceConfig() *ServiceConfig {
