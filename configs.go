@@ -15,6 +15,7 @@ import (
 
 type ServiceConfig struct {
 	GlobalDefaultBucket *BucketConfig               `yaml:"global_default_bucket,flow"`
+	ListenerBufferSize  int                         `yaml:"listener_buffer_size,flow"`
 	Namespaces          map[string]*NamespaceConfig `yaml:",flow"`
 }
 
@@ -95,10 +96,13 @@ func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
 	return cfg
 }
 
+// TODO(manik) fluent cfg builder
+
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		GlobalDefaultBucket: NewDefaultBucketConfig(),
-		Namespaces:          make(map[string]*NamespaceConfig)}
+		NewDefaultBucketConfig(),
+		10000,
+		make(map[string]*NamespaceConfig)}
 }
 
 func NewDefaultNamespaceConfig() *NamespaceConfig {

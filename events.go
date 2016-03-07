@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice/logging"
+	"fmt"
 )
 
 type EventType int
 
 const (
+// TODO(manik) do we need a maxDebtReached event?
 	EVENT_TOKENS_SERVED EventType = iota
 	EVENT_TIMEOUT_SERVING_TOKENS
 	EVENT_TOO_MANY_TOKENS_REQUESTED
@@ -19,6 +21,25 @@ const (
 	EVENT_BUCKET_CREATED
 	EVENT_BUCKET_REMOVED
 )
+
+func (et EventType) String() string {
+	switch et {
+	case EVENT_TOKENS_SERVED:
+		return "EVENT_TOKENS_SERVED"
+	case EVENT_TIMEOUT_SERVING_TOKENS:
+		return "EVENT_TIMEOUT_SERVING_TOKENS"
+	case EVENT_TOO_MANY_TOKENS_REQUESTED:
+		return "EVENT_TOO_MANY_TOKENS_REQUESTED"
+	case EVENT_BUCKET_MISS:
+		return "EVENT_BUCKET_MISS"
+	case EVENT_BUCKET_CREATED:
+		return "EVENT_BUCKET_CREATED"
+	case EVENT_BUCKET_REMOVED:
+		return "EVENT_BUCKET_REMOVED"
+	}
+
+	panic(fmt.Sprintf("Don't know event %v", et))
+}
 
 type Event interface {
 	EventType() EventType
@@ -32,8 +53,7 @@ type Event interface {
 // EventProducer is a hook into the notification system, to inform listeners that certain events
 // take place.
 type EventProducer struct {
-	c        chan Event
-	listener Listener
+	c chan Event
 }
 
 func (e *EventProducer) Emit(event Event) {
@@ -45,22 +65,35 @@ func (e *EventProducer) Emit(event Event) {
 	}
 }
 
+func (ep *EventProducer) notifyListeners(l Listener) {
+	for event := range ep.c {
+		l(event)
+	}
+}
+
 type Listener func(details Event)
 
-func registerListener(listener Listener) *EventProducer {
+func registerListener(listener Listener, bufsize int) *EventProducer {
 	if listener == nil {
 		panic("Cannot register a nil listener")
 	}
 
-	return &EventProducer{
-		make(chan Event, 100000), // TODO(manik) queue size configurable
-		listener}
+	ep := &EventProducer{make(chan Event, bufsize)}
+
+	go ep.notifyListeners(listener)
+
+	return ep
 }
 
 type namedEvent struct {
 	eventType             EventType
 	namespace, bucketName string
 	dynamic               bool
+}
+
+func (n *namedEvent) String() string {
+	return fmt.Sprintf("namedEvent{type: %v, namespace: %v, name: %v, dynamic: %v, numTokens: %v, waitTime: %v}",
+		n.eventType, n.namespace, n.bucketName, n.dynamic, 0, 0)
 }
 
 func (n *namedEvent) EventType() EventType {
@@ -92,6 +125,11 @@ type tokenEvent struct {
 	numTokens int64
 }
 
+func (t *tokenEvent) String() string {
+	return fmt.Sprintf("tokenEvent{type: %v, namespace: %v, name: %v, dynamic: %v, numTokens: %v, waitTime: %v}",
+		t.namedEvent.eventType, t.namedEvent.namespace, t.namedEvent.bucketName, t.namedEvent.dynamic, t.numTokens, 0)
+}
+
 func (t *tokenEvent) NumTokens() int64 {
 	return t.numTokens
 }
@@ -101,6 +139,13 @@ type tokenWaitEvent struct {
 	waitTime time.Duration
 }
 
+func (t *tokenWaitEvent) String() string {
+	return fmt.Sprintf("tokenWaitEvent{type: %v, namespace: %v, name: %v, dynamic: %v, numTokens: %v, waitTime: %v}",
+		t.tokenEvent.namedEvent.eventType, t.tokenEvent.namedEvent.namespace,
+		t.tokenEvent.namedEvent.bucketName, t.tokenEvent.namedEvent.dynamic,
+		t.tokenEvent.numTokens, t.waitTime)
+}
+
 func (t *tokenWaitEvent) WaitTime() time.Duration {
 	return t.waitTime
 }
@@ -108,7 +153,7 @@ func (t *tokenWaitEvent) WaitTime() time.Duration {
 func newTokensServedEvent(namespace, bucketName string, dynamic bool, numTokens int64, waitTime time.Duration) Event {
 	return &tokenWaitEvent{
 		tokenEvent: &tokenEvent{
-			namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TIMEOUT_SERVING_TOKENS),
+			namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TOKENS_SERVED),
 			numTokens:  numTokens},
 		waitTime: waitTime}
 }

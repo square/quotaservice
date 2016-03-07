@@ -12,18 +12,21 @@ import (
 
 // Mock objects
 type mockBucket struct {
+	retval                time.Duration
+	active                bool
 	namespace, bucketName string
 	dyn                   bool
+	cfg                   *BucketConfig
 }
 
 func (b *mockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
-	return 0
+	return b.retval
 }
 func (b *mockBucket) Config() *BucketConfig {
-	return nil
+	return b.cfg
 }
 func (b *mockBucket) ActivityDetected() bool {
-	return true
+	return b.active
 }
 func (b *mockBucket) ReportActivity() {}
 func (b *mockBucket) Dynamic() bool {
@@ -31,11 +34,27 @@ func (b *mockBucket) Dynamic() bool {
 }
 func (b *mockBucket) Destroy() {}
 
-type mockBucketFactory struct{}
+type mockBucketFactory struct {
+	buckets map[string]*mockBucket
+}
 
-func (bf mockBucketFactory) Init(cfg *ServiceConfig) {}
-func (bf mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *BucketConfig, dyn bool) Bucket {
-	return &mockBucket{namespace: namespace, bucketName: bucketName, dyn: dyn}
+func (bf *mockBucketFactory) SetRetval(namespace, name string, d time.Duration) {
+	bf.buckets[FullyQualifiedName(namespace, name)].retval = d
+}
+
+func (bf *mockBucketFactory) MarkForGC(namespace, name string) {
+	bf.buckets[FullyQualifiedName(namespace, name)].active = false
+}
+
+func (bf *mockBucketFactory) Init(cfg *ServiceConfig) {}
+func (bf *mockBucketFactory) NewBucket(namespace string, bucketName string, cfg *BucketConfig, dyn bool) Bucket {
+	b := &mockBucket{0, true, namespace, bucketName, dyn, cfg}
+	if bf.buckets == nil {
+		bf.buckets = make(map[string]*mockBucket)
+	}
+
+	bf.buckets[FullyQualifiedName(namespace, bucketName)] = b
+	return b
 }
 
 var cfg = func() *ServiceConfig {
