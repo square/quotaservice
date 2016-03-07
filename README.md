@@ -442,6 +442,7 @@ Metrics can be implemented by attaching an event listener and collecting data fr
 The following configuration elements need to be provided to the quota service:
 
 * Global:
+    * Listener buffer size (default: `10000`)
     * Global default bucket settings (*disabled if unset*)
 
 * For each namespace:
