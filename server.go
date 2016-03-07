@@ -77,7 +77,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		return
 	}
 
-	if b.Config().MaxTokensPerRequest < tokensRequested {
+	if b.Config().MaxTokensPerRequest < tokensRequested && b.Config().MaxTokensPerRequest > 0 {
 		err = newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
