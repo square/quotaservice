@@ -7,6 +7,9 @@ go:
 services:
   - redis-server
 
+before_script:
+  - go vet $(go list ./... | grep -v /vendor/)
+
 install:
   - export GO15VENDOREXPERIMENT=1
 
