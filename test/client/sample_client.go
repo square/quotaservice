@@ -5,11 +5,12 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	pb "github.com/maniksurtani/quotaservice/protos"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"golang.org/x/net/context"
-	pb "github.com/maniksurtani/quotaservice/protos"
-	"github.com/golang/protobuf/proto"
 )
 
 func main() {
@@ -26,8 +27,8 @@ func main() {
 	client := pb.NewQuotaServiceClient(conn)
 
 	req := &pb.AllowRequest{
-		Namespace: proto.String("test.namespace"),
-		Name: proto.String("abc"),
+		Namespace:          proto.String("test.namespace"),
+		Name:               proto.String("abc"),
 		NumTokensRequested: proto.Int64(1)}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {
@@ -36,4 +37,3 @@ func main() {
 		fmt.Printf("Got response %v", rsp)
 	}
 }
-

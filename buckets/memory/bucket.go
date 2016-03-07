@@ -23,14 +23,14 @@ func (bf *bucketFactory) Init(cfg *quotaservice.ServiceConfig) {
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *quotaservice.BucketConfig, dyn bool) quotaservice.Bucket {
 	// fill rate is tokens-per-second.
 	bucket := &tokenBucket{
-		ActivityChannel: quotaservice.NewActivityChannel(),
-		dynamic: dyn,
-		cfg: cfg,
+		ActivityChannel:    quotaservice.NewActivityChannel(),
+		dynamic:            dyn,
+		cfg:                cfg,
 		nanosBetweenTokens: 1e9 / cfg.FillRate,
-		accumulatedTokens: cfg.Size, // Start full
-		fullName: quotaservice.FullyQualifiedName(namespace, bucketName),
-		waitTimer: make(chan *waitTimeReq),
-		closer: make(chan struct{})}
+		accumulatedTokens:  cfg.Size, // Start full
+		fullName:           quotaservice.FullyQualifiedName(namespace, bucketName),
+		waitTimer:          make(chan *waitTimeReq),
+		closer:             make(chan struct{})}
 
 	go bucket.waitTimeLoop()
 
@@ -48,14 +48,14 @@ func NewBucketFactory() quotaservice.BucketFactory {
 // served, but new requests will not.
 type tokenBucket struct {
 	quotaservice.ActivityChannel
-	dynamic           bool
-	cfg               *quotaservice.BucketConfig
+	dynamic bool
+	cfg     *quotaservice.BucketConfig
 	nanosBetweenTokens,
 	tokensNextAvailableNanos,
 	accumulatedTokens int64
-	fullName          string
-	waitTimer         chan *waitTimeReq
-	closer            chan struct{}
+	fullName  string
+	waitTimer chan *waitTimeReq
+	closer    chan struct{}
 }
 
 // waitTimeReq is a request that you put on the channel for the waitTimer goroutine to pick up and
@@ -87,7 +87,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 
 	if currentTimeNanos > tna {
 		freshTokens = (currentTimeNanos - tna) / b.nanosBetweenTokens
-		ac = min(b.cfg.Size, ac + freshTokens)
+		ac = min(b.cfg.Size, ac+freshTokens)
 		tna = currentTimeNanos
 	}
 
@@ -99,7 +99,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 	tna += futureWaitNanos
 	ac -= accumulatedTokensUsed
 
-	if (tna - currentTimeNanos > b.cfg.MaxDebtMillis * 1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos && maxWaitTimeNanos > 0) {
+	if (tna-currentTimeNanos > b.cfg.MaxDebtMillis*1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos && maxWaitTimeNanos > 0) {
 		waitTimeNanos = -1
 	} else {
 		b.tokensNextAvailableNanos = tna

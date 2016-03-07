@@ -4,14 +4,15 @@
 package main
 
 import (
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/rpc/grpc"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"sync"
+	"syscall"
+
+	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/buckets/memory"
+	"github.com/maniksurtani/quotaservice/rpc/grpc"
 )
 
 func main() {
