@@ -16,14 +16,17 @@ import (
 
 func main() {
 	cfg := quotaservice.NewDefaultServiceConfig()
-	cfg.Namespaces["test.namespace"] = quotaservice.NewDefaultNamespaceConfig()
-	cfg.Namespaces["test.namespace"].DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
-	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.Size = 100000000000
-	cfg.Namespaces["test.namespace"].DynamicBucketTemplate.FillRate = 100000000
-	cfg.Namespaces["test.namespace"].Buckets["xyz"] = quotaservice.NewDefaultBucketConfig()
-	cfg.Namespaces["test.namespace2"] = quotaservice.NewDefaultNamespaceConfig()
-	cfg.Namespaces["test.namespace2"].DefaultBucket = quotaservice.NewDefaultBucketConfig()
-	cfg.Namespaces["test.namespace2"].Buckets["xyz"] = quotaservice.NewDefaultBucketConfig()
+	ns := quotaservice.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
+	ns.DynamicBucketTemplate.Size = 100000000000
+	ns.DynamicBucketTemplate.FillRate = 100000000
+	ns.AddBucket("xyz", quotaservice.NewDefaultBucketConfig())
+	cfg.AddNamespace("test.namespace", ns)
+
+	ns = quotaservice.NewDefaultNamespaceConfig()
+	ns.DefaultBucket = quotaservice.NewDefaultBucketConfig()
+	ns.AddBucket("xyz", quotaservice.NewDefaultBucketConfig())
+	cfg.AddNamespace("test.namespace2", ns)
 
 	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
 	server.Start()

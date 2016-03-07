@@ -24,11 +24,52 @@ func (s *ServiceConfig) String() string {
 		s.GlobalDefaultBucket, s.Namespaces)
 }
 
+func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *ServiceConfig {
+	s.Namespaces[namespace] = n
+	return s
+}
+
+func (s *ServiceConfig) applyDefaults() *ServiceConfig {
+	if s.GlobalDefaultBucket != nil {
+		s.GlobalDefaultBucket.applyDefaults()
+	}
+
+	for name, ns := range s.Namespaces {
+		if ns.DefaultBucket != nil && ns.DynamicBucketTemplate != nil {
+			panic(fmt.Sprintf("Namespace %v is not allowed to have a default bucket as well as allow dynamic buckets.", name))
+		}
+
+		// Ensure the namespace's bucket map exists.
+		if ns.Buckets == nil {
+			ns.Buckets = make(map[string]*BucketConfig)
+		}
+
+		if ns.DefaultBucket != nil {
+			ns.DefaultBucket.applyDefaults()
+		}
+
+		if ns.DynamicBucketTemplate != nil {
+			ns.DynamicBucketTemplate.applyDefaults()
+		}
+
+		for _, b := range ns.Buckets {
+			b.applyDefaults()
+		}
+	}
+
+	return s
+}
+
 type NamespaceConfig struct {
 	DefaultBucket         *BucketConfig            `yaml:"default_bucket,flow"`
 	DynamicBucketTemplate *BucketConfig            `yaml:"dynamic_bucket_template,flow"`
 	MaxDynamicBuckets     int                      `yaml:"max_dynamic_buckets"`
 	Buckets               map[string]*BucketConfig `yaml:",flow"`
+}
+
+func (n *NamespaceConfig) AddBucket(name string, b *BucketConfig) *NamespaceConfig {
+	n.Buckets[name] = b
+	return n
 }
 
 type BucketConfig struct {
@@ -42,6 +83,34 @@ type BucketConfig struct {
 
 func (b *BucketConfig) String() string {
 	return fmt.Sprint(*b)
+}
+
+func (b *BucketConfig) applyDefaults() *BucketConfig {
+	if b.Size == 0 {
+		b.Size = 100
+	}
+
+	if b.FillRate == 0 {
+		b.FillRate = 50
+	}
+
+	if b.WaitTimeoutMillis == 0 {
+		b.WaitTimeoutMillis = 1000
+	}
+
+	if b.MaxIdleMillis == 0 {
+		b.MaxIdleMillis = -1
+	}
+
+	if b.MaxDebtMillis == 0 {
+		b.MaxDebtMillis = 10000
+	}
+
+	if b.MaxTokensPerRequest == 0 {
+		b.MaxTokensPerRequest = b.FillRate
+	}
+
+	return b
 }
 
 func ReadConfigFromFile(filename string) *ServiceConfig {
@@ -68,35 +137,8 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 	cfg.GlobalDefaultBucket = nil
 	yaml.Unmarshal(bytes, cfg)
 
-	return ApplyDefaults(cfg)
+	return cfg.applyDefaults()
 }
-
-func ApplyDefaults(cfg *ServiceConfig) *ServiceConfig {
-	applyBucketDefaults(cfg.GlobalDefaultBucket)
-
-	for name, ns := range cfg.Namespaces {
-		if ns.DefaultBucket != nil && ns.DynamicBucketTemplate != nil {
-			panic(fmt.Sprintf("Namespace %v is not allowed to have a default bucket as well as allow dynamic buckets.", name))
-		}
-
-		// Ensure the namespace's bucket map exists.
-		if ns.Buckets == nil {
-			ns.Buckets = make(map[string]*BucketConfig)
-		}
-
-		applyBucketDefaults(ns.DefaultBucket)
-		applyBucketDefaults(ns.DynamicBucketTemplate)
-
-		for _, b := range ns.Buckets {
-			applyBucketDefaults(b)
-		}
-	}
-
-	logging.Printf("Read config %+v", cfg)
-	return cfg
-}
-
-// TODO(manik) fluent cfg builder
 
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
@@ -111,32 +153,4 @@ func NewDefaultNamespaceConfig() *NamespaceConfig {
 
 func NewDefaultBucketConfig() *BucketConfig {
 	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1, MaxDebtMillis: 10000}
-}
-
-func applyBucketDefaults(b *BucketConfig) {
-	if b != nil {
-		if b.Size == 0 {
-			b.Size = 100
-		}
-
-		if b.FillRate == 0 {
-			b.FillRate = 50
-		}
-
-		if b.WaitTimeoutMillis == 0 {
-			b.WaitTimeoutMillis = 1000
-		}
-
-		if b.MaxIdleMillis == 0 {
-			b.MaxIdleMillis = -1
-		}
-
-		if b.MaxDebtMillis == 0 {
-			b.MaxDebtMillis = 10000
-		}
-
-		if b.MaxTokensPerRequest == 0 {
-			b.MaxTokensPerRequest = b.FillRate
-		}
-	}
 }

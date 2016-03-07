@@ -31,14 +31,21 @@ func TestMain(m *testing.M) {
 func setUp() {
 	cfg := NewDefaultServiceConfig()
 	cfg.GlobalDefaultBucket = NewDefaultBucketConfig()
-	cfg.Namespaces["dyn"] = NewDefaultNamespaceConfig()
-	cfg.Namespaces["dyn"].DynamicBucketTemplate = NewDefaultBucketConfig()
-	cfg.Namespaces["dyn"].DynamicBucketTemplate.MaxTokensPerRequest = 5
-	cfg.Namespaces["dyn"].MaxDynamicBuckets = 3
-	cfg.Namespaces["dyn"].DynamicBucketTemplate.MaxIdleMillis = 100
-	cfg.Namespaces["nodyn"] = NewDefaultNamespaceConfig()
-	cfg.Namespaces["nodyn"].Buckets["b"] = NewDefaultBucketConfig()
-	cfg.Namespaces["nodyn"].Buckets["b"].MaxTokensPerRequest = 10
+
+	// Namespace "dyn"
+	ns := NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
+	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
+	ns.DynamicBucketTemplate.MaxIdleMillis = 100
+	ns.MaxDynamicBuckets = 3
+	cfg.AddNamespace("dyn", ns)
+
+	// Namespace "nodyn"
+	ns = NewDefaultNamespaceConfig()
+	b := NewDefaultBucketConfig()
+	b.MaxTokensPerRequest = 10
+	ns.AddBucket("b", b)
+	cfg.AddNamespace("nodyn", ns)
 
 	mbf = &mockBucketFactory{}
 	s = New(cfg, mbf, &endpoint{&mockEndpoint{}})

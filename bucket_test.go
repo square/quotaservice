@@ -60,20 +60,29 @@ func (bf *mockBucketFactory) NewBucket(namespace string, bucketName string, cfg 
 var cfg = func() *ServiceConfig {
 	c := NewDefaultServiceConfig()
 	c.GlobalDefaultBucket = NewDefaultBucketConfig()
-	c.Namespaces["x"] = NewDefaultNamespaceConfig()
-	c.Namespaces["x"].DefaultBucket = NewDefaultBucketConfig()
-	c.Namespaces["x"].Buckets["a"] = NewDefaultBucketConfig()
 
-	c.Namespaces["y"] = NewDefaultNamespaceConfig()
-	c.Namespaces["y"].DynamicBucketTemplate = NewDefaultBucketConfig()
-	c.Namespaces["y"].Buckets["a"] = NewDefaultBucketConfig()
+	// Namespace "x"
+	ns := NewDefaultNamespaceConfig()
+	ns.DefaultBucket = NewDefaultBucketConfig()
+	ns.AddBucket("a", NewDefaultBucketConfig())
+	c.AddNamespace("x", ns)
 
-	c.Namespaces["z"] = NewDefaultNamespaceConfig()
-	c.Namespaces["z"].MaxDynamicBuckets = 5
-	c.Namespaces["z"].DynamicBucketTemplate = NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["a"] = NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["b"] = NewDefaultBucketConfig()
-	c.Namespaces["z"].Buckets["c"] = NewDefaultBucketConfig()
+	// Namespace "y"
+	ns = NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
+	ns.AddBucket("a", NewDefaultBucketConfig())
+	c.AddNamespace("y", ns)
+
+	// Namespace "z"
+	ns = NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
+	ns.MaxDynamicBuckets = 5
+	ns.
+	AddBucket("a", NewDefaultBucketConfig()).
+	AddBucket("b", NewDefaultBucketConfig()).
+	AddBucket("c", NewDefaultBucketConfig())
+	c.AddNamespace("z", ns)
+
 	return c
 }()
 
