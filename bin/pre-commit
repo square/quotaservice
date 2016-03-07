@@ -29,7 +29,7 @@ if [ $runtests ] ; then
     echo "${RED}Refusing to commit.${NO_COLOUR}"
     exit 1
   else
-	  go test -race -v $(go list ./... | grep -v /vendor/) > /tmp/qstests.out 2>&1
+	  go test -v $(go list ./... | grep -v /vendor/) > /tmp/qstests.out 2>&1
     if [ $? -ne 0 ] ; then
       cat /tmp/qstests.out | perl -pe 's/--- /\n/' | grep -e '^FAIL'
       echo
