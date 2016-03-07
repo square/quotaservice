@@ -49,11 +49,11 @@ In order of priority.
 * Statically configure the service via a YAML configuration file.
 * Explicit calls to the quota service's API on whether an RPC should be allowed to proceed or not. Services are expected to use this API *before* actually making the RPC it needs to make.
 * Weighted quotas.
+* Expose a listener on the server, so events can be tracked and statistics gathered.
 
 ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Naïve client(s) that integrate with gRPC.
-* Expose metrics on the server, tracking rates of denials/throttling.
 
 ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
 * Smart client, with client-side buckets and asynchronous, bulk token updates from the quota service.
@@ -393,18 +393,49 @@ type Logger interface {
 ```
 
 
-## Metrics
+## Listeners
 
-If enabled, metrics are gathered and exported via a `Metrics` interface. `Metrics` can be queried for data and published to monitoring systems, and exposes the following information, per token bucket, as well as for the default bucket:
+Listeners can be attached, to be notified of events that take place, such as:
 
-* Pass rate
-* Throttle rate
-* Timeout rate
-* Overall response time histogram
-* Pass-only response time histogram
-* Volume by caller
+* Tokens served (including whether a wait time was imposed)
+* Tokens not served due to:
+  * Timeout (max wait exceeded wait time imposed)
+  * Too many tokens requested
+  * Bucket miss (non-existent, or too many dynamic buckets)
+  * Dynamic bucket created
+  * Bucket removed (garbage-collected)
 
-Histograms are a high-fidelity [implementation](https://github.com/codahale/hdrhistogram), based on Gil Tene’s [HDRHistogram](https://github.com/HdrHistogram/HdrHistogram/blob/master/README.md).
+Each event callback passes the caller the following details:
+
+```go
+type Event interface {
+	EventType() EventType
+	Namespace() string
+	BucketName() string
+	Dynamic() bool
+	NumTokens() int64
+	WaitTime() time.Duration
+}
+```
+
+where `EventType` is defined as:
+
+```go
+type EventType int
+
+const (
+	EVENT_TOKENS_SERVED EventType = iota
+	EVENT_TIMEOUT_SERVING_TOKENS
+	EVENT_TOO_MANY_TOKENS_REQUESTED
+	EVENT_BUCKET_MISS
+	EVENT_BUCKET_CREATED
+	EVENT_BUCKET_REMOVED
+)
+
+```
+
+### Metrics
+Metrics can be implemented by attaching an event listener and collecting data from the event.
 
 ## Configuration
 
@@ -412,7 +443,6 @@ The following configuration elements need to be provided to the quota service:
 
 * Global:
     * Global default bucket settings (*disabled if unset*)
-    * Metrics enabled (`true` | `false`)
 
 * For each namespace:
     * Namespace default bucket settings (*disabled if unset*)
