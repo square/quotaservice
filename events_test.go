@@ -45,7 +45,7 @@ func setUp() {
 	events = make(chan Event, 100)
 	s.SetListener(func(e Event) {
 		events <- e
-	})
+	}, 100)
 	s.Start()
 	qs = me.QuotaService
 	// New buckets would have been created. Clear all notifications.

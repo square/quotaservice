@@ -15,7 +15,7 @@ type Server interface {
 	Stop() (bool, error)
 	SetLogger(logger logging.Logger)
 	ServeAdminConsole(mux *http.ServeMux)
-	SetListener(listener Listener)
+	SetListener(listener Listener, eventQueueBufSize int)
 }
 
 // NewFromFile creates a new quotaservice server.

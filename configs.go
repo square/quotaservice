@@ -11,12 +11,14 @@ import (
 
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/yaml.v2"
+	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/golang/protobuf/proto"
 )
 
 type ServiceConfig struct {
 	GlobalDefaultBucket *BucketConfig               `yaml:"global_default_bucket,flow"`
-	ListenerBufferSize  int                         `yaml:"listener_buffer_size,flow"`
 	Namespaces          map[string]*NamespaceConfig `yaml:",flow"`
+	Version             int
 }
 
 func (s *ServiceConfig) String() string {
@@ -27,6 +29,13 @@ func (s *ServiceConfig) String() string {
 func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *ServiceConfig {
 	s.Namespaces[namespace] = n
 	return s
+}
+
+func (s *ServiceConfig) ToProto() *pb.ServiceConfig {
+	return &pb.ServiceConfig{
+		Version: proto.Int(s.Version),
+		GlobalDefaultBucket: bucketToProto(defaultBucketName, s.GlobalDefaultBucket),
+		Namespaces: namespaceMapToProto(s.Namespaces)}
 }
 
 func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
@@ -72,6 +81,15 @@ func (n *NamespaceConfig) AddBucket(name string, b *BucketConfig) *NamespaceConf
 	return n
 }
 
+func (n *NamespaceConfig) ToProto(name string) *pb.NamespaceConfig {
+	return &pb.NamespaceConfig{
+		DefaultBucket: bucketToProto(defaultBucketName, n.DefaultBucket),
+		DynamicBucketTemplate: bucketToProto(dynamicBucketTemplateName, n.DynamicBucketTemplate),
+		MaxDynamicBuckets: proto.Int(n.MaxDynamicBuckets),
+		Buckets: bucketMapToProto(n.Buckets),
+		Name: proto.String(name)}
+}
+
 type BucketConfig struct {
 	Size                int64
 	FillRate            int64 `yaml:"fill_rate"`
@@ -83,6 +101,17 @@ type BucketConfig struct {
 
 func (b *BucketConfig) String() string {
 	return fmt.Sprint(*b)
+}
+
+func (b *BucketConfig) ToProto(name string) *pb.BucketConfig {
+	return &pb.BucketConfig{
+		Size: proto.Int64(b.Size),
+		FillRate: proto.Int64(b.FillRate),
+		WaitTimeoutMillis: proto.Int64(b.WaitTimeoutMillis),
+		MaxIdleMillis: proto.Int64(b.MaxIdleMillis),
+		MaxDebtMillis: proto.Int64(b.MaxDebtMillis),
+		MaxTokensPerRequest: proto.Int64(b.MaxTokensPerRequest),
+		Name: proto.String(name)}
 }
 
 func (b *BucketConfig) ApplyDefaults() *BucketConfig {
@@ -143,8 +172,8 @@ func readConfigFromBytes(bytes []byte) *ServiceConfig {
 func NewDefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
 		NewDefaultBucketConfig(),
-		10000,
-		make(map[string]*NamespaceConfig)}
+		make(map[string]*NamespaceConfig),
+		0}
 }
 
 func NewDefaultNamespaceConfig() *NamespaceConfig {
@@ -153,4 +182,96 @@ func NewDefaultNamespaceConfig() *NamespaceConfig {
 
 func NewDefaultBucketConfig() *BucketConfig {
 	return &BucketConfig{Size: 100, FillRate: 50, WaitTimeoutMillis: 1000, MaxIdleMillis: -1, MaxDebtMillis: 10000}
+}
+
+// Helpers to read to and write from proto representations
+func bucketToProto(name string, b *BucketConfig) *pb.BucketConfig {
+	if b == nil {
+		return nil
+	}
+
+	return b.ToProto(name)
+}
+
+func bucketMapToProto(buckets map[string]*BucketConfig) []*pb.BucketConfig {
+	slice := make([]*pb.BucketConfig, len(buckets))
+	i := 0
+	for n, b := range buckets {
+		slice[i] = bucketToProto(n, b)
+		i++
+	}
+
+	return slice
+}
+
+func namespaceMapToProto(namespaces map[string]*NamespaceConfig) []*pb.NamespaceConfig {
+	slice := make([]*pb.NamespaceConfig, len(namespaces))
+	i := 0
+	for n, nsp := range namespaces {
+		slice[i] = nsp.ToProto(n)
+		i++
+	}
+
+	return slice
+}
+
+func FromProto(cfg *pb.ServiceConfig) *ServiceConfig {
+	_, globalBucket := bucketFromProto(cfg.GlobalDefaultBucket)
+	return &ServiceConfig{
+		GlobalDefaultBucket: globalBucket,
+		Version: int(cfg.GetVersion()),
+		Namespaces: namespacesFromProto(cfg.Namespaces)}
+}
+
+func bucketsFromProto(cfgs []*pb.BucketConfig) map[string]*BucketConfig {
+	buckets := make(map[string]*BucketConfig, len(cfgs))
+	for _, cfg := range cfgs {
+		n, b := bucketFromProto(cfg)
+		if b != nil {
+			buckets[n] = b
+		}
+	}
+
+	return buckets
+}
+
+func bucketFromProto(cfg *pb.BucketConfig) (name string, b *BucketConfig) {
+	if cfg == nil {
+		return "", nil
+	}
+
+	return cfg.GetName(), &BucketConfig{
+		Size: cfg.GetSize(),
+		FillRate: cfg.GetFillRate(),
+		WaitTimeoutMillis: cfg.GetWaitTimeoutMillis(),
+		MaxIdleMillis: cfg.GetMaxIdleMillis(),
+		MaxDebtMillis: cfg.GetMaxDebtMillis(),
+		MaxTokensPerRequest: cfg.GetMaxTokensPerRequest()}
+}
+
+func namespacesFromProto(cfgs []*pb.NamespaceConfig) map[string]*NamespaceConfig {
+	namespaces := make(map[string]*NamespaceConfig, len(cfgs))
+	for _, cfg := range cfgs {
+		n, ns := namespaceFromProto(cfg)
+		if ns != nil {
+			namespaces[n] = ns
+		}
+	}
+
+	return namespaces
+}
+
+func namespaceFromProto(cfg *pb.NamespaceConfig) (name string, n *NamespaceConfig) {
+	if cfg == nil {
+		return "", nil
+	}
+
+	_, defaultBucket := bucketFromProto(cfg.DefaultBucket)
+	_, dynamicBucketTemplate := bucketFromProto(cfg.DynamicBucketTemplate)
+
+	return cfg.GetName(), &NamespaceConfig{
+		DefaultBucket: defaultBucket,
+		DynamicBucketTemplate: dynamicBucketTemplate,
+		MaxDynamicBuckets: int(cfg.GetMaxDynamicBuckets()),
+		Buckets: bucketsFromProto(cfg.Buckets)}
 }

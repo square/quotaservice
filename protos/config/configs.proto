@@ -1,0 +1,44 @@
+/*
+ *   Copyright 2016 Manik Surtani
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
+
+syntax = "proto2";
+
+package quotaservice.configs;
+
+// Representations of configuration elements, for persisting and sharing across nodes.
+message ServiceConfig {
+  optional BucketConfig global_default_bucket = 1;
+  repeated NamespaceConfig namespaces = 2;
+  optional int32 version = 3;
+}
+
+message NamespaceConfig {
+  optional string name = 1;
+  optional BucketConfig default_bucket = 2;
+  optional BucketConfig dynamic_bucket_template = 3;
+  optional int32 max_dynamic_buckets = 4;
+  repeated BucketConfig buckets = 5;
+}
+
+message BucketConfig {
+  optional string name = 1;
+  optional int64 size = 2;
+  optional int64 fill_rate = 3;
+  optional int64 wait_timeout_millis = 4;
+  optional int64 max_idle_millis = 5;
+  optional int64 max_debt_millis = 6;
+  optional int64 max_tokens_per_request = 7;
+}

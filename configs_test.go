@@ -5,10 +5,11 @@ package quotaservice
 
 import (
 	"testing"
+	"reflect"
+	"fmt"
 )
 
-func TestConfig(t *testing.T) {
-	yaml := `namespaces:
+const cfgYaml = `namespaces:
   no_default_no_dynamic:
     buckets:
       one:
@@ -32,7 +33,8 @@ func TestConfig(t *testing.T) {
       max_idle_millis: 40000
 `
 
-	cfg := readConfigFromBytes([]byte(yaml))
+func TestConfig(t *testing.T) {
+	cfg := readConfigFromBytes([]byte(cfgYaml))
 
 	if cfg.GlobalDefaultBucket != nil {
 		t.Fatal("Did not configure a global default bucket")
@@ -113,4 +115,94 @@ func TestNonexistentFile(t *testing.T) {
 	ExpectingPanic(t, func() {
 		_ = ReadConfigFromFile("/does/not/exist")
 	})
+}
+
+func TestToAndFromProtos(t *testing.T) {
+	osc := readConfigFromBytes([]byte(cfgYaml))
+	p := osc.ToProto()
+	fmt.Println("Generated proto: ", p)
+	recreated := FromProto(p)
+
+	if osc.Version != recreated.Version {
+		t.Fatal("version field mismatch")
+	}
+
+	testBuckets(t, defaultBucketName, osc.GlobalDefaultBucket, recreated.GlobalDefaultBucket)
+
+	if len(osc.Namespaces) != len(recreated.Namespaces) {
+		t.Fatal("Different number of namespaces")
+	}
+
+	for n, n1 := range osc.Namespaces {
+		n2 := recreated.Namespaces[n]
+		if n2 == nil {
+			t.Fatalf("Namespace %v doesn't exist on replica", n)
+		}
+
+		testNamespaces(t, n, n1, n2)
+	}
+}
+
+func testBuckets(t *testing.T, name string, b1, b2 *BucketConfig) {
+	fmt.Printf("    Testing bucket %v\n", name)
+
+	if bothNils(t, b1, b2) {
+		return
+	}
+
+	if b1.FillRate != b2.FillRate {
+		t.Fatal("Fill rate mismatch")
+	}
+	if b1.Size != b2.Size {
+		t.Fatal("Size mismatch")
+	}
+	if b1.MaxDebtMillis != b2.MaxDebtMillis {
+		t.Fatal("MaxDebtMillis mismatch")
+	}
+	if b1.MaxIdleMillis != b2.MaxIdleMillis {
+		t.Fatal("MaxIdleMillis mismatch")
+	}
+	if b1.MaxTokensPerRequest != b2.MaxTokensPerRequest {
+		t.Fatal("MaxTokensPerRequest mismatch")
+	}
+	if b1.WaitTimeoutMillis != b2.WaitTimeoutMillis {
+		t.Fatal("WaitTimeoutMillis mismatch")
+	}
+}
+
+func testNamespaces(t *testing.T, name string, n1, n2 *NamespaceConfig) {
+	fmt.Printf("  Testing namespace %v\n", name)
+
+	if bothNils(t, n1, n2) {
+		return
+	}
+
+	if n1.MaxDynamicBuckets != n2.MaxDynamicBuckets {
+		t.Fatal("MaxDynamicBuckets mismatch")
+	}
+	testBuckets(t, defaultBucketName, n1.DefaultBucket, n2.DefaultBucket)
+	testBuckets(t, dynamicBucketTemplateName, n1.DynamicBucketTemplate, n2.DynamicBucketTemplate)
+
+	if len(n1.Buckets) != len(n2.Buckets) {
+		t.Fatal("Different number of buckets")
+	}
+
+	for n, b1 := range n1.Buckets {
+		b2 := n2.Buckets[n]
+		if b2 == nil {
+			t.Fatalf("Bucket %v doesn't exist on namespace", n)
+		}
+
+		testBuckets(t, n, b1, b2)
+	}
+}
+
+func bothNils(t *testing.T, o1, o2 interface{}) bool {
+	if (o1 == nil && o2 == nil) || (reflect.ValueOf(o1).IsNil() && reflect.ValueOf(o2).IsNil()) {
+		return true
+	}
+	if (o1 == nil || reflect.ValueOf(o1).IsNil()) || (o2 == nil || reflect.ValueOf(o2).IsNil()) {
+		t.Fatalf("o1 = %+v ; o2 = %+v", o1, o2)
+	}
+	return false
 }

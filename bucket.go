@@ -17,6 +17,7 @@ import (
 const (
 	globalNamespace = "___GLOBAL___"
 	defaultBucketName = "___DEFAULT_BUCKET___"
+	dynamicBucketTemplateName = "___DYNAMIC_BUCKET_TPL___"
 )
 
 // bucketContainer is a holder for configurations and bucket factories.

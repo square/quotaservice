@@ -15,14 +15,15 @@ import (
 
 // Implements the quotaservice.Server interface
 type server struct {
-	cfgs            *ServiceConfig
-	currentStatus   lifecycle.Status
-	stopper         *chan int
-	bucketContainer *bucketContainer
-	bucketFactory   BucketFactory
-	rpcEndpoints    []RpcEndpoint
-	listener        Listener
-	producer        *EventProducer
+	cfgs              *ServiceConfig
+	currentStatus     lifecycle.Status
+	stopper           *chan int
+	bucketContainer   *bucketContainer
+	bucketFactory     BucketFactory
+	rpcEndpoints      []RpcEndpoint
+	listener          Listener
+	eventQueueBufSize int
+	producer          *EventProducer
 }
 
 func (s *server) String() string {
@@ -32,7 +33,7 @@ func (s *server) String() string {
 func (s *server) Start() (bool, error) {
 	// Set up listeners
 	if s.listener != nil {
-		s.producer = registerListener(s.listener, s.cfgs.ListenerBufferSize)
+		s.producer = registerListener(s.listener, s.eventQueueBufSize)
 	}
 
 	// Initialize buckets
@@ -118,11 +119,17 @@ func (s *server) SetLogger(logger logging.Logger) {
 	logging.SetLogger(logger)
 }
 
-func (s *server) SetListener(listener Listener) {
+func (s *server) SetListener(listener Listener, eventQueueBufSize int) {
 	if s.currentStatus == lifecycle.Started {
 		panic("Cannot add listener after server has started!")
 	}
+
+	if eventQueueBufSize < 1 {
+		panic("Event queue buffer size must be greater than 0")
+	}
+
 	s.listener = listener
+	s.eventQueueBufSize = eventQueueBufSize
 }
 
 // Implements admin.Administrable
