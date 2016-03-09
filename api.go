@@ -14,7 +14,7 @@ type Server interface {
 	Start() (bool, error)
 	Stop() (bool, error)
 	SetLogger(logger logging.Logger)
-	ServeAdminConsole(mux *http.ServeMux)
+	ServeAdminConsole(mux *http.ServeMux, assetsDirectory string)
 	SetListener(listener Listener, eventQueueBufSize int)
 }
 

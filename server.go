@@ -108,8 +108,8 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	return
 }
 
-func (s *server) ServeAdminConsole(mux *http.ServeMux) {
-	admin.ServeAdminConsole(s, mux)
+func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string) {
+	admin.ServeAdminConsole(s, mux, assetsDir)
 }
 
 func (s *server) SetLogger(logger logging.Logger) {

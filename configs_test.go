@@ -130,7 +130,7 @@ func TestToAndFromProtos(t *testing.T) {
 	testBuckets(t, defaultBucketName, osc.GlobalDefaultBucket, recreated.GlobalDefaultBucket)
 
 	if len(osc.Namespaces) != len(recreated.Namespaces) {
-		t.Fatal("Different number of namespaces")
+		t.Fatalf("Different number of namespaces. Original %v, recreated %v", len(osc.Namespaces), len(recreated.Namespaces))
 	}
 
 	for n, n1 := range osc.Namespaces {
