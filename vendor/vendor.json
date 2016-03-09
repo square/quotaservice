@@ -3,11 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "github.com/codahale/hdrhistogram",
-			"revision": "2da969979c0dd5cda296463b05293e775bc3b5be",
-			"revisionTime": "2016-01-31T11:50:05-08:00"
-		},
-		{
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "68415e7123da32b07eab49c96d2c4d6158360e9b",
 			"revisionTime": "2015-12-07T15:07:14+11:00"
