@@ -12,8 +12,9 @@ import (
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
 
-	pb "github.com/maniksurtani/quotaservice/protos/config"
 	"errors"
+
+	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Implements the quotaservice.Server interface
@@ -27,6 +28,7 @@ type server struct {
 	listener          Listener
 	eventQueueBufSize int
 	producer          *EventProducer
+	p                 admin.ConfigPersister
 }
 
 func (s *server) String() string {
@@ -68,7 +70,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		err = newError("Cannot create dynamic bucket " + FullyQualifiedName(namespace, name),
+		err = newError("Cannot create dynamic bucket "+FullyQualifiedName(namespace, name),
 			ER_TOO_MANY_BUCKETS)
 		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
@@ -76,7 +78,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	}
 
 	if b == nil {
-		err = newError("No such bucket " + FullyQualifiedName(namespace, name), ER_NO_BUCKET)
+		err = newError("No such bucket "+FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 		s.Emit(newBucketMissedEvent(namespace, name, false))
 		return
 	}
@@ -113,6 +115,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 
 func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string) {
 	admin.ServeAdminConsole(s, mux, assetsDir)
+}
+
+func (s *server) SetConfigPersister(p admin.ConfigPersister) {
+	s.p = p
 }
 
 func (s *server) SetLogger(logger logging.Logger) {
@@ -221,7 +227,8 @@ func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
 }
 
 func (s *server) saveUpdatedConfigs() error {
-	// TODO(manik) persist configs
-	// TODO(manik) inform peers
+    if s.p != nil {
+        return s.p.PersistAndNotify(s.cfgs.ToProto())
+    }
 	return nil
 }
