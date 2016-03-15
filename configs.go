@@ -28,7 +28,7 @@ func (s *ServiceConfig) String() string {
 
 func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *ServiceConfig {
 	s.Namespaces[namespace] = n
-	n.name = namespace
+	n.Name = namespace
 	return s
 }
 
@@ -42,11 +42,11 @@ func (s *ServiceConfig) ToProto() *pb.ServiceConfig {
 func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
 	if s.GlobalDefaultBucket != nil {
 		s.GlobalDefaultBucket.ApplyDefaults()
-		s.GlobalDefaultBucket.name = defaultBucketName
+		s.GlobalDefaultBucket.Name = defaultBucketName
 	}
 
 	for name, ns := range s.Namespaces {
-		ns.name = name
+		ns.Name = name
 		if ns.DefaultBucket != nil && ns.DynamicBucketTemplate != nil {
 			panic(fmt.Sprintf("Namespace %v is not allowed to have a default bucket as well as allow dynamic buckets.", name))
 		}
@@ -58,19 +58,19 @@ func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
 
 		if ns.DefaultBucket != nil {
 			ns.DefaultBucket.ApplyDefaults()
-			ns.DefaultBucket.name = defaultBucketName
+			ns.DefaultBucket.Name = defaultBucketName
 			ns.DefaultBucket.namespace = ns
 		}
 
 		if ns.DynamicBucketTemplate != nil {
 			ns.DynamicBucketTemplate.ApplyDefaults()
-			ns.DynamicBucketTemplate.name = dynamicBucketTemplateName
+			ns.DynamicBucketTemplate.Name = dynamicBucketTemplateName
 			ns.DynamicBucketTemplate.namespace = ns
 		}
 
 		for n, b := range ns.Buckets {
 			b.ApplyDefaults()
-			b.name = n
+			b.Name = n
 			b.namespace = ns
 		}
 	}
@@ -78,17 +78,32 @@ func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
 	return s
 }
 
+func (s *ServiceConfig) NamespaceNames() []string {
+	if s.Namespaces == nil || len(s.Namespaces) == 0 {
+		return []string{}
+	}
+
+	names := make([]string, len(s.Namespaces))
+	i := 0
+	for ns, _ := range s.Namespaces {
+		names[i] = ns
+		i++
+	}
+
+	return names
+}
+
 type NamespaceConfig struct {
 	DefaultBucket         *BucketConfig            `yaml:"default_bucket,flow"`
 	DynamicBucketTemplate *BucketConfig            `yaml:"dynamic_bucket_template,flow"`
 	MaxDynamicBuckets     int                      `yaml:"max_dynamic_buckets"`
 	Buckets               map[string]*BucketConfig `yaml:",flow"`
-	name                  string
+	Name                  string
 }
 
 func (n *NamespaceConfig) AddBucket(name string, b *BucketConfig) *NamespaceConfig {
 	n.Buckets[name] = b
-	b.name = name
+	b.Name = name
 	return n
 }
 
@@ -98,7 +113,7 @@ func (n *NamespaceConfig) ToProto() *pb.NamespaceConfig {
 		DynamicBucketTemplate: bucketToProto(dynamicBucketTemplateName, n.DynamicBucketTemplate),
 		MaxDynamicBuckets: proto.Int(n.MaxDynamicBuckets),
 		Buckets: bucketMapToProto(n.Buckets),
-		Name: proto.String(n.name)}
+		Name: proto.String(n.Name)}
 }
 
 type BucketConfig struct {
@@ -109,7 +124,7 @@ type BucketConfig struct {
 	MaxDebtMillis       int64 `yaml:"max_debt_millis"`
 	MaxTokensPerRequest int64 `yaml:"max_tokens_per_request"`
 	namespace           *NamespaceConfig
-	name                string
+	Name                string
 }
 
 func (b *BucketConfig) String() string {
@@ -124,7 +139,7 @@ func (b *BucketConfig) ToProto() *pb.BucketConfig {
 		MaxIdleMillis: proto.Int64(b.MaxIdleMillis),
 		MaxDebtMillis: proto.Int64(b.MaxDebtMillis),
 		MaxTokensPerRequest: proto.Int64(b.MaxTokensPerRequest),
-		Name: proto.String(b.name)}
+		Name: proto.String(b.Name)}
 }
 
 func (b *BucketConfig) ApplyDefaults() *BucketConfig {
@@ -161,7 +176,7 @@ func (b *BucketConfig) FQN() string {
 		return FullyQualifiedName(globalNamespace, defaultBucketName)
 	}
 
-	return FullyQualifiedName(b.namespace.name, b.name)
+	return FullyQualifiedName(b.namespace.Name, b.Name)
 }
 
 func ReadConfigFromFile(filename string) *ServiceConfig {
@@ -250,7 +265,7 @@ func bucketsFromProto(cfgs []*pb.BucketConfig, nsc *NamespaceConfig) map[string]
 	for _, cfg := range cfgs {
 		b := bucketFromProto(cfg, nsc)
 		if b != nil {
-			buckets[b.name] = b
+			buckets[b.Name] = b
 		}
 	}
 
@@ -269,7 +284,7 @@ func bucketFromProto(cfg *pb.BucketConfig, nsc *NamespaceConfig) (b *BucketConfi
 		MaxIdleMillis: cfg.GetMaxIdleMillis(),
 		MaxDebtMillis: cfg.GetMaxDebtMillis(),
 		MaxTokensPerRequest: cfg.GetMaxTokensPerRequest(),
-		namespace: nsc, name: cfg.GetName()}
+		namespace: nsc, Name: cfg.GetName()}
 	return
 }
 
@@ -279,7 +294,7 @@ func namespacesFromProto(cfgs []*pb.NamespaceConfig) map[string]*NamespaceConfig
 	for _, cfg := range cfgs {
 		ns := namespaceFromProto(cfg)
 		if ns != nil {
-			namespaces[ns.name] = ns
+			namespaces[ns.Name] = ns
 		}
 	}
 
@@ -293,7 +308,7 @@ func namespaceFromProto(cfg *pb.NamespaceConfig) (n *NamespaceConfig) {
 
 	n = &NamespaceConfig{
 		MaxDynamicBuckets: int(cfg.GetMaxDynamicBuckets()),
-		name: cfg.GetName()}
+		Name: cfg.GetName()}
 
 	n.DefaultBucket = bucketFromProto(cfg.DefaultBucket, n)
 	n.DynamicBucketTemplate = bucketFromProto(cfg.DynamicBucketTemplate, n)

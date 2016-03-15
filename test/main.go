@@ -34,7 +34,7 @@ func main() {
 
 	// Serve Admin Console
 	sm := http.NewServeMux()
-	server.ServeAdminConsole(sm)
+	server.ServeAdminConsole(sm, "admin/public")
 	http.ListenAndServe("localhost:8080", sm)
 
 	// Block until SIGTERM, SIGKILL or SIGINT

@@ -42,7 +42,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	cfg.Namespaces["n"].DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
 	// Times out every 250 millis.
 	cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis = 250
-	events := &quotaservice.MockEmitter{make(chan quotaservice.Event, 100)}
+	events := &quotaservice.MockEmitter{Events: make(chan quotaservice.Event, 100)}
 	container := quotaservice.NewBucketContainer(cfg, factory, events)
 
 	// No GC should happen here as long as we are in use.

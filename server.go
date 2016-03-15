@@ -11,6 +11,9 @@ import (
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
+
+	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"errors"
 )
 
 // Implements the quotaservice.Server interface
@@ -65,7 +68,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		err = newError(fmt.Sprintf("Cannot create dynamic bucket %v:%v.", namespace, name),
+		err = newError("Cannot create dynamic bucket " + FullyQualifiedName(namespace, name),
 			ER_TOO_MANY_BUCKETS)
 		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
@@ -73,7 +76,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	}
 
 	if b == nil {
-		err = newError(fmt.Sprintf("No such bucket %v:%v.", namespace, name), ER_NO_BUCKET)
+		err = newError("No such bucket " + FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 		s.Emit(newBucketMissedEvent(namespace, name, false))
 		return
 	}
@@ -132,17 +135,93 @@ func (s *server) SetListener(listener Listener, eventQueueBufSize int) {
 	s.eventQueueBufSize = eventQueueBufSize
 }
 
-// Implements admin.Administrable
-func (s *server) Configs() fmt.Stringer {
-	return s.cfgs
-}
-
-func (s *server) BucketContainer() fmt.Stringer {
-	return s.bucketContainer
-}
-
 func (s *server) Emit(e Event) {
 	if s.producer != nil {
 		s.producer.Emit(e)
 	}
+}
+
+// Implements admin.Administrable
+func (s *server) Configs() interface{} {
+	return s.cfgs
+}
+
+func (s *server) DeleteBucket(namespace, name string) error {
+	err := s.bucketContainer.deleteBucket(namespace, name)
+	if err != nil {
+		return err
+	}
+
+	s.saveUpdatedConfigs()
+	return nil
+}
+
+func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
+	if !s.bucketContainer.NamespaceExists(namespace) && namespace != globalNamespace {
+		return errors.New("Namespace doesn't exist")
+	}
+
+	if namespace == globalNamespace {
+		err := s.bucketContainer.createGlobalDefaultBucket(bucketFromProto(b, nil))
+		if err != nil {
+			return err
+		}
+	} else {
+		if s.bucketContainer.Exists(namespace, b.GetName()) {
+			return errors.New("Bucket already exists")
+		}
+
+		s.bucketContainer.RLock()
+		defer s.bucketContainer.RUnlock()
+		ns := s.bucketContainer.namespaces[namespace]
+		s.bucketContainer.createNewNamedBucketFromCfg(namespace,
+			b.GetName(), ns, bucketFromProto(b, ns.cfg), false)
+	}
+
+	s.saveUpdatedConfigs()
+	return nil
+}
+
+func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig) error {
+	// Simple delete and add?
+	e := s.bucketContainer.deleteBucket(namespace, b.GetName())
+	if e != nil {
+		return e
+	}
+
+	return s.AddBucket(namespace, b)
+}
+
+func (s *server) DeleteNamespace(n string) error {
+	err := s.bucketContainer.deleteNamespace(n)
+	if err != nil {
+		return err
+	}
+
+	s.saveUpdatedConfigs()
+	return nil
+}
+
+func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
+	e := s.bucketContainer.createNamespace(namespaceFromProto(n))
+	if e != nil {
+		return e
+	}
+	s.saveUpdatedConfigs()
+	return nil
+}
+
+func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
+	err := s.bucketContainer.deleteNamespace(n.GetName())
+	if err != nil {
+		return err
+	}
+
+	return s.AddNamespace(n)
+}
+
+func (s *server) saveUpdatedConfigs() error {
+	// TODO(manik) persist configs
+	// TODO(manik) inform peers
+	return nil
 }
