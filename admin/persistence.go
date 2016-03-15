@@ -25,8 +25,10 @@ type DiskConfigPersister struct {
 
 func NewDiskConfigPersister(location string) (ConfigPersister, error) {
 	_, e := os.Stat(location)
+
+	// This will catch nonexistent paths, as well as passing in a directory instead of a file.
+	// Nonexistent files in an existing path, however, is allowed.
 	if e != nil && !os.IsNotExist(e) {
-		// TODO(manik) is this good enough to catch directories that don't exist?
 		return nil, e
 	}
 
