@@ -19,8 +19,8 @@ type ConfigPersister interface {
 	// detected. Changes are coalesced so that a single notification may be emitted for multiple
 	// changes.
 	ConfigChangedWatcher() chan struct{}
-	// ReadPersistedConfig reads configuration previously persisted, returning the configuration 
-    // read and any errors encountered.
+	// ReadPersistedConfig reads configuration previously persisted, returning the configuration
+	// read and any errors encountered.
 	ReadPersistedConfig() (*pb.ServiceConfig, error)
 }
 
@@ -72,7 +72,7 @@ func (d *DiskConfigPersister) PersistAndNotify(c *pb.ServiceConfig) error {
 	return nil
 }
 
-// ReadPersistedConfig reads configuration previously persisted, returning the configuration read and 
+// ReadPersistedConfig reads configuration previously persisted, returning the configuration read and
 // any errors encountered.
 func (d *DiskConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 	bytes, e := ioutil.ReadFile(d.location)
