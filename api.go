@@ -20,7 +20,7 @@ type Server interface {
 	SetListener(listener Listener, eventQueueBufSize int)
 }
 
-// NewFromFile creates a new quotaservice server.
+// New creates a new quotaservice server.
 func New(config *ServiceConfig, bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
