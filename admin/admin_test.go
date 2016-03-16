@@ -87,13 +87,3 @@ func TestUnmarshalNamespaceConfig(t *testing.T) {
 		t.Fatalf("Two representations aren't equal: %+v != %+v", n, cfgReRead)
 	}
 }
-
-
-/*
-
-&{DefaultBucket:<nil> DynamicBucketTemplate:{100 50 1000 -1 10000 0 <nil> } MaxDynamicBuckets:8000 Buckets:map[Blah 456:{5000 123450 1000 678900 543210 98760 0xc82000b800 Blah 456} Blah 789:{500 1234500 1000 6789000 5432100 987600 0xc82000b800 Blah 789} Blah 123:{50000 12345 1000 67890 54321 9876 0xc82000b800 Blah 123}] Name:Blah Namespace 123}
-&{DefaultBucket:<nil> DynamicBucketTemplate:{100 50 1000 -1 10000 0 0xc82000b9e0 } MaxDynamicBuckets:8000 Buckets:map[Blah 789:{500 1234500 1000 6789000 5432100 987600 0xc82000b9e0 Blah 789} Blah 123:{50000 12345 1000 67890 54321 9876 0xc82000b9e0 Blah 123} Blah 456:{5000 123450 1000 678900 543210 98760 0xc82000b9e0 Blah 456}] Name:Blah Namespace 123}
-
-
-
- */
