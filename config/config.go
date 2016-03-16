@@ -110,6 +110,14 @@ type NamespaceConfig struct {
 func (n *NamespaceConfig) AddBucket(name string, b *BucketConfig) *NamespaceConfig {
 	n.Buckets[name] = b
 	b.Name = name
+	b.namespace = n
+	return n
+}
+
+func (n *NamespaceConfig) SetDynamicBucketTemplate(b *BucketConfig) *NamespaceConfig {
+	b.Name = DynamicBucketTemplateName
+	b.namespace = n
+	n.DynamicBucketTemplate = b
 	return n
 }
 

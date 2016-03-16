@@ -1,7 +1,7 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-// TODO(manik) Implement this package
+// Package implements admin UIs and a REST API
 package admin
 
 import (
@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"github.com/maniksurtani/quotaservice/config"
+	"encoding/json"
+	"io"
 )
 
 // Administrable defines something that can be administered via this package.
@@ -103,9 +105,21 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "DELETE":
 			a.a.DeleteBucket(namespace, name)
 		case "PUT":
-			a.a.AddBucket(namespace, getBucketConfig(params, r))
+			c, e := getBucketConfig(r.Body)
+			if e != nil {
+				logging.Println("Caught error", e)
+				http.Error(w, "500 bad content", http.StatusInternalServerError)
+			} else {
+				a.a.AddBucket(namespace, c)
+			}
 		case "POST":
-			a.a.UpdateBucket(namespace, getBucketConfig(params, r))
+			c, e := getBucketConfig(r.Body)
+			if e != nil {
+				logging.Println("Caught error", e)
+				http.Error(w, "500 bad content", http.StatusInternalServerError)
+			} else {
+				a.a.UpdateBucket(namespace, c)
+			}
 		default:
 			logging.Printf("Not handling method %v", r.Method)
 			http.NotFound(w, r)
@@ -116,9 +130,21 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "DELETE":
 			a.a.DeleteNamespace(ns)
 		case "PUT":
-			a.a.AddNamespace(getNamespaceConfig(ns, r))
+			c, e := getNamespaceConfig(r.Body)
+			if e != nil {
+				logging.Println("Caught error", e)
+				http.Error(w, "500 bad content", http.StatusInternalServerError)
+			} else {
+				a.a.AddNamespace(c)
+			}
 		case "POST":
-			a.a.UpdateNamespace(getNamespaceConfig(ns, r))
+			c, e := getNamespaceConfig(r.Body)
+			if e != nil {
+				logging.Println("Caught error", e)
+				http.Error(w, "500 bad content", http.StatusInternalServerError)
+			} else {
+				a.a.UpdateNamespace(c)
+			}
 		default:
 			logging.Printf("Not handling method %v", r.Method)
 			http.NotFound(w, r)
@@ -138,12 +164,22 @@ func extractNamespaceName(params string) (namespace, name string) {
 	return parts[0], parts[1]
 }
 
-func getBucketConfig(params string, r *http.Request) *pb.BucketConfig {
-	// TODO(manik) parse http request to extract bucket config
-	return nil
+func getBucketConfig(r io.Reader) (*pb.BucketConfig, error) {
+	bytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	c := &pb.BucketConfig{}
+	json.Unmarshal(bytes, c)
+	return c, nil
 }
 
-func getNamespaceConfig(params string, r *http.Request) *pb.NamespaceConfig {
-	// TODO(manik) parse http request to extract bucket config
-	return nil
+func getNamespaceConfig(r io.Reader) (*pb.NamespaceConfig, error) {
+	bytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	c := &pb.NamespaceConfig{}
+	json.Unmarshal(bytes, c)
+	return c, nil
 }
