@@ -12,11 +12,12 @@ import (
 
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 // Administrable defines something that can be administered via this package.
 type Administrable interface {
-	Configs() interface{}
+	Configs() *config.ServiceConfig
 
 	DeleteBucket(namespace, name string) error
 	AddBucket(namespace string, b *pb.BucketConfig) error
@@ -38,7 +39,7 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 		htmlFiles := make([]string, 0)
 		for _, f := range files {
 			if !f.IsDir() && strings.HasSuffix(f.Name(), ".html") {
-				htmlFiles = append(htmlFiles, assetsDirectory+"/"+f.Name())
+				htmlFiles = append(htmlFiles, assetsDirectory + "/" + f.Name())
 			}
 		}
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

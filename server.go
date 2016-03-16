@@ -149,7 +149,7 @@ func (s *server) Emit(e Event) {
 }
 
 // Implements admin.Administrable
-func (s *server) Configs() interface{} {
+func (s *server) Configs() *config.ServiceConfig {
 	return s.cfgs
 }
 
