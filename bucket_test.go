@@ -7,32 +7,33 @@ package quotaservice
 import (
 	"strconv"
 	"testing"
+"github.com/maniksurtani/quotaservice/config"
 )
 
-var cfg = func() *ServiceConfig {
-	c := NewDefaultServiceConfig()
-	c.GlobalDefaultBucket = NewDefaultBucketConfig()
+var cfg = func() *config.ServiceConfig {
+	c := config.NewDefaultServiceConfig()
+	c.GlobalDefaultBucket = config.NewDefaultBucketConfig()
 
 	// Namespace "x"
-	ns := NewDefaultNamespaceConfig()
-	ns.DefaultBucket = NewDefaultBucketConfig()
-	ns.AddBucket("a", NewDefaultBucketConfig())
+	ns := config.NewDefaultNamespaceConfig()
+	ns.DefaultBucket = config.NewDefaultBucketConfig()
+	ns.AddBucket("a", config.NewDefaultBucketConfig())
 	c.AddNamespace("x", ns)
 
 	// Namespace "y"
-	ns = NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
-	ns.AddBucket("a", NewDefaultBucketConfig())
+	ns = config.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
+	ns.AddBucket("a", config.NewDefaultBucketConfig())
 	c.AddNamespace("y", ns)
 
 	// Namespace "z"
-	ns = NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
+	ns = config.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	ns.MaxDynamicBuckets = 5
 	ns.
-	AddBucket("a", NewDefaultBucketConfig()).
-	AddBucket("b", NewDefaultBucketConfig()).
-	AddBucket("c", NewDefaultBucketConfig())
+	AddBucket("a", config.NewDefaultBucketConfig()).
+	AddBucket("b", config.NewDefaultBucketConfig()).
+	AddBucket("c", config.NewDefaultBucketConfig())
 	c.AddNamespace("z", ns)
 
 	return c
@@ -134,7 +135,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal("Should have a global default bucket.")
 	}
 
-	container.deleteBucket(globalNamespace, defaultBucketName)
+	container.deleteBucket(config.GlobalNamespace, config.DefaultBucketName)
 
 	if container.defaultBucket != nil {
 		t.Fatal("Should delete global default bucket.")
@@ -144,7 +145,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal("Default bucket on x should exist")
 	}
 
-	container.deleteBucket("x", defaultBucketName)
+	container.deleteBucket("x", config.DefaultBucketName)
 
 	if container.namespaces["x"].defaultBucket != nil {
 		t.Fatal("Default bucket on x should not exist")

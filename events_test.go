@@ -7,6 +7,7 @@ import (
 	"testing"
 	"os"
 	"time"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 var s Server
@@ -21,20 +22,20 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
-	cfg := NewDefaultServiceConfig()
-	cfg.GlobalDefaultBucket = NewDefaultBucketConfig()
+	cfg := config.NewDefaultServiceConfig()
+	cfg.GlobalDefaultBucket = config.NewDefaultBucketConfig()
 
 	// Namespace "dyn"
-	ns := NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = NewDefaultBucketConfig()
+	ns := config.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
 	ns.DynamicBucketTemplate.MaxIdleMillis = 100
 	ns.MaxDynamicBuckets = 3
 	cfg.AddNamespace("dyn", ns)
 
 	// Namespace "nodyn"
-	ns = NewDefaultNamespaceConfig()
-	b := NewDefaultBucketConfig()
+	ns = config.NewDefaultNamespaceConfig()
+	b := config.NewDefaultBucketConfig()
 	b.MaxTokensPerRequest = 10
 	ns.AddBucket("b", b)
 	cfg.AddNamespace("nodyn", ns)

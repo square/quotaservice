@@ -5,9 +5,9 @@ package quotaservice
 
 import (
 	"fmt"
-	"testing"
 	"time"
 	"sync"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 type MockBucket struct {
@@ -16,7 +16,7 @@ type MockBucket struct {
 	Active                bool
 	namespace, bucketName string
 	dyn                   bool
-	cfg                   *BucketConfig
+	cfg                   *config.BucketConfig
 }
 
 func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
@@ -25,7 +25,7 @@ func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime 
 
 	return b.WaitTime
 }
-func (b *MockBucket) Config() *BucketConfig {
+func (b *MockBucket) Config() *config.BucketConfig {
 	return b.cfg
 }
 func (b *MockBucket) ActivityDetected() bool {
@@ -61,7 +61,7 @@ func (bf *MockBucketFactory) SetActive(namespace, name string, active bool) {
 }
 
 func (bf *MockBucketFactory) bucket(namespace, name string) *MockBucket {
-	fqn := FullyQualifiedName(namespace, name)
+	fqn := config.FullyQualifiedName(namespace, name)
 	bucket := bf.buckets[fqn]
 	if bucket == nil {
 		panic(fmt.Sprintf("No such bucket %v", fqn))
@@ -69,18 +69,18 @@ func (bf *MockBucketFactory) bucket(namespace, name string) *MockBucket {
 	return bucket
 }
 
-func (bf *MockBucketFactory) Init(cfg *ServiceConfig) {}
-func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg *BucketConfig, dyn bool) Bucket {
+func (bf *MockBucketFactory) Init(cfg *config.ServiceConfig) {}
+func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg *config.BucketConfig, dyn bool) Bucket {
 	b := &MockBucket{sync.RWMutex{}, 0, true, namespace, bucketName, dyn, cfg}
 	if bf.buckets == nil {
 		bf.buckets = make(map[string]*MockBucket)
 	}
 
-	bf.buckets[FullyQualifiedName(namespace, bucketName)] = b
+	bf.buckets[config.FullyQualifiedName(namespace, bucketName)] = b
 	return b
 }
 
-type MockEmitter struct{
+type MockEmitter struct {
 	Events chan Event
 }
 
@@ -100,19 +100,7 @@ func (d *MockEndpoint) Init(qs QuotaService) {
 func (d *MockEndpoint) Start() {}
 func (d *MockEndpoint) Stop() {}
 
-func ExpectingPanic(t *testing.T, f func()) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("Did not panic()")
-		} else {
-			fmt.Print(r)
-		}
-	}()
-
-	f()
-}
-
-func NewBucketContainerWithMocks(cfg *ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
+func NewBucketContainerWithMocks(cfg *config.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
 	bf := &MockBucketFactory{}
 	e := &MockEmitter{}
 	return NewBucketContainer(cfg, bf, e), bf, e

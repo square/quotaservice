@@ -13,20 +13,21 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 func main() {
-	cfg := quotaservice.NewDefaultServiceConfig()
-	ns := quotaservice.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
+	cfg := config.NewDefaultServiceConfig()
+	ns := config.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	ns.DynamicBucketTemplate.Size = 100000000000
 	ns.DynamicBucketTemplate.FillRate = 100000000
-	ns.AddBucket("xyz", quotaservice.NewDefaultBucketConfig())
+	ns.AddBucket("xyz", config.NewDefaultBucketConfig())
 	cfg.AddNamespace("test.namespace", ns)
 
-	ns = quotaservice.NewDefaultNamespaceConfig()
-	ns.DefaultBucket = quotaservice.NewDefaultBucketConfig()
-	ns.AddBucket("xyz", quotaservice.NewDefaultBucketConfig())
+	ns = config.NewDefaultNamespaceConfig()
+	ns.DefaultBucket = config.NewDefaultBucketConfig()
+	ns.AddBucket("xyz", config.NewDefaultBucketConfig())
 	cfg.AddNamespace("test.namespace2", ns)
 
 	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))

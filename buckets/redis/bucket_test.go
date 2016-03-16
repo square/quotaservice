@@ -10,9 +10,10 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets"
 	"gopkg.in/redis.v3"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
-var cfg = quotaservice.NewDefaultServiceConfig()
+var cfg = config.NewDefaultServiceConfig()
 var factory quotaservice.BucketFactory
 var bucket *redisBucket
 
@@ -25,7 +26,7 @@ func TestMain(m *testing.M) {
 func setUp() {
 	factory = NewBucketFactory(&redis.Options{Addr: "localhost:6379"}, 2)
 	factory.Init(cfg)
-	bucket = factory.NewBucket("redis", "redis", quotaservice.NewDefaultBucketConfig(), false).(*redisBucket)
+	bucket = factory.NewBucket("redis", "redis", config.NewDefaultBucketConfig(), false).(*redisBucket)
 }
 
 func TestScriptLoaded(t *testing.T) {

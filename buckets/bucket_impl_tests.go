@@ -5,6 +5,7 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"time"
 	"strconv"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
@@ -37,9 +38,9 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 }
 
 func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
-	cfg := quotaservice.NewDefaultServiceConfig()
-	cfg.Namespaces["n"] = quotaservice.NewDefaultNamespaceConfig()
-	cfg.Namespaces["n"].DynamicBucketTemplate = quotaservice.NewDefaultBucketConfig()
+	cfg := config.NewDefaultServiceConfig()
+	cfg.Namespaces["n"] = config.NewDefaultNamespaceConfig()
+	cfg.Namespaces["n"].DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	// Times out every 250 millis.
 	cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis = 250
 	events := &quotaservice.MockEmitter{Events: make(chan quotaservice.Event, 100)}
@@ -77,7 +78,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 }
 
 func waitForGC(events chan quotaservice.Event, namespace string, buckets []string) {
-	bucketMap := make(map [string]bool)
+	bucketMap := make(map[string]bool)
 	for _, b := range buckets {
 		bucketMap[b] = true
 	}

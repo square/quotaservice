@@ -1,12 +1,13 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-package quotaservice
+package config
 
 import (
 	"testing"
 	"reflect"
 	"fmt"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 const cfgYaml = `namespaces:
@@ -112,7 +113,7 @@ func assertBucket(t *testing.T, b *BucketConfig, size, fillRate, waitTimeoutMill
 }
 
 func TestNonexistentFile(t *testing.T) {
-	ExpectingPanic(t, func() {
+	helpers.ExpectingPanic(t, func() {
 		_ = ReadConfigFromFile("/does/not/exist")
 	})
 }
@@ -120,14 +121,13 @@ func TestNonexistentFile(t *testing.T) {
 func TestToAndFromProtos(t *testing.T) {
 	osc := readConfigFromBytes([]byte(cfgYaml))
 	p := osc.ToProto()
-	fmt.Println("Generated proto: ", p)
 	recreated := FromProto(p)
 
 	if osc.Version != recreated.Version {
 		t.Fatal("version field mismatch")
 	}
 
-	testBuckets(t, defaultBucketName, osc.GlobalDefaultBucket, recreated.GlobalDefaultBucket)
+	testBuckets(t, DefaultBucketName, osc.GlobalDefaultBucket, recreated.GlobalDefaultBucket)
 
 	if len(osc.Namespaces) != len(recreated.Namespaces) {
 		t.Fatalf("Different number of namespaces. Original %v, recreated %v", len(osc.Namespaces), len(recreated.Namespaces))
@@ -180,8 +180,8 @@ func testNamespaces(t *testing.T, name string, n1, n2 *NamespaceConfig) {
 	if n1.MaxDynamicBuckets != n2.MaxDynamicBuckets {
 		t.Fatal("MaxDynamicBuckets mismatch")
 	}
-	testBuckets(t, defaultBucketName, n1.DefaultBucket, n2.DefaultBucket)
-	testBuckets(t, dynamicBucketTemplateName, n1.DynamicBucketTemplate, n2.DynamicBucketTemplate)
+	testBuckets(t, DefaultBucketName, n1.DefaultBucket, n2.DefaultBucket)
+	testBuckets(t, DynamicBucketTemplateName, n1.DynamicBucketTemplate, n2.DynamicBucketTemplate)
 
 	if len(n1.Buckets) != len(n2.Buckets) {
 		t.Fatal("Different number of buckets")

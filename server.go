@@ -15,11 +15,12 @@ import (
 	"errors"
 
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 // Implements the quotaservice.Server interface
 type server struct {
-	cfgs              *ServiceConfig
+	cfgs              *config.ServiceConfig
 	currentStatus     lifecycle.Status
 	stopper           *chan int
 	bucketContainer   *bucketContainer
@@ -70,7 +71,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		err = newError("Cannot create dynamic bucket "+FullyQualifiedName(namespace, name),
+		err = newError("Cannot create dynamic bucket " + config.FullyQualifiedName(namespace, name),
 			ER_TOO_MANY_BUCKETS)
 		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
@@ -78,7 +79,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	}
 
 	if b == nil {
-		err = newError("No such bucket "+FullyQualifiedName(namespace, name), ER_NO_BUCKET)
+		err = newError("No such bucket " + config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 		s.Emit(newBucketMissedEvent(namespace, name, false))
 		return
 	}
@@ -163,12 +164,12 @@ func (s *server) DeleteBucket(namespace, name string) error {
 }
 
 func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
-	if !s.bucketContainer.NamespaceExists(namespace) && namespace != globalNamespace {
+	if !s.bucketContainer.NamespaceExists(namespace) && namespace != config.GlobalNamespace {
 		return errors.New("Namespace doesn't exist")
 	}
 
-	if namespace == globalNamespace {
-		err := s.bucketContainer.createGlobalDefaultBucket(bucketFromProto(b, nil))
+	if namespace == config.GlobalNamespace {
+		err := s.bucketContainer.createGlobalDefaultBucket(config.BucketFromProto(b, nil))
 		if err != nil {
 			return err
 		}
@@ -181,7 +182,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 		defer s.bucketContainer.RUnlock()
 		ns := s.bucketContainer.namespaces[namespace]
 		s.bucketContainer.createNewNamedBucketFromCfg(namespace,
-			b.GetName(), ns, bucketFromProto(b, ns.cfg), false)
+			b.GetName(), ns, config.BucketFromProto(b, ns.cfg), false)
 	}
 
 	s.saveUpdatedConfigs()
@@ -209,7 +210,7 @@ func (s *server) DeleteNamespace(n string) error {
 }
 
 func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
-	e := s.bucketContainer.createNamespace(namespaceFromProto(n))
+	e := s.bucketContainer.createNamespace(config.NamespaceFromProto(n))
 	if e != nil {
 		return e
 	}
@@ -227,8 +228,8 @@ func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
 }
 
 func (s *server) saveUpdatedConfigs() error {
-    if s.p != nil {
-        return s.p.PersistAndNotify(s.cfgs.ToProto())
-    }
+	if s.p != nil {
+		return s.p.PersistAndNotify(s.cfgs.ToProto())
+	}
 	return nil
 }

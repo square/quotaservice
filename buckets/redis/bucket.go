@@ -14,6 +14,7 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/redis.v3"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 // Suffixes for Redis keys
@@ -25,7 +26,7 @@ const (
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
 type redisBucket struct {
 	dynamic               bool
-	cfg                   *quotaservice.BucketConfig
+	cfg                   *config.BucketConfig
 	factory               *bucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
@@ -36,7 +37,7 @@ type redisBucket struct {
 }
 
 type bucketFactory struct {
-	cfg               *quotaservice.ServiceConfig
+	cfg               *config.ServiceConfig
 	m                 *sync.RWMutex
 	client            *redis.Client
 	initialized       bool
@@ -57,7 +58,7 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 		connectionRetries: connectionRetries}
 }
 
-func (bf *bucketFactory) Init(cfg *quotaservice.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *config.ServiceConfig) {
 	if !bf.initialized {
 		bf.m.Lock()
 		defer bf.m.Unlock()
@@ -77,7 +78,7 @@ func (bf *bucketFactory) connectToRedis() {
 	bf.scriptSHA = loadScript(bf.client)
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *quotaservice.BucketConfig, dyn bool) quotaservice.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.BucketConfig, dyn bool) quotaservice.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
@@ -145,7 +146,7 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 	return
 }
 
-func (b *redisBucket) Config() *quotaservice.BucketConfig {
+func (b *redisBucket) Config() *config.BucketConfig {
 	return b.cfg
 }
 

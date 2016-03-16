@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets"
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 var factory = NewBucketFactory()
@@ -20,11 +20,11 @@ func TestMain(m *testing.M) {
 }
 
 func setUp() {
-	factory.Init(quotaservice.NewDefaultServiceConfig())
+	factory.Init(config.NewDefaultServiceConfig())
 }
 
 func TestTokenAcquisition(t *testing.T) {
-	bucket := factory.NewBucket("memory", "memory", quotaservice.NewDefaultBucketConfig(), false)
+	bucket := factory.NewBucket("memory", "memory", config.NewDefaultBucketConfig(), false)
 	buckets.TestTokenAcquisition(t, bucket)
 }
 
