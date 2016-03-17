@@ -1,11 +1,11 @@
 package rest
 
 import (
-	"testing"
-	"github.com/maniksurtani/quotaservice/config"
+	"fmt"
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/admin"
-	"fmt"
+	"github.com/maniksurtani/quotaservice/config"
+	"testing"
 )
 
 func TestAddGlobalDefault(t *testing.T) {
