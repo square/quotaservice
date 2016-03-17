@@ -318,8 +318,10 @@ func (bc *bucketContainer) deleteBucket(namespace, name string) error {
 		if namespace == config.GlobalNamespace {
 			// Global.
 			if name == config.DefaultBucketName {
-				bc.defaultBucket.Destroy()
-				bc.defaultBucket = nil
+				if bc.defaultBucket != nil {
+					bc.defaultBucket.Destroy()
+					bc.defaultBucket = nil
+				}
 			} else {
 				return errors.New("No such bucket " + name + " on global namespace.")
 			}

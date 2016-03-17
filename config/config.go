@@ -9,9 +9,12 @@ import (
 	"io"
 	"io/ioutil"
 
+	"gopkg.in/yaml.v2"
+
+	"encoding/json"
+
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -83,19 +86,17 @@ func (s *ServiceConfig) ApplyDefaults() *ServiceConfig {
 	return s
 }
 
-func (s *ServiceConfig) NamespaceNames() []string {
+func (s *ServiceConfig) NamespaceNames() (names []string) {
 	if s.Namespaces == nil || len(s.Namespaces) == 0 {
 		return []string{}
 	}
 
-	names := make([]string, len(s.Namespaces))
-	i := 0
+	names = make([]string, 0, len(s.Namespaces))
 	for ns, _ := range s.Namespaces {
-		names[i] = ns
-		i++
+		names = append(names, ns)
 	}
 
-	return names
+	return
 }
 
 type NamespaceConfig struct {
@@ -243,26 +244,22 @@ func bucketToProto(name string, b *BucketConfig) *pb.BucketConfig {
 	return b.ToProto()
 }
 
-func bucketMapToProto(buckets map[string]*BucketConfig) []*pb.BucketConfig {
-	slice := make([]*pb.BucketConfig, len(buckets))
-	i := 0
+func bucketMapToProto(buckets map[string]*BucketConfig) (c []*pb.BucketConfig) {
+	c = make([]*pb.BucketConfig, 0, len(buckets))
 	for n, b := range buckets {
-		slice[i] = bucketToProto(n, b)
-		i++
+		c = append(c, bucketToProto(n, b))
 	}
 
-	return slice
+	return
 }
 
-func namespaceMapToProto(namespaces map[string]*NamespaceConfig) []*pb.NamespaceConfig {
-	slice := make([]*pb.NamespaceConfig, len(namespaces))
-	i := 0
+func namespaceMapToProto(namespaces map[string]*NamespaceConfig) (c []*pb.NamespaceConfig) {
+	c = make([]*pb.NamespaceConfig, len(namespaces))
 	for _, nsp := range namespaces {
-		slice[i] = nsp.ToProto()
-		i++
+		c = append(c, nsp.ToProto())
 	}
 
-	return slice
+	return
 }
 
 func FromProto(cfg *pb.ServiceConfig) *ServiceConfig {
@@ -271,6 +268,16 @@ func FromProto(cfg *pb.ServiceConfig) *ServiceConfig {
 		GlobalDefaultBucket: globalBucket,
 		Version:             int(cfg.Version),
 		Namespaces:          namespacesFromProto(cfg.Namespaces)}
+}
+
+func FromJSON(j []byte) (c *ServiceConfig, e error) {
+	p := &pb.ServiceConfig{}
+	e = json.Unmarshal(j, p)
+	if e == nil {
+		c = FromProto(p)
+	}
+
+	return
 }
 
 func bucketsFromProto(cfgs []*pb.BucketConfig, nsc *NamespaceConfig) map[string]*BucketConfig {
@@ -326,6 +333,16 @@ func NamespaceFromProto(cfg *pb.NamespaceConfig) (n *NamespaceConfig) {
 	n.DefaultBucket = BucketFromProto(cfg.DefaultBucket, n)
 	n.DynamicBucketTemplate = BucketFromProto(cfg.DynamicBucketTemplate, n)
 	n.Buckets = bucketsFromProto(cfg.Buckets, n)
+
+	return
+}
+
+func NamespaceFromJSON(j []byte) (n *NamespaceConfig, e error) {
+	p := &pb.NamespaceConfig{}
+	e = json.Unmarshal(j, p)
+	if e == nil {
+		n = NamespaceFromProto(p)
+	}
 
 	return
 }
