@@ -174,7 +174,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 			return err
 		}
 	} else {
-		if s.bucketContainer.Exists(namespace, b.GetName()) {
+		if s.bucketContainer.Exists(namespace, b.Name) {
 			return errors.New("Bucket already exists")
 		}
 
@@ -182,7 +182,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 		defer s.bucketContainer.RUnlock()
 		ns := s.bucketContainer.namespaces[namespace]
 		s.bucketContainer.createNewNamedBucketFromCfg(namespace,
-			b.GetName(), ns, config.BucketFromProto(b, ns.cfg), false)
+			b.Name, ns, config.BucketFromProto(b, ns.cfg), false)
 	}
 
 	s.saveUpdatedConfigs()
@@ -191,7 +191,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 
 func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig) error {
 	// Simple delete and add?
-	e := s.bucketContainer.deleteBucket(namespace, b.GetName())
+	e := s.bucketContainer.deleteBucket(namespace, b.Name)
 	if e != nil {
 		return e
 	}
@@ -219,7 +219,7 @@ func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
 }
 
 func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
-	err := s.bucketContainer.deleteNamespace(n.GetName())
+	err := s.bucketContainer.deleteNamespace(n.Name)
 	if err != nil {
 		return err
 	}

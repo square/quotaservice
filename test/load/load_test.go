@@ -5,12 +5,12 @@ package loadtest
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	"testing"
+
 	pb "github.com/maniksurtani/quotaservice/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"testing"
 )
 
 func BenchmarkQuotaRequests(b *testing.B) {
@@ -27,9 +27,9 @@ func BenchmarkQuotaRequests(b *testing.B) {
 	client := pb.NewQuotaServiceClient(conn)
 
 	req := &pb.AllowRequest{
-		Namespace:          proto.String("test.namespace"),
-		Name:               proto.String("one"),
-		NumTokensRequested: proto.Int64(1)}
+		Namespace:       "test.namespace",
+		BucketName:      "one",
+		TokensRequested: 1}
 	b.ResetTimer()
 	b.SetParallelism(8)
 	b.RunParallel(

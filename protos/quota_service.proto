@@ -14,7 +14,7 @@
  *   limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package quotaservice;
 
@@ -24,25 +24,37 @@ service QuotaService {
 }
 
 message AllowRequest {
-  optional string namespace = 1;
-  optional string name = 2;
-  optional int64 num_tokens_requested = 3; // Defaults to 1.
-  optional int64 max_wait_millis_override = 4; // Defaults to -1, which assumes server-side defaults.
+  string namespace = 1;
+  string bucket_name = 2;
+  /**
+   * Number of tokens requested. Defaults to 1, cannot be 0.
+   */
+  int64 tokens_requested = 3;
+  /**
+   * Max wait time, in millis. Defaults to 0, which assumes no waiting.
+   */
+  int64 max_wait_millis_override = 4;
 }
 
 message AllowResponse {
   enum Status {
-    OK = 1;                        // Tokens granted
-    OK_WAIT = 2;                   // Tokens granted, but wait time set
-    REJECTED_TIMEOUT = 3;          // Tokens not  available within max wait time
-    REJECTED_NO_BUCKET = 4;        // No valid bucket
-    REJECTED_TOO_MANY_BUCKETS = 5; // Dynamic bucket couldn't be created
-    REJECTED_TOO_MANY_TOKENS_REQUESTED = 6;
-    REJECTED_INVALID_REQUEST = 7;
-    REJECTED_SERVER_ERROR = 8;
+    OK = 0;                                 // Tokens granted
+    REJECTED_TIMEOUT = 1;                   // Tokens not  available within max wait time
+    REJECTED_NO_BUCKET = 2;                 // No valid bucket
+    REJECTED_TOO_MANY_BUCKETS = 3;          // Dynamic bucket couldn't be created
+    REJECTED_TOO_MANY_TOKENS_REQUESTED = 4;
+    REJECTED_INVALID_REQUEST = 5;
+    REJECTED_SERVER_ERROR = 6;
   }
 
-  optional Status status = 1;
-  optional int64 num_tokens_granted = 2;
-  optional int64 wait_millis = 3; // Defaults to 0.
+  Status status = 1;
+
+  /**
+   * Number of tokens granted, if status == OK
+   */
+  int64 tokens_granted = 2;
+  /**
+   * Wait for this many millis before proceeding, if status == OK. 0 if no waiting is required.
+   */
+  int64 wait_millis = 3;
 }
