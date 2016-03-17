@@ -1,20 +1,71 @@
 package rest
 
 import (
-	"fmt"
+	"io/ioutil"
+	"net/http"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/config"
-	"testing"
 )
 
+func TestReadConfigs(t *testing.T) {
+	s, c := startService(true, namespaceConfig("ns", true, bucketConfig("b1"), bucketConfig("b2")))
+	defer s.Stop()
+	// Start an HTTP server
+	mux := http.NewServeMux()
+	s.ServeAdminConsole(mux, "")
+	go http.ListenAndServe("127.0.0.1:11111", mux)
+	waitForAdminServer()
+
+	rsp, e := http.Get("http://127.0.0.1:11111/api/")
+	assertNoError(t, e)
+	defer rsp.Body.Close()
+	contents, e := ioutil.ReadAll(rsp.Body)
+	assertNoError(t, e)
+
+	fromJSON, e := config.FromJSON(contents)
+	assertNoError(t, e)
+
+	if !reflect.DeepEqual(fromJSON, c) {
+		t.Fatalf("Configs read from API aren't the same as what was expected. Expected: %+v API sent: %+v", c, fromJSON)
+	}
+}
+
+func TestReadNamespaceConfigs(t *testing.T) {
+	s, c := startService(true, namespaceConfig("ns", true, bucketConfig("b1"), bucketConfig("b2")))
+	defer s.Stop()
+	// Start an HTTP server
+	mux := http.NewServeMux()
+	s.ServeAdminConsole(mux, "")
+	go http.ListenAndServe("127.0.0.1:11111", mux)
+	waitForAdminServer()
+
+	rsp, e := http.Get("http://127.0.0.1:11111/api/ns")
+	assertNoError(t, e)
+	defer rsp.Body.Close()
+	contents, e := ioutil.ReadAll(rsp.Body)
+	assertNoError(t, e)
+
+	fromJSON, e := config.NamespaceFromJSON(contents)
+	assertNoError(t, e)
+
+	if !reflect.DeepEqual(fromJSON, c.Namespaces["ns"]) {
+		t.Fatalf("Configs read from API aren't the same as what was expected. Expected: %+v API sent: %+v", c.Namespaces["ns"], fromJSON)
+	}
+}
+
 func TestAddGlobalDefault(t *testing.T) {
-	s := startService(false)
+	s, _ := startService(false)
 	defer s.Stop()
 
 	assertDefaultBucketDoesNotExist(t, s)
 
 	b := config.NewDefaultBucketConfig()
+	b.Name = config.DefaultBucketName
 	e := s.(admin.Administrable).AddBucket(config.GlobalNamespace, b.ToProto())
 	assertNoError(t, e)
 
@@ -26,7 +77,7 @@ func TestAddGlobalDefault(t *testing.T) {
 }
 
 func TestRemoveGlobalDefault(t *testing.T) {
-	s := startService(true)
+	s, _ := startService(true)
 	defer s.Stop()
 
 	assertDefaultBucketExists(t, s)
@@ -44,7 +95,7 @@ func TestRemoveGlobalDefault(t *testing.T) {
 }
 
 func TestUpdateGlobalDefault(t *testing.T) {
-	s := startService(true)
+	s, _ := startService(true)
 	defer s.Stop()
 
 	assertDefaultBucketExists(t, s)
@@ -72,14 +123,12 @@ func TestUpdateGlobalDefault(t *testing.T) {
 }
 
 func TestAddNamespace(t *testing.T) {
-	s := startService(false)
+	s, _ := startService(false)
 	defer s.Stop()
 
 	assertBucketDoesNotExist(t, s, "ns", "b")
 
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	n.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
+	n := namespaceConfig("ns", true)
 
 	e := s.(admin.Administrable).AddNamespace(n.ToProto())
 	assertNoError(t, e)
@@ -97,11 +146,7 @@ func TestAddNamespace(t *testing.T) {
 }
 
 func TestRemoveNamespace(t *testing.T) {
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	n.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
-
-	s := startService(false, n)
+	s, _ := startService(false, namespaceConfig("ns", true))
 	defer s.Stop()
 
 	assertBucketExists(t, s, "ns", "b")
@@ -118,11 +163,8 @@ func TestRemoveNamespace(t *testing.T) {
 }
 
 func TestUpdateNamespace(t *testing.T) {
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	n.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
-
-	s := startService(false, n)
+	n := namespaceConfig("ns", true)
+	s, _ := startService(false, n)
 	defer s.Stop()
 
 	// Allows dynamic buckets.
@@ -147,13 +189,8 @@ func TestUpdateNamespace(t *testing.T) {
 }
 
 func TestAddBucket(t *testing.T) {
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	b := config.NewDefaultBucketConfig()
-	b.Name = "b"
-	n.AddBucket("b", b)
-
-	s := startService(false, n)
+	b := bucketConfig("b")
+	s, _ := startService(false, namespaceConfig("ns", false, b))
 	defer s.Stop()
 
 	// Doesn't allow dynamic buckets.
@@ -176,13 +213,7 @@ func TestAddBucket(t *testing.T) {
 }
 
 func TestRemoveBucket(t *testing.T) {
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	b := config.NewDefaultBucketConfig()
-	b.Name = "b"
-	n.AddBucket("b", b)
-
-	s := startService(false, n)
+	s, _ := startService(false, namespaceConfig("ns", false, bucketConfig("b")))
 	defer s.Stop()
 
 	// Doesn't allow dynamic buckets.
@@ -202,14 +233,8 @@ func TestRemoveBucket(t *testing.T) {
 }
 
 func TestUpdateBucket(t *testing.T) {
-	n := config.NewDefaultNamespaceConfig()
-	n.Name = "ns"
-	b := config.NewDefaultBucketConfig()
-	b.Name = "b"
-	b.MaxTokensPerRequest = 2
-	n.AddBucket("b", b)
-
-	s := startService(false, n)
+	b := bucketConfig("b")
+	s, _ := startService(false, namespaceConfig("ns", false, b))
 	defer s.Stop()
 
 	assertBucketExists(t, s, "ns", "b")
@@ -230,18 +255,38 @@ func TestUpdateBucket(t *testing.T) {
 	assertNoError(t, e)
 }
 
-func startService(withDefault bool, ns ...*config.NamespaceConfig) quotaservice.Server {
+func namespaceConfig(n string, dynamic bool, b ...*config.BucketConfig) *config.NamespaceConfig {
+	ns := config.NewDefaultNamespaceConfig()
+	ns.Name = n
+	for _, bc := range b {
+		ns.AddBucket(bc.Name, bc)
+	}
+
+	if dynamic {
+		ns.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
+	}
+
+	return ns
+}
+
+func bucketConfig(n string) *config.BucketConfig {
+	b := config.NewDefaultBucketConfig()
+	b.Name = n
+	b.MaxTokensPerRequest = 2
+	return b
+}
+
+func startService(withDefault bool, ns ...*config.NamespaceConfig) (quotaservice.Server, *config.ServiceConfig) {
 	c := config.NewDefaultServiceConfig()
 	if !withDefault {
 		c.GlobalDefaultBucket = nil
 	}
 	for _, n := range ns {
-		fmt.Printf("Adding namespace %+v ", n)
 		c.AddNamespace(n.Name, n)
 	}
 	s := quotaservice.New(c, &quotaservice.MockBucketFactory{}, &quotaservice.MockEndpoint{})
 	s.Start()
-	return s
+	return s, c
 }
 
 func assertDefaultBucketExists(t *testing.T, s quotaservice.Server) {
@@ -282,4 +327,19 @@ func assertError(t *testing.T, e error) {
 	if e == nil {
 		t.Fatal("Expecting error!")
 	}
+}
+
+func waitForAdminServer() {
+	maxWait := 2 * time.Minute
+	deadline := time.Now().Add(maxWait)
+
+	// Yuck.
+	for time.Now().Before(deadline) {
+		_, e := http.Get("http://127.0.0.1:11111/")
+		if e == nil {
+			return
+		}
+	}
+
+	panic("Waited for 2 minutes, admin server did not come up")
 }

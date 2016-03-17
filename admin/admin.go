@@ -11,10 +11,12 @@ import (
 	"strings"
 
 	"encoding/json"
+	"errors"
+	"io"
+
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"io"
 )
 
 // Administrable defines something that can be administered via this package.
@@ -97,10 +99,10 @@ type apiHandler struct {
 }
 
 func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.HasPrefix(r.URL.Path, "/api/bucket/") {
-		params := strings.TrimPrefix(r.URL.Path, "/api/bucket/")
+	if strings.HasPrefix(r.URL.Path, "/api/") {
+		params := strings.TrimPrefix(r.URL.Path, "/api/")
 		namespace, name := extractNamespaceName(params)
-		logging.Printf("Request for bucket %v", params)
+		logging.Printf("Request for %v", params)
 		switch r.Method {
 		case "DELETE":
 			a.a.DeleteBucket(namespace, name)
@@ -119,6 +121,12 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "500 bad content", http.StatusInternalServerError)
 			} else {
 				a.a.UpdateBucket(namespace, c)
+			}
+		case "GET":
+			e := a.writeConfigs(namespace, w)
+			if e != nil {
+				logging.Print("Caught error ", e)
+				http.Error(w, "500 bad content", http.StatusInternalServerError)
 			}
 		default:
 			logging.Printf("Not handling method %v", r.Method)
@@ -155,11 +163,42 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (a *apiHandler) writeConfigs(namespace string, w http.ResponseWriter) (e error) {
+	cfgs := a.a.Configs()
+	var b []byte
+
+	if namespace == "" || namespace == config.GlobalNamespace {
+		// All buckets and namespaces
+		b, e = json.Marshal(cfgs.ToProto())
+		if e != nil {
+			return
+		}
+	} else {
+		n := cfgs.Namespaces[namespace]
+		if n == nil {
+			e = errors.New("Unable to locate namespace " + namespace)
+			return
+		}
+		b, e = json.Marshal(n.ToProto())
+		if e != nil {
+			return
+		}
+	}
+
+	w.Write(b)
+	return
+}
+
 func extractNamespaceName(params string) (namespace, name string) {
 	// params should be in the format xyz/abc. We just split on '/'
 	parts := strings.Split(params, "/")
+
 	if len(parts) < 2 {
-		panic("Params '" + params + "' doesn't contain a '/'")
+		if len(parts) < 1 {
+			return config.GlobalNamespace, config.DefaultBucketName
+		}
+
+		return parts[0], config.DefaultBucketName
 	}
 	return parts[0], parts[1]
 }
