@@ -1,11 +1,11 @@
 package admin
 
 import (
-	"testing"
-	"github.com/maniksurtani/quotaservice/config"
-	"encoding/json"
 	"bytes"
+	"encoding/json"
+	"github.com/maniksurtani/quotaservice/config"
 	"reflect"
+	"testing"
 )
 
 func TestExtractNamespace(t *testing.T) {
@@ -46,7 +46,6 @@ func TestUnmarshalNamespaceConfig(t *testing.T) {
 	n.Name = "Blah Namespace 123"
 	n.MaxDynamicBuckets = 8000
 	n.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
-
 
 	c1 := config.NewDefaultBucketConfig()
 	c1.FillRate = 12345

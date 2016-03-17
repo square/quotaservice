@@ -4,9 +4,9 @@
 package quotaservice
 
 import (
-	"testing"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/test/helpers"
+	"testing"
 )
 
 func TestWithNoRpcs(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets"
-	"gopkg.in/redis.v3"
 	"github.com/maniksurtani/quotaservice/config"
+	"gopkg.in/redis.v3"
 )
 
 var cfg = config.NewDefaultServiceConfig()

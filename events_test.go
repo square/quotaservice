@@ -4,10 +4,10 @@
 package quotaservice
 
 import (
-	"testing"
-	"os"
-	"time"
 	"github.com/maniksurtani/quotaservice/config"
+	"os"
+	"testing"
+	"time"
 )
 
 var s Server
@@ -64,16 +64,16 @@ func TestTooManyTokens(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	mbf.SetWaitTime("nodyn", "b", 2 * time.Minute)
+	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
 	qs.Allow("nodyn", "b", 1, 1)
 	checkEvent("nodyn", "b", false, EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-events, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
-	mbf.SetWaitTime("nodyn", "b", 2 * time.Nanosecond)
+	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
 	qs.Allow("nodyn", "b", 1, 0)
-	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2 * time.Nanosecond, <-events, t)
+	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-events, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
@@ -148,6 +148,3 @@ func clearEvents(numEvents int) {
 		}
 	}
 }
-
-
-

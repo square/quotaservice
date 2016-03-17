@@ -12,15 +12,15 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/redis.v3"
-	"github.com/maniksurtani/quotaservice/config"
 )
 
 // Suffixes for Redis keys
 const (
 	tokensNextAvblNanosSuffix = "TNA"
-	accumulatedTokensSuffix = "AT"
+	accumulatedTokensSuffix   = "AT"
 )
 
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
@@ -88,10 +88,10 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.Buc
 		dyn,
 		cfg,
 		bf,
-		strconv.FormatInt(1e9 / cfg.FillRate, 10),
+		strconv.FormatInt(1e9/cfg.FillRate, 10),
 		strconv.FormatInt(cfg.Size, 10),
 		idle,
-		strconv.FormatInt(cfg.MaxDebtMillis * 1e6, 10), // Convert millis to nanos
+		strconv.FormatInt(cfg.MaxDebtMillis*1e6, 10), // Convert millis to nanos
 		[]string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix),
 			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)},
 		quotaservice.NewActivityChannel()}

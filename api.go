@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/maniksurtani/quotaservice/admin"
-	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 // The Server interface is what you get when you create a new quotaservice.

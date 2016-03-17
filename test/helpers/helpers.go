@@ -1,8 +1,8 @@
 package helpers
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 // ExpectingPanic indicates that a function passed in should panic. If it does, no errors are

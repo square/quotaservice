@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 type bucketFactory struct {
@@ -49,14 +49,14 @@ func NewBucketFactory() quotaservice.BucketFactory {
 // served, but new requests will not.
 type tokenBucket struct {
 	quotaservice.ActivityChannel
-	dynamic           bool
-	cfg               *config.BucketConfig
+	dynamic bool
+	cfg     *config.BucketConfig
 	nanosBetweenTokens,
 	tokensNextAvailableNanos,
 	accumulatedTokens int64
-	fullName          string
-	waitTimer         chan *waitTimeReq
-	closer            chan struct{}
+	fullName  string
+	waitTimer chan *waitTimeReq
+	closer    chan struct{}
 }
 
 // waitTimeReq is a request that you put on the channel for the waitTimer goroutine to pick up and
@@ -88,7 +88,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 
 	if currentTimeNanos > tna {
 		freshTokens = (currentTimeNanos - tna) / b.nanosBetweenTokens
-		ac = min(b.cfg.Size, ac + freshTokens)
+		ac = min(b.cfg.Size, ac+freshTokens)
 		tna = currentTimeNanos
 	}
 
@@ -100,7 +100,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 	tna += futureWaitNanos
 	ac -= accumulatedTokensUsed
 
-	if (tna - currentTimeNanos > b.cfg.MaxDebtMillis * 1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos && maxWaitTimeNanos > 0) {
+	if (tna-currentTimeNanos > b.cfg.MaxDebtMillis*1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos && maxWaitTimeNanos > 0) {
 		waitTimeNanos = -1
 	} else {
 		b.tokensNextAvailableNanos = tna
@@ -124,7 +124,7 @@ func (b *tokenBucket) waitTimeLoop() {
 			req.response <- b.calcWaitTime(req.requested, req.maxWaitTimeNanos)
 		case <-b.closer:
 			logging.Printf("Garbage collecting bucket %v", b.fullName)
-		// TODO(manik) properly notify goroutines who are currently trying to write to waitTimer
+			// TODO(manik) properly notify goroutines who are currently trying to write to waitTimer
 			return
 		}
 	}

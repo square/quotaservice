@@ -12,8 +12,8 @@ import (
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/rpc/grpc"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/rpc/grpc"
 )
 
 func main() {

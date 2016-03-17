@@ -5,9 +5,9 @@ package quotaservice
 
 import (
 	"fmt"
-	"time"
-	"sync"
 	"github.com/maniksurtani/quotaservice/config"
+	"sync"
+	"time"
 )
 
 type MockBucket struct {
@@ -98,7 +98,7 @@ func (d *MockEndpoint) Init(qs QuotaService) {
 	d.QuotaService = qs
 }
 func (d *MockEndpoint) Start() {}
-func (d *MockEndpoint) Stop() {}
+func (d *MockEndpoint) Stop()  {}
 
 func NewBucketContainerWithMocks(cfg *config.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
 	bf := &MockBucketFactory{}

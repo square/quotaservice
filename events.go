@@ -6,8 +6,8 @@ package quotaservice
 import (
 	"time"
 
-	"github.com/maniksurtani/quotaservice/logging"
 	"fmt"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 type EventType int
@@ -22,12 +22,12 @@ const (
 )
 
 var eventNames = []string{
-	EVENT_TOKENS_SERVED: "EVENT_TOKENS_SERVED",
-	EVENT_TIMEOUT_SERVING_TOKENS: "EVENT_TIMEOUT_SERVING_TOKENS",
+	EVENT_TOKENS_SERVED:             "EVENT_TOKENS_SERVED",
+	EVENT_TIMEOUT_SERVING_TOKENS:    "EVENT_TIMEOUT_SERVING_TOKENS",
 	EVENT_TOO_MANY_TOKENS_REQUESTED: "EVENT_TOO_MANY_TOKENS_REQUESTED",
-	EVENT_BUCKET_MISS: "EVENT_BUCKET_MISS",
-	EVENT_BUCKET_CREATED: "EVENT_BUCKET_CREATED",
-	EVENT_BUCKET_REMOVED: "EVENT_BUCKET_REMOVED"}
+	EVENT_BUCKET_MISS:               "EVENT_BUCKET_MISS",
+	EVENT_BUCKET_CREATED:            "EVENT_BUCKET_CREATED",
+	EVENT_BUCKET_REMOVED:            "EVENT_BUCKET_REMOVED"}
 
 func (et EventType) String() string {
 	name := eventNames[et]

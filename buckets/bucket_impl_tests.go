@@ -1,11 +1,11 @@
 package buckets
 
 import (
-	"testing"
 	"github.com/maniksurtani/quotaservice"
-	"time"
-	"strconv"
 	"github.com/maniksurtani/quotaservice/config"
+	"strconv"
+	"testing"
+	"time"
 )
 
 func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {

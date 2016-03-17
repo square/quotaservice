@@ -4,10 +4,10 @@
 package config
 
 import (
-	"testing"
-	"reflect"
 	"fmt"
 	"github.com/maniksurtani/quotaservice/test/helpers"
+	"reflect"
+	"testing"
 )
 
 const cfgYaml = `namespaces:

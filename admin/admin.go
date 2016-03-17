@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"strings"
 
+	"encoding/json"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"encoding/json"
 	"io"
 )
 
@@ -41,7 +41,7 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 		htmlFiles := make([]string, 0)
 		for _, f := range files {
 			if !f.IsDir() && strings.HasSuffix(f.Name(), ".html") {
-				htmlFiles = append(htmlFiles, assetsDirectory + "/" + f.Name())
+				htmlFiles = append(htmlFiles, assetsDirectory+"/"+f.Name())
 			}
 		}
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

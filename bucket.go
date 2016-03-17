@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 // bucketContainer is a holder for configurations and bucket factories.
@@ -22,7 +22,7 @@ type bucketContainer struct {
 	n             notifier
 	namespaces    map[string]*namespace
 	defaultBucket Bucket
-	sync.RWMutex // Embedded mutex
+	sync.RWMutex  // Embedded mutex
 }
 
 type namespace struct {
@@ -31,7 +31,7 @@ type namespace struct {
 	cfg           *config.NamespaceConfig
 	buckets       map[string]Bucket
 	defaultBucket Bucket
-	sync.RWMutex // Embedded mutex
+	sync.RWMutex  // Embedded mutex
 }
 
 type notifier interface {
@@ -77,7 +77,7 @@ func (m ActivityChannel) ReportActivity() {
 	case m <- true:
 	// reported activity
 	default:
-	// Already reported
+		// Already reported
 	}
 }
 
@@ -273,7 +273,7 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	bucket.ReportActivity()
 
 	if bucketName != config.DefaultBucketName {
-		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
+		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
 	}
 	return bucket
 }

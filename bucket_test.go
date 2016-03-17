@@ -5,9 +5,9 @@
 package quotaservice
 
 import (
+	"github.com/maniksurtani/quotaservice/config"
 	"strconv"
 	"testing"
-"github.com/maniksurtani/quotaservice/config"
 )
 
 var cfg = func() *config.ServiceConfig {
@@ -31,9 +31,9 @@ var cfg = func() *config.ServiceConfig {
 	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	ns.MaxDynamicBuckets = 5
 	ns.
-	AddBucket("a", config.NewDefaultBucketConfig()).
-	AddBucket("b", config.NewDefaultBucketConfig()).
-	AddBucket("c", config.NewDefaultBucketConfig())
+		AddBucket("a", config.NewDefaultBucketConfig()).
+		AddBucket("b", config.NewDefaultBucketConfig()).
+		AddBucket("c", config.NewDefaultBucketConfig())
 	c.AddNamespace("z", ns)
 
 	return c

@@ -14,8 +14,8 @@ import (
 
 	"errors"
 
-	pb "github.com/maniksurtani/quotaservice/protos/config"
 	"github.com/maniksurtani/quotaservice/config"
+	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Implements the quotaservice.Server interface
@@ -71,7 +71,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		err = newError("Cannot create dynamic bucket " + config.FullyQualifiedName(namespace, name),
+		err = newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name),
 			ER_TOO_MANY_BUCKETS)
 		s.Emit(newBucketMissedEvent(namespace, name, true))
 		return
@@ -79,7 +79,7 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 	}
 
 	if b == nil {
-		err = newError("No such bucket " + config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
+		err = newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 		s.Emit(newBucketMissedEvent(namespace, name, false))
 		return
 	}
