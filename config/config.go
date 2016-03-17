@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 	"gopkg.in/yaml.v2"
@@ -40,7 +39,7 @@ func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *Serv
 
 func (s *ServiceConfig) ToProto() *pb.ServiceConfig {
 	return &pb.ServiceConfig{
-		Version:             proto.Int(s.Version),
+		Version:             int32(s.Version),
 		GlobalDefaultBucket: bucketToProto(DefaultBucketName, s.GlobalDefaultBucket),
 		Namespaces:          namespaceMapToProto(s.Namespaces)}
 }
@@ -125,9 +124,9 @@ func (n *NamespaceConfig) ToProto() *pb.NamespaceConfig {
 	return &pb.NamespaceConfig{
 		DefaultBucket:         bucketToProto(DefaultBucketName, n.DefaultBucket),
 		DynamicBucketTemplate: bucketToProto(DynamicBucketTemplateName, n.DynamicBucketTemplate),
-		MaxDynamicBuckets:     proto.Int(n.MaxDynamicBuckets),
+		MaxDynamicBuckets:     int32(n.MaxDynamicBuckets),
 		Buckets:               bucketMapToProto(n.Buckets),
-		Name:                  proto.String(n.Name)}
+		Name:                  n.Name}
 }
 
 type BucketConfig struct {
@@ -147,13 +146,13 @@ func (b *BucketConfig) String() string {
 
 func (b *BucketConfig) ToProto() *pb.BucketConfig {
 	return &pb.BucketConfig{
-		Size:                proto.Int64(b.Size),
-		FillRate:            proto.Int64(b.FillRate),
-		WaitTimeoutMillis:   proto.Int64(b.WaitTimeoutMillis),
-		MaxIdleMillis:       proto.Int64(b.MaxIdleMillis),
-		MaxDebtMillis:       proto.Int64(b.MaxDebtMillis),
-		MaxTokensPerRequest: proto.Int64(b.MaxTokensPerRequest),
-		Name:                proto.String(b.Name)}
+		Size:                b.Size,
+		FillRate:            b.FillRate,
+		WaitTimeoutMillis:   b.WaitTimeoutMillis,
+		MaxIdleMillis:       b.MaxIdleMillis,
+		MaxDebtMillis:       b.MaxDebtMillis,
+		MaxTokensPerRequest: b.MaxTokensPerRequest,
+		Name:                b.Name}
 }
 
 func (b *BucketConfig) ApplyDefaults() *BucketConfig {
@@ -270,7 +269,7 @@ func FromProto(cfg *pb.ServiceConfig) *ServiceConfig {
 	globalBucket := BucketFromProto(cfg.GlobalDefaultBucket, nil)
 	return &ServiceConfig{
 		GlobalDefaultBucket: globalBucket,
-		Version:             int(cfg.GetVersion()),
+		Version:             int(cfg.Version),
 		Namespaces:          namespacesFromProto(cfg.Namespaces)}
 }
 
@@ -292,13 +291,13 @@ func BucketFromProto(cfg *pb.BucketConfig, nsc *NamespaceConfig) (b *BucketConfi
 	}
 
 	b = &BucketConfig{
-		Size:                cfg.GetSize(),
-		FillRate:            cfg.GetFillRate(),
-		WaitTimeoutMillis:   cfg.GetWaitTimeoutMillis(),
-		MaxIdleMillis:       cfg.GetMaxIdleMillis(),
-		MaxDebtMillis:       cfg.GetMaxDebtMillis(),
-		MaxTokensPerRequest: cfg.GetMaxTokensPerRequest(),
-		namespace:           nsc, Name: cfg.GetName()}
+		Size:                cfg.Size,
+		FillRate:            cfg.FillRate,
+		WaitTimeoutMillis:   cfg.WaitTimeoutMillis,
+		MaxIdleMillis:       cfg.MaxIdleMillis,
+		MaxDebtMillis:       cfg.MaxDebtMillis,
+		MaxTokensPerRequest: cfg.MaxTokensPerRequest,
+		namespace:           nsc, Name: cfg.Name}
 	return
 }
 
@@ -321,8 +320,8 @@ func NamespaceFromProto(cfg *pb.NamespaceConfig) (n *NamespaceConfig) {
 	}
 
 	n = &NamespaceConfig{
-		MaxDynamicBuckets: int(cfg.GetMaxDynamicBuckets()),
-		Name:              cfg.GetName()}
+		MaxDynamicBuckets: int(cfg.MaxDynamicBuckets),
+		Name:              cfg.Name}
 
 	n.DefaultBucket = BucketFromProto(cfg.DefaultBucket, n)
 	n.DynamicBucketTemplate = BucketFromProto(cfg.DynamicBucketTemplate, n)

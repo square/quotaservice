@@ -295,44 +295,7 @@ if tokensNextAvailableNanos + futureWaitNanos - currentTimeNanos > maxDebtNanos 
 
 ## API: Protobuf service
 
-A protobuf service endpoint will be exposed by the quota service.
-
-```proto
-syntax = "proto2";
-
-package quotaservice;
-
-service QuotaService {
- rpc Allow(AllowRequest) returns (AllowResponse) {}
-}
-
-message AllowRequest {
- optional string namespace = 1;
- optional string name = 2;
-
- // Defaults to 1
- optional int64 num_tokens_requested = 3;
-
- // Defaults to -1, which assumes server-side defaults. 0 means no max wait at all.
- optional int64 max_wait_millis_override = 4;
-}
-
-message AllowResponse {
- enum Status {
-   OK = 1;                        // Tokens granted
-   OK_WAIT = 2;                   // Tokens granted, but wait time set
-   REJECTED_TIMEOUT = 3;          // Tokens not  available within max wait time
-   REJECTED_NO_BUCKET = 4;        // No valid bucket
-   REJECTED_TOO_MANY_BUCKETS = 5; // Dynamic bucket couldn't be created
-   REJECTED_TOO_MANY_TOKENS_REQUESTED = 6;
-   REJECTED_SERVER_ERROR = 7;  
- }
-
- optional Status status = 1;
- optional int64 num_tokens_granted = 2;
- optional int64 wait_millis = 3; // 0 refers to no waiting necessary.
-}
-```
+A protobuf service endpoint will be exposed by the quota service, as defined [here](https://github.com/maniksurtani/quotaservice/blob/master/protos/quota_service.proto).
 
 ### Alternative APIs
 

@@ -14,31 +14,31 @@
  *   limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package quotaservice.configs;
 
 // Representations of configuration elements, for persisting and sharing across nodes.
 message ServiceConfig {
-  optional BucketConfig global_default_bucket = 1;
+  BucketConfig global_default_bucket = 1;
   repeated NamespaceConfig namespaces = 2;
-  optional int32 version = 3;
+  int32 version = 3;
 }
 
 message NamespaceConfig {
-  optional string name = 1;
-  optional BucketConfig default_bucket = 2;
-  optional BucketConfig dynamic_bucket_template = 3;
-  optional int32 max_dynamic_buckets = 4;
+  string name = 1;
+  BucketConfig default_bucket = 2;
+  BucketConfig dynamic_bucket_template = 3;
+  int32 max_dynamic_buckets = 4;
   repeated BucketConfig buckets = 5;
 }
 
 message BucketConfig {
-  optional string name = 1;
-  optional int64 size = 2;
-  optional int64 fill_rate = 3;
-  optional int64 wait_timeout_millis = 4;
-  optional int64 max_idle_millis = 5;
-  optional int64 max_debt_millis = 6;
-  optional int64 max_tokens_per_request = 7;
+  string name = 1;
+  int64 size = 2;
+  int64 fill_rate = 3;
+  int64 wait_timeout_millis = 4;
+  int64 max_idle_millis = 5;
+  int64 max_debt_millis = 6;
+  int64 max_tokens_per_request = 7;
 }

@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	pb "github.com/maniksurtani/quotaservice/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -27,9 +26,9 @@ func main() {
 	client := pb.NewQuotaServiceClient(conn)
 
 	req := &pb.AllowRequest{
-		Namespace:          proto.String("test.namespace"),
-		Name:               proto.String("abc"),
-		NumTokensRequested: proto.Int64(1)}
+		Namespace:       "test.namespace",
+		BucketName:      "abc",
+		TokensRequested: 1}
 	rsp, err := client.Allow(context.TODO(), req)
 	if err != nil {
 		fmt.Printf("Caught error %v", err)

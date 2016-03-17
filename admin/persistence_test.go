@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
@@ -23,11 +22,11 @@ func TestPersistence(t *testing.T) {
 	}
 
 	s := &pb.ServiceConfig{
-		GlobalDefaultBucket: &pb.BucketConfig{Size: proto.Int64(300), FillRate: proto.Int64(400), WaitTimeoutMillis: proto.Int64(123456)},
+		GlobalDefaultBucket: &pb.BucketConfig{Size: 300, FillRate: 400, WaitTimeoutMillis: 123456},
 		Namespaces:          make([]*pb.NamespaceConfig, 1),
-		Version:             proto.Int(92)}
+		Version:             92}
 
-	s.Namespaces[0] = &pb.NamespaceConfig{Name: proto.String("xyz"), MaxDynamicBuckets: proto.Int(123), DynamicBucketTemplate: &pb.BucketConfig{}}
+	s.Namespaces[0] = &pb.NamespaceConfig{Name: "xyz", MaxDynamicBuckets: 123, DynamicBucketTemplate: &pb.BucketConfig{}}
 
 	// Store s.
 	e = persister.PersistAndNotify(s)
@@ -36,7 +35,7 @@ func TestPersistence(t *testing.T) {
 	// Test notification
 	select {
 	case <-persister.ConfigChangedWatcher():
-		// This is good.
+	// This is good.
 	default:
 		t.Fatal("Config channel should not be empty!")
 	}

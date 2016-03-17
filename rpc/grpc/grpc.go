@@ -8,7 +8,6 @@ import (
 	"net"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
@@ -64,47 +63,35 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 	rsp := new(pb.AllowResponse)
 	if invalid(req) {
 		logging.Printf("Invalid request %+v", req)
-		s := pb.AllowResponse_REJECTED_INVALID_REQUEST
-		rsp.Status = &s
+		rsp.Status = pb.AllowResponse_REJECTED_INVALID_REQUEST
 		return rsp, nil
 	}
 
-	var numTokensRequested int64 = 1
-	if req.NumTokensRequested != nil {
-		numTokensRequested = req.GetNumTokensRequested()
+	var tokensRequested int64 = 1
+	if req.TokensRequested > 0 {
+		tokensRequested = req.TokensRequested
 	}
 
-	var maxWaitMillisOverride int64 = -1
-	if req.MaxWaitMillisOverride != nil {
-		maxWaitMillisOverride = req.GetMaxWaitMillisOverride()
-	}
-
-	granted, wait, err := g.qs.Allow(req.GetNamespace(), req.GetName(), numTokensRequested, maxWaitMillisOverride)
-	var status pb.AllowResponse_Status
+	granted, wait, err := g.qs.Allow(req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride)
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
-			status = toPBStatus(qsErr)
+			rsp.Status = toPBStatus(qsErr)
 		} else {
 			logging.Printf("Caught error %v", err)
-			status = pb.AllowResponse_REJECTED_SERVER_ERROR
+			rsp.Status = pb.AllowResponse_REJECTED_SERVER_ERROR
 		}
 	} else {
-		if wait > 0 {
-			status = pb.AllowResponse_OK_WAIT
-		} else {
-			status = pb.AllowResponse_OK
-		}
-		rsp.NumTokensGranted = proto.Int64(granted)
-		rsp.WaitMillis = proto.Int64(wait.Nanoseconds())
+		rsp.Status = pb.AllowResponse_OK
+		rsp.TokensGranted = granted
+		rsp.WaitMillis = wait.Nanoseconds()
 	}
-	rsp.Status = &status
+
 	return rsp, nil
 }
 
 func invalid(req *pb.AllowRequest) bool {
-	// Negative tokens are allowed!
-	return req.GetName() == "" || req.GetNamespace() == "" || (req.NumTokensRequested != nil && req.GetNumTokensRequested() == 0)
+	return req.BucketName == "" || req.Namespace == ""
 }
 
 func toPBStatus(qsErr quotaservice.QuotaServiceError) (r pb.AllowResponse_Status) {
