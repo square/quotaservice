@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"net/http"
+	"io/ioutil"
 )
 
 const help = `Usage: quotaservice-cli -h host -p port (-n namespace) [COMMAND]
@@ -36,9 +38,28 @@ func main() {
 
 	switch flag.Args()[0] {
 	case "list":
-		fmt.Println("Listing... ", host, port, ns)
+		list(*host, *port, *ns)
 	default:
 		flag.Usage()
 		os.Exit(2)
 	}
+}
+
+func list(host string, port int, ns string) {
+	u := fmt.Sprintf("http://%s:%d/api/%s", host, port, ns)
+	r, e := http.Get(u)
+	if e != nil {
+		fmt.Println("ERROR: ", e)
+		return
+	}
+
+	defer r.Body.Close()
+	b, e := ioutil.ReadAll(r.Body)
+	if e != nil {
+		fmt.Println("ERROR: ", e)
+		return
+	}
+
+	fmt.Println("Config:")
+	fmt.Println(string(b))
 }
