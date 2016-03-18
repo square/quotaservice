@@ -74,7 +74,13 @@ func (bf *bucketFactory) Init(cfg *config.ServiceConfig) {
 func (bf *bucketFactory) connectToRedis() {
 	// Set up connection to Redis
 	bf.client = redis.NewClient(bf.redisOpts)
-	logging.Printf("Connection established. Time on Redis server: %v", time.Unix(toInt64(bf.client.Time().Val()[0], 0), 0))
+	redisResults := bf.client.Time().Val()
+	if len(redisResults) == 0 {
+		logging.Printf("Cannot connect to Redis. TIME returned %v", redisResults)
+	} else {
+		t := time.Unix(toInt64(redisResults[0], 0), 0)
+		logging.Printf("Connection established. Time on Redis server: %v", t)
+	}
 	bf.scriptSHA = loadScript(bf.client)
 }
 
