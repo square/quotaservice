@@ -100,8 +100,10 @@ func (s *server) Allow(namespace string, name string, tokensRequested int64, max
 		maxWaitTime *= time.Duration(b.Config().WaitTimeoutMillis)
 	}
 
+	// TODO(manik) chk on retvals
 	waitTime = b.Take(tokensRequested, maxWaitTime)
 
+	// TODO(manik) chk on test. WTF is going on?
 	if waitTime > 0 && maxWaitTime > 0 {
 		waitTime = 0
 		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)

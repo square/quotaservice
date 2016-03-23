@@ -7,6 +7,8 @@ import "time"
 
 // QuotaService is the interface used by RPC subsystems when fielding remote requests for quotas.
 type QuotaService interface {
+	// TODO(manik) namespace string, name string --> namespace, name string
+	// TODO(manik) do we really need this this many return values? Kinda sucky.
 	// Allow will tell you whether the tokens requested in a given namespace and name are available.
 	// It will reserve the tokens, and return the number granted, as well as how long a caller would
 	// have to wait before the tokens are assumed to be available. In that case, the tokens are

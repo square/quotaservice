@@ -41,6 +41,7 @@ type notifier interface {
 // Bucket is an abstraction of a token bucket.
 type Bucket interface {
 	ActivityReporter
+	// TODO(manik) clean up this API. Sucky encoded return types.
 	// Take retrieves tokens from a token bucket, returning the time, in millis, to wait before
 	// the number of tokens becomes available. A return value of 0 would mean no waiting is
 	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
@@ -229,6 +230,7 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (buck
 	}
 
 	if bucket != nil {
+		// TODO(manik) if we report activity here, do we need to pass these into bucket impls?
 		bucket.ReportActivity()
 	}
 

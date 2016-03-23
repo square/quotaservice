@@ -20,6 +20,7 @@ const help = `Usage: quotaservice-cli -h host -p port (-n namespace) [COMMAND]
 
 `
 
+// TODO(manik) finish CLI
 func main() {
 	flag.Usage = func() {
 		fmt.Println(help)
