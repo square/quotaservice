@@ -107,7 +107,7 @@ func TestUpdateGlobalDefault(t *testing.T) {
 	assertNoError(t, e)
 
 	// Now check that we hit max tokens limits.
-	_, _, e = s.(quotaservice.QuotaService).Allow("doesn't exist", "doesn't exist", 5, 0)
+	_, e = s.(quotaservice.QuotaService).Allow("doesn't exist", "doesn't exist", 5, 0)
 	assertError(t, e)
 	if e.(quotaservice.QuotaServiceError).Reason != quotaservice.ER_TOO_MANY_TOKENS_REQUESTED {
 		t.Fatal("Wrong error: ", e)
@@ -118,7 +118,7 @@ func TestUpdateGlobalDefault(t *testing.T) {
 	assertNoError(t, e)
 
 	// Now check again
-	_, _, e = s.(quotaservice.QuotaService).Allow("doesn't exist", "doesn't exist", 5, 0)
+	_, e = s.(quotaservice.QuotaService).Allow("doesn't exist", "doesn't exist", 5, 0)
 	assertNoError(t, e)
 }
 
@@ -240,7 +240,7 @@ func TestUpdateBucket(t *testing.T) {
 	assertBucketExists(t, s, "ns", "b")
 
 	// Now check that we hit max tokens limits.
-	_, _, e := s.(quotaservice.QuotaService).Allow("ns", "b", 5, 0)
+	_, e := s.(quotaservice.QuotaService).Allow("ns", "b", 5, 0)
 	assertError(t, e)
 	if e.(quotaservice.QuotaServiceError).Reason != quotaservice.ER_TOO_MANY_TOKENS_REQUESTED {
 		t.Fatal("Wrong error: ", e)
@@ -251,7 +251,7 @@ func TestUpdateBucket(t *testing.T) {
 	e = s.(admin.Administrable).UpdateBucket("ns", b.ToProto())
 	assertNoError(t, e)
 
-	_, _, e = s.(quotaservice.QuotaService).Allow("ns", "b", 5, 0)
+	_, e = s.(quotaservice.QuotaService).Allow("ns", "b", 5, 0)
 	assertNoError(t, e)
 }
 
@@ -295,12 +295,8 @@ func assertDefaultBucketExists(t *testing.T, s quotaservice.Server) {
 
 func assertBucketExists(t *testing.T, s quotaservice.Server, nsName, bName string) {
 	// Demonstrate that we now do have a default bucket.
-	g, w, e := s.(quotaservice.QuotaService).Allow(nsName, bName, 1, 0)
+	w, e := s.(quotaservice.QuotaService).Allow(nsName, bName, 1, 0)
 	assertNoError(t, e)
-
-	if g != 1 {
-		t.Fatal("Expected to be granted 1 token")
-	}
 
 	if w != 0 {
 		t.Fatal("Expecting wait time of 0")
@@ -313,7 +309,7 @@ func assertDefaultBucketDoesNotExist(t *testing.T, s quotaservice.Server) {
 
 func assertBucketDoesNotExist(t *testing.T, s quotaservice.Server, nsName, bName string) {
 	// Demonstrate that there is no default bucket first
-	_, _, e := s.(quotaservice.QuotaService).Allow(nsName, bName, 1, 0)
+	_, e := s.(quotaservice.QuotaService).Allow(nsName, bName, 1, 0)
 	assertError(t, e)
 }
 

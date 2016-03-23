@@ -7,16 +7,15 @@ import "time"
 
 // QuotaService is the interface used by RPC subsystems when fielding remote requests for quotas.
 type QuotaService interface {
-	// TODO(manik) namespace string, name string --> namespace, name string
-	// TODO(manik) do we really need this this many return values? Kinda sucky.
 	// Allow will tell you whether the tokens requested in a given namespace and name are available.
-	// It will reserve the tokens, and return the number granted, as well as how long a caller would
-	// have to wait before the tokens are assumed to be available. In that case, the tokens are
-	// reserved, and cannot be put back. Wait times will need to be below the maximum allowed wait
-	// time for that namespace and name, and this can be overridden by maxWaitMillisOverride. Set
-	// maxWaitMillisOverride to -1 if you do not wish to override, or 0 if you do not wish to wait
-	// at all.
-	Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error)
+	// It will reserve the tokens, and tell the caller how long it would have to wait before the
+	// tokens are assumed to be available. In that case, the tokens are reserved, and cannot be put
+	// back. Wait times will need to be below the maximum allowed wait time for that namespace and
+	// name, and this can be overridden by maxWaitMillisOverride, as long as it is lower than the
+	// maximum. A returned waitTime of 0 means tokens can be used immediately. Errors indicate
+	// tokens could not be obtained, and will contain more context once cast to
+	// quotaservice.QoutaServiceError.
+	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64) (waitTime time.Duration, err error)
 }
 
 // RpcEndpoint defines a subsystem that listens on a network socket for external systems to

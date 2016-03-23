@@ -12,28 +12,40 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	// Clear any stale state
 	bucket.Take(1, 0)
 
-	wait := bucket.Take(1, 0)
+	wait, s := bucket.Take(1, 0)
 	if wait != 0 {
 		t.Fatalf("Expecting 0 wait. Was %v", wait)
+	}
+	if !s {
+		t.Fatal("Expecting success to be true.")
 	}
 
 	// Consume all tokens. This should work too.
-	wait = bucket.Take(100, 0)
+	wait, s = bucket.Take(100, 0)
 
 	if wait != 0 {
 		t.Fatalf("Expecting 0 wait. Was %v", wait)
 	}
+	if !s {
+		t.Fatal("Expecting success to be true.")
+	}
 
 	// Should have no more left. Should have to wait.
-	wait = bucket.Take(10, 0)
+	wait, s = bucket.Take(10, 10 * time.Second)
 	if wait < 1 {
 		t.Fatalf("Expecting positive wait time. Was %v", wait)
 	}
+	if !s {
+		t.Fatal("Expecting success to be true.")
+	}
 
 	// If we don't want to wait...
-	wait = bucket.Take(10, time.Nanosecond)
-	if wait > -1 {
-		t.Fatalf("Expecting negative wait time. Was %v", wait)
+	wait, s = bucket.Take(10, 0)
+	if wait != 0 {
+		t.Fatalf("Expecting 0 wait time. Was %v", wait)
+	}
+	if s {
+		t.Fatal("Expecting success to be false.")
 	}
 }
 

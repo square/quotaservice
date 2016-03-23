@@ -18,11 +18,15 @@ type MockBucket struct {
 	cfg                   *config.BucketConfig
 }
 
-func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
+func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	b.RLock()
 	defer b.RUnlock()
 
-	return b.WaitTime
+	if b.WaitTime > maxWaitTime {
+		return 0, false
+	}
+
+	return b.WaitTime, true
 }
 func (b *MockBucket) Config() *config.BucketConfig {
 	return b.cfg

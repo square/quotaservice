@@ -67,53 +67,46 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace string, name string, tokensRequested int64, maxWaitMillisOverride int64) (granted int64, waitTime time.Duration, err error) {
+func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64) (time.Duration, error) {
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		err = newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name),
-			ER_TOO_MANY_BUCKETS)
 		s.Emit(newBucketMissedEvent(namespace, name, true))
-		return
-
+		return 0, newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name), ER_TOO_MANY_BUCKETS)
 	}
 
 	if b == nil {
-		err = newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 		s.Emit(newBucketMissedEvent(namespace, name, false))
-		return
+		return 0, newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 	}
 
 	if b.Config().MaxTokensPerRequest < tokensRequested && b.Config().MaxTokensPerRequest > 0 {
-		err = newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
+		s.Emit(newTooManyTokensRequestedEvent(namespace, name, b.Dynamic(), tokensRequested))
+		return 0, newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
-		s.Emit(newTooManyTokensRequestedEvent(namespace, name, b.Dynamic(), tokensRequested))
-		return
 	}
 
-	// Timeout
 	maxWaitTime := time.Millisecond
 	if maxWaitMillisOverride > -1 && maxWaitMillisOverride < b.Config().WaitTimeoutMillis {
+		// Use the max wait time override from the request.
 		maxWaitTime *= time.Duration(maxWaitMillisOverride)
 	} else {
+		// Fall back to the max wait time configured on the bucket.
 		maxWaitTime *= time.Duration(b.Config().WaitTimeoutMillis)
 	}
 
-	// TODO(manik) chk on retvals
-	waitTime = b.Take(tokensRequested, maxWaitTime)
+	w, success := b.Take(tokensRequested, maxWaitTime)
 
-	// TODO(manik) chk on test. WTF is going on?
-	if waitTime > 0 && maxWaitTime > 0 {
-		waitTime = 0
-		err = newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
+	if !success {
+		// Could not claim tokens within the given max wait time
 		s.Emit(newTimedOutEvent(namespace, name, b.Dynamic(), tokensRequested))
-	} else {
-		granted = tokensRequested
-		s.Emit(newTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, waitTime))
+		return 0, newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
 	}
 
-	return
+	// The only positive result
+	s.Emit(newTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, w))
+	return w, nil
 }
 
 func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string) {

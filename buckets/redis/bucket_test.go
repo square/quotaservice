@@ -36,10 +36,13 @@ func TestScriptLoaded(t *testing.T) {
 }
 
 func TestFailingRedisConn(t *testing.T) {
-	w := bucket.Take(1, 0)
+	w, s := bucket.Take(1, 0)
 
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
+	}
+	if !s {
+		t.Fatalf("Success should be true.")
 	}
 
 	err := bucket.factory.client.Close()
@@ -48,9 +51,12 @@ func TestFailingRedisConn(t *testing.T) {
 	}
 
 	// Client should reconnect
-	w = bucket.Take(1, 0)
+	w, s = bucket.Take(1, 0)
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
+	}
+	if !s {
+		t.Fatalf("Success should be true.")
 	}
 }
 

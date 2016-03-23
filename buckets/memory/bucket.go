@@ -64,19 +64,20 @@ type waitTimeReq struct {
 	response                    chan int64
 }
 
-func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration) {
+func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	rsp := make(chan int64, 1)
 	b.waitTimer <- &waitTimeReq{numTokens, maxWaitTime.Nanoseconds(), rsp}
 	waitTimeNanos := <-rsp
 
-	waitTime = time.Duration(waitTimeNanos) * time.Nanosecond
-	if waitTime > maxWaitTime && maxWaitTime > 0 {
-		waitTime = -1
+	if waitTimeNanos < 0 {
+		// Timed out
+		return 0, false
 	}
 
-	return
+	return time.Duration(waitTimeNanos) * time.Nanosecond, true
 }
 
+// calcWaitTime is designed to run in a single event loop and is not thread-safe.
 func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeNanos int64) {
 	currentTimeNanos := time.Now().UnixNano()
 	tna := b.tokensNextAvailableNanos
@@ -98,7 +99,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 	tna += futureWaitNanos
 	ac -= accumulatedTokensUsed
 
-	if (tna-currentTimeNanos > b.cfg.MaxDebtMillis*1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos && maxWaitTimeNanos > 0) {
+	if (tna-currentTimeNanos > b.cfg.MaxDebtMillis*1e6) || (waitTimeNanos > 0 && waitTimeNanos > maxWaitTimeNanos) {
 		waitTimeNanos = -1
 	} else {
 		b.tokensNextAvailableNanos = tna
@@ -115,6 +116,7 @@ func min(x, y int64) int64 {
 	return y
 }
 
+// waitTimeLoop is the single event loop that claims tokens on a given bucket.
 func (b *tokenBucket) waitTimeLoop() {
 	for {
 		select {

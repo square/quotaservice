@@ -72,7 +72,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 		tokensRequested = req.TokensRequested
 	}
 
-	granted, wait, err := g.qs.Allow(req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride)
+	wait, err := g.qs.Allow(req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride)
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
@@ -83,7 +83,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 		}
 	} else {
 		rsp.Status = pb.AllowResponse_OK
-		rsp.TokensGranted = granted
+		rsp.TokensGranted = req.TokensRequested
 		rsp.WaitMillis = wait.Nanoseconds()
 	}
 

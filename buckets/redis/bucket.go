@@ -107,13 +107,14 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 	return namespace + ":" + bucketName + ":" + suffix
 }
 
-func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime time.Duration) {
+func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 	args := []string{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		b.maxIdleTimeMillis, b.maxDebtNanos}
 
 	keepTrying := true
+	var waitTime time.Duration
 	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
 		res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
 		switch waitTimeNanos := res.Val().(type) {
@@ -136,7 +137,12 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime
 			b.factory.connectionRetries))
 	}
 
-	return
+	if waitTime < 0 {
+		// Timed out
+		return 0, false
+	}
+
+	return waitTime, true
 }
 
 func toInt64(s interface{}, defaultValue int64) (v int64) {
@@ -205,7 +211,7 @@ func loadScript(c *redis.Client) (sha string) {
 	tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
 	accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
 
-	if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime and maxWaitTime > 0) then
+	if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime) then
     	waitTime = -1
 	else
 		if lifespan > 0 then
