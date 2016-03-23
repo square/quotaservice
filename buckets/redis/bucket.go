@@ -33,7 +33,6 @@ type redisBucket struct {
 	maxIdleTimeMillis     string
 	maxDebtNanos          string
 	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
-	quotaservice.ActivityChannel
 }
 
 type bucketFactory struct {
@@ -99,14 +98,13 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.Buc
 		idle,
 		strconv.FormatInt(cfg.MaxDebtMillis*1e6, 10), // Convert millis to nanos
 		[]string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix),
-			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)},
-		quotaservice.NewActivityChannel()}
+			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)}}
 
 	return rb
 }
 
 func toRedisKey(namespace, bucketName, suffix string) string {
-	return fmt.Sprintf("%v:%v:%v", namespace, bucketName, suffix)
+	return namespace + ":" + bucketName + ":" + suffix
 }
 
 func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (waitTime time.Duration) {

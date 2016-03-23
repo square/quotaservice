@@ -21,17 +21,17 @@ type bucketContainer struct {
 	bf            BucketFactory
 	n             notifier
 	namespaces    map[string]*namespace
-	defaultBucket Bucket
-	sync.RWMutex  // Embedded mutex
+	defaultBucket *expirableBucket
+	sync.RWMutex // Embedded mutex
 }
 
 type namespace struct {
 	n             notifier
-	namespaceName string
+	name          string
 	cfg           *config.NamespaceConfig
-	buckets       map[string]Bucket
-	defaultBucket Bucket
-	sync.RWMutex  // Embedded mutex
+	buckets       map[string]*expirableBucket
+	defaultBucket *expirableBucket
+	sync.RWMutex // Embedded mutex
 }
 
 type notifier interface {
@@ -40,7 +40,7 @@ type notifier interface {
 
 // Bucket is an abstraction of a token bucket.
 type Bucket interface {
-	ActivityReporter
+	// TODO(manik) clean up this API. Sucky encoded return types.
 	// Take retrieves tokens from a token bucket, returning the time, in millis, to wait before
 	// the number of tokens becomes available. A return value of 0 would mean no waiting is
 	// necessary, and a wait time that is less than 0 would mean that no tokens would be available
@@ -55,37 +55,26 @@ type Bucket interface {
 	Destroy()
 }
 
-type ActivityReporter interface {
-	ActivityDetected() bool
-	ReportActivity()
-}
-
-// ActivityChannel is a channel that should be embedded into all bucket implementations. It should
-// be constructed using NewActivityChannel(), and activity should be reported on the bucket instance
-// using ActivityChannel.ReportActivity(), to ensure it isn't assumed to be inactive and removed
-// after a period of time.
-type ActivityChannel chan bool
-
-// NewActivityChannel creates a new activity channel for use by bucket implementations.
-func NewActivityChannel() ActivityChannel {
-	return ActivityChannel(make(chan bool, 1))
+type expirableBucket struct {
+	Bucket
+	activityMonitor chan struct{}
 }
 
 // ReportActivity indicates that an ActivityChannel is active. This method doesn't block.
-func (m ActivityChannel) ReportActivity() {
+func (e *expirableBucket) ReportActivity() {
 	select {
-	case m <- true:
+	case e.activityMonitor <- struct{}{}:
 	// reported activity
 	default:
-		// Already reported
+	// Already reported
 	}
 }
 
 // ActivityDetected tells you if activity has been detected since the last time this method was
 // called.
-func (m ActivityChannel) ActivityDetected() bool {
+func (e *expirableBucket) ActivityDetected() bool {
 	select {
-	case <-m:
+	case <-e.activityMonitor:
 		return true
 	default:
 		return false
@@ -94,7 +83,7 @@ func (m ActivityChannel) ActivityDetected() bool {
 
 // watch watches a bucket for activity, deleting the bucket if no activity has been detected after
 // a given duration.
-func (ns *namespace) watch(bucketName string, bucket Bucket, freq time.Duration) {
+func (ns *namespace) watch(bucketName string, bucket *expirableBucket, freq time.Duration) {
 	if freq <= 0 {
 		return
 	}
@@ -127,7 +116,7 @@ func (ns *namespace) removeBucket(bucketName string) {
 	bucket := ns.buckets[bucketName]
 	if bucket != nil {
 		delete(ns.buckets, bucketName)
-		ns.n.Emit(newBucketRemovedEvent(ns.namespaceName, bucketName, bucket.Dynamic()))
+		ns.n.Emit(newBucketRemovedEvent(ns.name, bucketName, bucket.Dynamic()))
 		bucket.Destroy()
 	}
 }
@@ -160,14 +149,23 @@ func NewBucketContainer(cfg *config.ServiceConfig, bf BucketFactory, n notifier)
 	return
 }
 
+func (bc *bucketContainer) newExpirableBucket(namespace, bucketName string, cfg *config.BucketConfig, dyn bool) *expirableBucket {
+	actualBucket := bc.bf.NewBucket(namespace, bucketName, cfg, dyn)
+	if actualBucket == nil {
+		return nil
+	}
+
+	return &expirableBucket{actualBucket, make(chan struct{}, 1)}
+}
+
 func (bc *bucketContainer) createNamespaceUnderLock(nsCfg *config.NamespaceConfig) error {
 	if _, exists := bc.namespaces[nsCfg.Name]; exists {
 		return errors.New("Namespace " + nsCfg.Name + " already exists.")
 	}
 
-	nsp := &namespace{n: bc.n, namespaceName: nsCfg.Name, cfg: nsCfg, buckets: make(map[string]Bucket)}
+	nsp := &namespace{n: bc.n, name: nsCfg.Name, cfg: nsCfg, buckets: make(map[string]*expirableBucket)}
 	if nsCfg.DefaultBucket != nil {
-		nsp.defaultBucket = bc.bf.NewBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
+		nsp.defaultBucket = bc.newExpirableBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
 	}
 
 	for bucketName, bucketCfg := range nsCfg.Buckets {
@@ -182,20 +180,22 @@ func (bc *bucketContainer) createGlobalDefaultBucket(cfg *config.BucketConfig) e
 	if bc.defaultBucket != nil {
 		return errors.New("Global default bucket already exists")
 	}
-	bc.defaultBucket = bc.bf.NewBucket(config.GlobalNamespace, config.DefaultBucketName, cfg, false)
+	bc.defaultBucket = bc.newExpirableBucket(config.GlobalNamespace, config.DefaultBucketName, cfg, false)
 	return nil
 }
 
-// findBucket locates a bucket for a given name and namespace. If the namespace doesn't exist, and
+// FindBucket locates a bucket for a given name and namespace. If the namespace doesn't exist, and
 // if a global default bucket is configured, it will be used. If the namespace is available but the
 // named bucket doesn't exist, it will either use a namespace-scoped default bucket if available, or
 // a dynamic bucket is created if enabled (and space for more dynamic buckets is available). If all
 // fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
 // buckets or re-create statically defined buckets that have been invalidated.
-func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (bucket Bucket, err error) {
+func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*expirableBucket, error) {
 	bc.RLock()
 	ns := bc.namespaces[namespace]
 	bc.RUnlock()
+	var bucket *expirableBucket
+	var err error
 
 	if ns == nil {
 		// Namespace doesn't exist. Use default bucket if possible.
@@ -218,7 +218,6 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (buck
 					bucket = bc.createNewNamedBucket(namespace, bucketName, ns)
 					if bucket == nil {
 						err = errors.New("Cannot create dynamic bucket")
-						return
 					}
 				}
 			} else {
@@ -232,12 +231,12 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (buck
 		bucket.ReportActivity()
 	}
 
-	return
+	return bucket, err
 }
 
 // createNewNamedBucket creates a new, named bucket. May return nil if the named bucket is dynamic,
 // and the namespace has already reached its maxDynamicBuckets setting.
-func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
+func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) *expirableBucket {
 	bCfg := ns.cfg.Buckets[bucketName]
 	dyn := false
 	if bCfg == nil {
@@ -266,14 +265,14 @@ func (bc *bucketContainer) countDynamicBuckets(namespace string) int {
 	return c
 }
 
-func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *config.BucketConfig, dyn bool) Bucket {
+func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *config.BucketConfig, dyn bool) *expirableBucket {
 	bc.n.Emit(newBucketCreatedEvent(namespace, bucketName, dyn))
-	bucket := bc.bf.NewBucket(namespace, bucketName, bCfg, dyn)
+	bucket := bc.newExpirableBucket(namespace, bucketName, bCfg, dyn)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()
 
 	if bucketName != config.DefaultBucketName {
-		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
+		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis) * time.Millisecond)
 	}
 	return bucket
 }

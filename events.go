@@ -124,7 +124,7 @@ type tokenEvent struct {
 
 func (t *tokenEvent) String() string {
 	return fmt.Sprintf("tokenEvent{type: %v, namespace: %v, name: %v, dynamic: %v, numTokens: %v, waitTime: %v}",
-		t.namedEvent.eventType, t.namedEvent.namespace, t.namedEvent.bucketName, t.namedEvent.dynamic, t.numTokens, 0)
+		t.eventType, t.namespace, t.bucketName, t.dynamic, t.numTokens, 0)
 }
 
 func (t *tokenEvent) NumTokens() int64 {
@@ -138,9 +138,7 @@ type tokenWaitEvent struct {
 
 func (t *tokenWaitEvent) String() string {
 	return fmt.Sprintf("tokenWaitEvent{type: %v, namespace: %v, name: %v, dynamic: %v, numTokens: %v, waitTime: %v}",
-		t.tokenEvent.namedEvent.eventType, t.tokenEvent.namedEvent.namespace,
-		t.tokenEvent.namedEvent.bucketName, t.tokenEvent.namedEvent.dynamic,
-		t.tokenEvent.numTokens, t.waitTime)
+		t.eventType, t.namespace, t.bucketName, t.dynamic, t.numTokens, t.waitTime)
 }
 
 func (t *tokenWaitEvent) WaitTime() time.Duration {

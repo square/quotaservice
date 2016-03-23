@@ -4,10 +4,11 @@
 package quotaservice
 
 import (
-	"github.com/maniksurtani/quotaservice/config"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/maniksurtani/quotaservice/config"
 )
 
 var s Server
@@ -29,9 +30,17 @@ func setUp() {
 	ns := config.NewDefaultNamespaceConfig()
 	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
 	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
+	ns.DynamicBucketTemplate.MaxIdleMillis = -1
+	ns.MaxDynamicBuckets = 2
+	cfg.AddNamespace("dyn", ns)
+
+	// Namespace "dyn_gc"
+	ns = config.NewDefaultNamespaceConfig()
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
+	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
 	ns.DynamicBucketTemplate.MaxIdleMillis = 100
 	ns.MaxDynamicBuckets = 3
-	cfg.AddNamespace("dyn", ns)
+	cfg.AddNamespace("dyn_gc", ns)
 
 	// Namespace "nodyn"
 	ns = config.NewDefaultNamespaceConfig()
@@ -89,24 +98,28 @@ func TestNewDynBucket(t *testing.T) {
 }
 
 func TestTooManyDynBuckets(t *testing.T) {
+	n := clearBuckets("dyn")
 	qs.Allow("dyn", "c", 1, 0)
 	qs.Allow("dyn", "d", 1, 0)
-	clearEvents(4)
+	clearEvents(4 + n)
 
 	qs.Allow("dyn", "e", 1, 0)
 	checkEvent("dyn", "e", true, EVENT_BUCKET_MISS, 0, 0, <-events, t)
 }
 
 func TestBucketRemoval(t *testing.T) {
+	qs.Allow("dyn_gc", "b", 1, 0)
+	qs.Allow("dyn_gc", "c", 1, 0)
+	qs.Allow("dyn_gc", "d", 1, 0)
+	clearEvents(6)
+
 	// GC thread should run every 100ms for this namespace. Make sure it runs at least once.
 	time.Sleep(300 * time.Millisecond)
 
-	mbf.SetActive("dyn", "b", false)
-	checkEvent("dyn", "b", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
-	mbf.SetActive("dyn", "c", false)
-	checkEvent("dyn", "c", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
-	mbf.SetActive("dyn", "d", false)
-	checkEvent("dyn", "d", true, EVENT_BUCKET_REMOVED, 0, 0, <-events, t)
+	for i := 0; i < 3; i++ {
+		e := <-events
+		checkEvent("dyn_gc", e.BucketName(), true, EVENT_BUCKET_REMOVED, 0, 0, e, t)
+	}
 }
 
 func checkEvent(namespace, name string, dyn bool, eventType EventType, tokens int64, waitTime time.Duration, actual Event, t *testing.T) {
@@ -115,27 +128,27 @@ func checkEvent(namespace, name string, dyn bool, eventType EventType, tokens in
 	}
 
 	if actual.Namespace() != namespace {
-		t.Fatalf("Event should have namespace '%v'. Was '%v'.", namespace, actual.Namespace())
+		t.Fatalf("Event should have namespace '%v'. Was '%v'. Event %+v.", namespace, actual.Namespace(), actual)
 	}
 
 	if actual.BucketName() != name {
-		t.Fatalf("Event should have bucket name '%v'. Was '%v'.", name, actual.Namespace())
+		t.Fatalf("Event should have bucket name '%v'. Was '%v'. Event %+v.", name, actual.BucketName(), actual)
 	}
 
 	if actual.Dynamic() != dyn {
-		t.Fatalf("Event should have dynamic='%v'. Was '%v'.", dyn, actual.Dynamic())
+		t.Fatalf("Event should have dynamic='%v'. Was '%v'. Event %+v.", dyn, actual.Dynamic(), actual)
 	}
 
 	if actual.EventType() != eventType {
-		t.Fatalf("Event should have type '%v'. Was '%v'.", eventType, actual.EventType())
+		t.Fatalf("Event should have type '%v'. Was '%v'. Event %+v.", eventType, actual.EventType(), actual)
 	}
 
 	if actual.NumTokens() != tokens {
-		t.Fatalf("Event should have tokens '%v'. Was '%v'.", tokens, actual.NumTokens())
+		t.Fatalf("Event should have tokens '%v'. Was '%v'. Event %+v.", tokens, actual.NumTokens(), actual)
 	}
 
 	if actual.WaitTime() != waitTime {
-		t.Fatalf("Event should have wait time '%v'. Was '%v'.", waitTime, actual.WaitTime())
+		t.Fatalf("Event should have wait time '%v'. Was '%v'. Event %+v.", waitTime, actual.WaitTime(), actual)
 	}
 }
 
@@ -147,4 +160,14 @@ func clearEvents(numEvents int) {
 			return
 		}
 	}
+}
+
+func clearBuckets(ns string) int {
+	cleared := 0
+	for bn, _ := range s.(*server).bucketContainer.namespaces[ns].buckets {
+		if s.(*server).bucketContainer.deleteBucket(ns, bn) == nil {
+			cleared++
+		}
+	}
+	return cleared
 }

@@ -24,7 +24,6 @@ func (bf *bucketFactory) Init(cfg *config.ServiceConfig) {
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.BucketConfig, dyn bool) quotaservice.Bucket {
 	// fill rate is tokens-per-second.
 	bucket := &tokenBucket{
-		ActivityChannel:    quotaservice.NewActivityChannel(),
 		dynamic:            dyn,
 		cfg:                cfg,
 		nanosBetweenTokens: 1e9 / cfg.FillRate,
@@ -48,7 +47,6 @@ func NewBucketFactory() quotaservice.BucketFactory {
 // goroutine is shut down when Destroy() is called on this bucket. In-flight requests will be
 // served, but new requests will not.
 type tokenBucket struct {
-	quotaservice.ActivityChannel
 	dynamic bool
 	cfg     *config.BucketConfig
 	nanosBetweenTokens,
