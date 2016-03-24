@@ -35,7 +35,8 @@ func main() {
 
 	// Serve Admin Console
 	sm := http.NewServeMux()
-	server.ServeAdminConsole(sm, "admin/public")
+	p, _ := config.NewDiskConfigPersister("/tmp/qscfgs.dat")
+	server.ServeAdminConsole(sm, "", p)
 	http.ListenAndServe("localhost:8080", sm)
 
 	// Block until SIGTERM, SIGKILL or SIGINT

@@ -6,7 +6,6 @@ package quotaservice
 import (
 	"net/http"
 
-	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 )
@@ -16,8 +15,7 @@ type Server interface {
 	Start() (bool, error)
 	Stop() (bool, error)
 	SetLogger(logger logging.Logger)
-	ServeAdminConsole(mux *http.ServeMux, assetsDirectory string)
-	SetConfigPersister(p admin.ConfigPersister)
+	ServeAdminConsole(mux *http.ServeMux, assetsDirectory string, p config.ConfigPersister)
 	SetListener(listener Listener, eventQueueBufSize int)
 }
 

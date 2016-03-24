@@ -29,7 +29,7 @@ type server struct {
 	listener          Listener
 	eventQueueBufSize int
 	producer          *EventProducer
-	p                 admin.ConfigPersister
+	p                 config.ConfigPersister
 }
 
 func (s *server) String() string {
@@ -109,11 +109,8 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	return w, nil
 }
 
-func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string) {
+func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, p config.ConfigPersister) {
 	admin.ServeAdminConsole(s, mux, assetsDir)
-}
-
-func (s *server) SetConfigPersister(p admin.ConfigPersister) {
 	s.p = p
 }
 
