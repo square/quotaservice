@@ -221,7 +221,11 @@ func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
 
 func (s *server) saveUpdatedConfigs() error {
 	if s.p != nil {
-		return s.p.PersistAndNotify(s.cfgs.ToProto())
+		r, e := config.Marshal(s.cfgs)
+		if e != nil {
+			return e
+		}
+		return s.p.PersistAndNotify(r)
 	}
 	return nil
 }
