@@ -13,6 +13,8 @@ import (
 
 	"encoding/json"
 
+	"bytes"
+	"github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -38,6 +40,14 @@ func (s *ServiceConfig) AddNamespace(namespace string, n *NamespaceConfig) *Serv
 	s.Namespaces[namespace] = n
 	n.Name = namespace
 	return s
+}
+
+func (s *ServiceConfig) Equals(other *ServiceConfig) bool {
+	// TODO(manik) we need a better impl! What's idiomatic?
+	p1 := s.ToProto()
+	p2 := other.ToProto()
+
+	return proto.Equal(p1, p2)
 }
 
 func (s *ServiceConfig) ToProto() *pb.ServiceConfig {
@@ -244,22 +254,22 @@ func bucketToProto(name string, b *BucketConfig) *pb.BucketConfig {
 	return b.ToProto()
 }
 
-func bucketMapToProto(buckets map[string]*BucketConfig) (c []*pb.BucketConfig) {
-	c = make([]*pb.BucketConfig, 0, len(buckets))
+func bucketMapToProto(buckets map[string]*BucketConfig) []*pb.BucketConfig {
+	c := make([]*pb.BucketConfig, 0, len(buckets))
 	for n, b := range buckets {
 		c = append(c, bucketToProto(n, b))
 	}
 
-	return
+	return c
 }
 
-func namespaceMapToProto(namespaces map[string]*NamespaceConfig) (c []*pb.NamespaceConfig) {
-	c = make([]*pb.NamespaceConfig, len(namespaces))
+func namespaceMapToProto(namespaces map[string]*NamespaceConfig) []*pb.NamespaceConfig {
+	c := make([]*pb.NamespaceConfig, 0, len(namespaces))
 	for _, nsp := range namespaces {
 		c = append(c, nsp.ToProto())
 	}
 
-	return
+	return c
 }
 
 func FromProto(cfg *pb.ServiceConfig) *ServiceConfig {
@@ -349,4 +359,29 @@ func NamespaceFromJSON(j []byte) (n *NamespaceConfig, e error) {
 
 func FullyQualifiedName(namespace, bucketName string) string {
 	return namespace + ":" + bucketName
+}
+
+func Marshal(s *ServiceConfig) (io.Reader, error) {
+	p := s.ToProto()
+	b, e := proto.Marshal(p)
+	if e != nil {
+		return nil, e
+	}
+
+	return bytes.NewReader(b), nil
+}
+
+func Unmarshal(r io.Reader) (*ServiceConfig, error) {
+	b, e := ioutil.ReadAll(r)
+	if e != nil {
+		return nil, e
+	}
+
+	p := &pb.ServiceConfig{}
+	e = proto.Unmarshal(b, p)
+	if e != nil {
+		return nil, e
+	}
+
+	return FromProto(p), nil
 }

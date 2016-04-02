@@ -4,10 +4,7 @@
 package config
 
 import (
-	"reflect"
 	"testing"
-
-	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 func TestPersistence(t *testing.T) {
@@ -21,15 +18,21 @@ func TestPersistence(t *testing.T) {
 		// This is good.
 	}
 
-	s := &pb.ServiceConfig{
-		GlobalDefaultBucket: &pb.BucketConfig{Size: 300, FillRate: 400, WaitTimeoutMillis: 123456},
-		Namespaces:          make([]*pb.NamespaceConfig, 1),
+	s := &ServiceConfig{
+		GlobalDefaultBucket: &BucketConfig{Size: 300, FillRate: 400, WaitTimeoutMillis: 123456},
+		Namespaces:          make(map[string]*NamespaceConfig, 1),
 		Version:             92}
 
-	s.Namespaces[0] = &pb.NamespaceConfig{Name: "xyz", MaxDynamicBuckets: 123, DynamicBucketTemplate: &pb.BucketConfig{}}
+	nc := &NamespaceConfig{
+		Name:              "xyz",
+		MaxDynamicBuckets: 123}
+	nc.SetDynamicBucketTemplate(&BucketConfig{})
+	s.AddNamespace("xyz", nc)
 
 	// Store s.
-	e = persister.PersistAndNotify(s)
+	r, e := Marshal(s)
+	checkError(t, e)
+	e = persister.PersistAndNotify(r)
 	checkError(t, e)
 
 	// Test notification
@@ -40,12 +43,13 @@ func TestPersistence(t *testing.T) {
 		t.Fatal("Config channel should not be empty!")
 	}
 
-	var newCfg *pb.ServiceConfig
-	newCfg, e = persister.ReadPersistedConfig()
+	r, e = persister.ReadPersistedConfig()
+	checkError(t, e)
+	unmarshalled, e := Unmarshal(r)
 	checkError(t, e)
 
-	if !reflect.DeepEqual(newCfg, s) {
-		t.Fatal("Configs should be equal!")
+	if !s.Equals(unmarshalled) {
+		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
 }
 
