@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
+	"time"
 )
 
 type GrpcEndpoint struct {
@@ -84,7 +85,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 	} else {
 		rsp.Status = pb.AllowResponse_OK
 		rsp.TokensGranted = req.TokensRequested
-		rsp.WaitMillis = wait.Nanoseconds()
+		rsp.WaitMillis = wait.Nanoseconds() / int64(time.Millisecond)
 	}
 
 	return rsp, nil
