@@ -20,7 +20,7 @@ import (
 
 // Implements the quotaservice.Server interface
 type server struct {
-	cfgs              *config.ServiceConfig
+	cfgs              *pb.ServiceConfig
 	currentStatus     lifecycle.Status
 	stopper           *chan int
 	bucketContainer   *bucketContainer
@@ -141,7 +141,7 @@ func (s *server) Emit(e Event) {
 }
 
 // Implements admin.Administrable
-func (s *server) Configs() *config.ServiceConfig {
+func (s *server) Configs() *pb.ServiceConfig {
 	return s.cfgs
 }
 
@@ -161,7 +161,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 	}
 
 	if namespace == config.GlobalNamespace {
-		err := s.bucketContainer.createGlobalDefaultBucket(config.BucketFromProto(b, nil))
+		err := s.bucketContainer.createGlobalDefaultBucket(b)
 		if err != nil {
 			return err
 		}
@@ -173,8 +173,7 @@ func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 		s.bucketContainer.RLock()
 		defer s.bucketContainer.RUnlock()
 		ns := s.bucketContainer.namespaces[namespace]
-		s.bucketContainer.createNewNamedBucketFromCfg(namespace,
-			b.Name, ns, config.BucketFromProto(b, ns.cfg), false)
+		s.bucketContainer.createNewNamedBucketFromCfg(namespace, b.Name, ns, b, false)
 	}
 
 	s.saveUpdatedConfigs()
@@ -202,7 +201,7 @@ func (s *server) DeleteNamespace(n string) error {
 }
 
 func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
-	e := s.bucketContainer.createNamespace(config.NamespaceFromProto(n))
+	e := s.bucketContainer.createNamespace(n)
 	if e != nil {
 		return e
 	}

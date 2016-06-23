@@ -8,6 +8,8 @@ import (
 	"github.com/maniksurtani/quotaservice/config"
 	"sync"
 	"time"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 type MockBucket struct {
@@ -15,7 +17,7 @@ type MockBucket struct {
 	WaitTime              time.Duration
 	namespace, bucketName string
 	dyn                   bool
-	cfg                   *config.BucketConfig
+	cfg                   *pbconfig.BucketConfig
 }
 
 func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
@@ -28,7 +30,7 @@ func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Dura
 
 	return b.WaitTime, true
 }
-func (b *MockBucket) Config() *config.BucketConfig {
+func (b *MockBucket) Config() *pbconfig.BucketConfig {
 	return b.cfg
 }
 func (b *MockBucket) Dynamic() bool {
@@ -57,8 +59,8 @@ func (bf *MockBucketFactory) bucket(namespace, name string) *MockBucket {
 	return bucket
 }
 
-func (bf *MockBucketFactory) Init(cfg *config.ServiceConfig) {}
-func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg *config.BucketConfig, dyn bool) Bucket {
+func (bf *MockBucketFactory) Init(cfg *pbconfig.ServiceConfig) {}
+func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket {
 	b := &MockBucket{sync.RWMutex{}, 0, namespace, bucketName, dyn, cfg}
 	if bf.buckets == nil {
 		bf.buckets = make(map[string]*MockBucket)
@@ -88,7 +90,7 @@ func (d *MockEndpoint) Init(qs QuotaService) {
 func (d *MockEndpoint) Start() {}
 func (d *MockEndpoint) Stop()  {}
 
-func NewBucketContainerWithMocks(cfg *config.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
+func NewBucketContainerWithMocks(cfg *pbconfig.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
 	bf := &MockBucketFactory{}
 	e := &MockEmitter{}
 	return NewBucketContainer(cfg, bf, e), bf, e

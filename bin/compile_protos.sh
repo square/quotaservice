@@ -5,3 +5,5 @@
 
 protoc --go_out=plugins=grpc:. ./protos/*.proto --proto_path ./
 protoc --go_out=plugins=grpc:. ./protos/config/*.proto --proto_path ./
+
+echo "Protos compiled. If you made any changes to protos/config/configs.proto, then please read protos/config/README.md now."

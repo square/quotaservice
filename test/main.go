@@ -18,17 +18,19 @@ import (
 
 func main() {
 	cfg := config.NewDefaultServiceConfig()
-	ns := config.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
+	ns := config.NewDefaultNamespaceConfig("test.namespace")
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig("")
 	ns.DynamicBucketTemplate.Size = 100000000000
 	ns.DynamicBucketTemplate.FillRate = 100000000
-	ns.AddBucket("xyz", config.NewDefaultBucketConfig())
-	cfg.AddNamespace("test.namespace", ns)
+	b := config.NewDefaultBucketConfig("xyz")
+	config.AddBucket(ns, b)
+	config.AddNamespace(cfg, ns)
 
-	ns = config.NewDefaultNamespaceConfig()
-	ns.DefaultBucket = config.NewDefaultBucketConfig()
-	ns.AddBucket("xyz", config.NewDefaultBucketConfig())
-	cfg.AddNamespace("test.namespace2", ns)
+	ns = config.NewDefaultNamespaceConfig("test.namespace2")
+	ns.DefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
+	b = config.NewDefaultBucketConfig("xyz")
+	config.AddBucket(ns, b)
+	config.AddNamespace(cfg, ns)
 
 	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
 	server.Start()

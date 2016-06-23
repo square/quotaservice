@@ -8,33 +8,34 @@ import (
 	"github.com/maniksurtani/quotaservice/config"
 	"strconv"
 	"testing"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
-var cfg = func() *config.ServiceConfig {
+var cfg = func() *pbconfig.ServiceConfig {
 	c := config.NewDefaultServiceConfig()
-	c.GlobalDefaultBucket = config.NewDefaultBucketConfig()
+	c.GlobalDefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
 
 	// Namespace "x"
-	ns := config.NewDefaultNamespaceConfig()
-	ns.DefaultBucket = config.NewDefaultBucketConfig()
-	ns.AddBucket("a", config.NewDefaultBucketConfig())
-	c.AddNamespace("x", ns)
+	ns := config.NewDefaultNamespaceConfig("x")
+	ns.DefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
+	config.AddBucket(ns, config.NewDefaultBucketConfig("a"))
+	config.AddNamespace(c, ns)
 
 	// Namespace "y"
-	ns = config.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
-	ns.AddBucket("a", config.NewDefaultBucketConfig())
-	c.AddNamespace("y", ns)
+	ns = config.NewDefaultNamespaceConfig("y")
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DefaultBucketName)
+	config.AddBucket(ns, config.NewDefaultBucketConfig("y"))
+	config.AddNamespace(c, ns)
 
 	// Namespace "z"
-	ns = config.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
+	ns = config.NewDefaultNamespaceConfig("z")
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DefaultBucketName)
 	ns.MaxDynamicBuckets = 5
-	ns.
-		AddBucket("a", config.NewDefaultBucketConfig()).
-		AddBucket("b", config.NewDefaultBucketConfig()).
-		AddBucket("c", config.NewDefaultBucketConfig())
-	c.AddNamespace("z", ns)
+	config.AddBucket(ns, config.NewDefaultBucketConfig("a"))
+	config.AddBucket(ns, config.NewDefaultBucketConfig("b"))
+	config.AddBucket(ns, config.NewDefaultBucketConfig("c"))
+	config.AddNamespace(c, ns)
 
 	return c
 }()

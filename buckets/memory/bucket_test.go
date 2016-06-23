@@ -24,7 +24,7 @@ func setUp() {
 }
 
 func TestTokenAcquisition(t *testing.T) {
-	bucket := factory.NewBucket("memory", "memory", config.NewDefaultBucketConfig(), false)
+	bucket := factory.NewBucket("memory", "memory", config.NewDefaultBucketConfig(""), false)
 	buckets.TestTokenAcquisition(t, bucket)
 }
 

@@ -4,6 +4,8 @@
 package config
 
 import (
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	"reflect"
 	"testing"
 )
 
@@ -18,16 +20,17 @@ func TestPersistence(t *testing.T) {
 		// This is good.
 	}
 
-	s := &ServiceConfig{
-		GlobalDefaultBucket: &BucketConfig{Size: 300, FillRate: 400, WaitTimeoutMillis: 123456},
-		Namespaces:          make(map[string]*NamespaceConfig, 1),
+	s := &pbconfig.ServiceConfig{
+		GlobalDefaultBucket: &pbconfig.BucketConfig{Size: 300, FillRate: 400, WaitTimeoutMillis: 123456},
+		Namespaces:          make(map[string]*pbconfig.NamespaceConfig, 1),
 		Version:             92}
 
-	nc := &NamespaceConfig{
+	nc := &pbconfig.NamespaceConfig{
 		Name:              "xyz",
 		MaxDynamicBuckets: 123}
-	nc.SetDynamicBucketTemplate(&BucketConfig{})
-	s.AddNamespace("xyz", nc)
+
+	SetDynamicBucketTemplate(nc, &pbconfig.BucketConfig{})
+	AddNamespace(s, nc)
 
 	// Store s.
 	r, e := Marshal(s)
@@ -48,7 +51,7 @@ func TestPersistence(t *testing.T) {
 	unmarshalled, e := Unmarshal(r)
 	checkError(t, e)
 
-	if !s.Equals(unmarshalled) {
+	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
 }

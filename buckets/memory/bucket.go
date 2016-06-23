@@ -11,17 +11,19 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 type bucketFactory struct {
-	cfg *config.ServiceConfig
+	cfg *pbconfig.ServiceConfig
 }
 
-func (bf *bucketFactory) Init(cfg *config.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	bf.cfg = cfg
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.BucketConfig, dyn bool) quotaservice.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
 	// fill rate is tokens-per-second.
 	bucket := &tokenBucket{
 		dynamic:            dyn,
@@ -48,7 +50,7 @@ func NewBucketFactory() quotaservice.BucketFactory {
 // served, but new requests will not.
 type tokenBucket struct {
 	dynamic bool
-	cfg     *config.BucketConfig
+	cfg     *pbconfig.BucketConfig
 	nanosBetweenTokens,
 	tokensNextAvailableNanos,
 	accumulatedTokens int64
@@ -130,7 +132,7 @@ func (b *tokenBucket) waitTimeLoop() {
 	}
 }
 
-func (b *tokenBucket) Config() *config.BucketConfig {
+func (b *tokenBucket) Config() *pbconfig.BucketConfig {
 	return b.cfg
 }
 

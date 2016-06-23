@@ -21,7 +21,7 @@ package quotaservice.configs;
 // Representations of configuration elements, for persisting and sharing across nodes.
 message ServiceConfig {
   BucketConfig global_default_bucket = 1;
-  repeated NamespaceConfig namespaces = 2;
+  map<string, NamespaceConfig> namespaces = 2;
   int32 version = 3;
 }
 
@@ -30,15 +30,16 @@ message NamespaceConfig {
   BucketConfig default_bucket = 2;
   BucketConfig dynamic_bucket_template = 3;
   int32 max_dynamic_buckets = 4;
-  repeated BucketConfig buckets = 5;
+  map<string, BucketConfig> buckets = 5;
 }
 
 message BucketConfig {
   string name = 1;
-  int64 size = 2;
-  int64 fill_rate = 3;
-  int64 wait_timeout_millis = 4;
-  int64 max_idle_millis = 5;
-  int64 max_debt_millis = 6;
-  int64 max_tokens_per_request = 7;
+  string namespace = 2;
+  int64 size = 3;
+  int64 fill_rate = 4;
+  int64 wait_timeout_millis = 5;
+  int64 max_idle_millis = 6;
+  int64 max_debt_millis = 7;
+  int64 max_tokens_per_request = 8;
 }
