@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
 	"gopkg.in/redis.v3"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Suffixes for Redis keys
@@ -26,7 +27,7 @@ const (
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
 type redisBucket struct {
 	dynamic               bool
-	cfg                   *config.BucketConfig
+	cfg                   *pbconfig.BucketConfig
 	factory               *bucketFactory
 	nanosBetweenTokens    string
 	maxTokensToAccumulate string
@@ -36,7 +37,7 @@ type redisBucket struct {
 }
 
 type bucketFactory struct {
-	cfg               *config.ServiceConfig
+	cfg               *pbconfig.ServiceConfig
 	m                 *sync.RWMutex
 	client            *redis.Client
 	initialized       bool
@@ -57,7 +58,7 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 		connectionRetries: connectionRetries}
 }
 
-func (bf *bucketFactory) Init(cfg *config.ServiceConfig) {
+func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	if !bf.initialized {
 		bf.m.Lock()
 		defer bf.m.Unlock()
@@ -83,7 +84,7 @@ func (bf *bucketFactory) connectToRedis() {
 	bf.scriptSHA = loadScript(bf.client)
 }
 
-func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *config.BucketConfig, dyn bool) quotaservice.Bucket {
+func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
@@ -158,7 +159,7 @@ func toInt64(s interface{}, defaultValue int64) (v int64) {
 	return
 }
 
-func (b *redisBucket) Config() *config.BucketConfig {
+func (b *redisBucket) Config() *pbconfig.BucketConfig {
 	return b.cfg
 }
 

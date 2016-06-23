@@ -21,7 +21,7 @@ import (
 
 // Administrable defines something that can be administered via this package.
 type Administrable interface {
-	Configs() *config.ServiceConfig
+	Configs() *pb.ServiceConfig
 
 	DeleteBucket(namespace, name string) error
 	AddBucket(namespace string, b *pb.BucketConfig) error
@@ -169,7 +169,7 @@ func (a *apiHandler) writeConfigs(namespace string, w http.ResponseWriter) (e er
 
 	if namespace == "" || namespace == config.GlobalNamespace {
 		// All buckets and namespaces
-		b, e = json.Marshal(cfgs.ToProto())
+		b, e = json.Marshal(cfgs)
 		if e != nil {
 			return
 		}
@@ -179,7 +179,7 @@ func (a *apiHandler) writeConfigs(namespace string, w http.ResponseWriter) (e er
 			e = errors.New("Unable to locate namespace " + namespace)
 			return
 		}
-		b, e = json.Marshal(n.ToProto())
+		b, e = json.Marshal(n)
 		if e != nil {
 			return
 		}

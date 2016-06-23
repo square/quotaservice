@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+	"os"
 )
 
 const help = `Usage: quotaservice-cli -h host -p port (-n namespace) [COMMAND]

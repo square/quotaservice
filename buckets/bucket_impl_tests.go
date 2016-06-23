@@ -31,7 +31,7 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	}
 
 	// Should have no more left. Should have to wait.
-	wait, s = bucket.Take(10, 10 * time.Second)
+	wait, s = bucket.Take(10, 10*time.Second)
 	if wait < 1 {
 		t.Fatalf("Expecting positive wait time. Was %v", wait)
 	}
@@ -51,10 +51,13 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 
 func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	cfg := config.NewDefaultServiceConfig()
-	cfg.Namespaces["n"] = config.NewDefaultNamespaceConfig()
-	cfg.Namespaces["n"].DynamicBucketTemplate = config.NewDefaultBucketConfig()
+	nsCfg := config.NewDefaultNamespaceConfig("n")
+	tpl := config.NewDefaultBucketConfig("")
 	// Times out every 250 millis.
-	cfg.Namespaces["n"].DynamicBucketTemplate.MaxIdleMillis = 250
+	tpl.MaxIdleMillis = 250
+	config.SetDynamicBucketTemplate(nsCfg, tpl)
+	config.AddNamespace(cfg, nsCfg)
+
 	events := &quotaservice.MockEmitter{Events: make(chan quotaservice.Event, 100)}
 	container := quotaservice.NewBucketContainer(cfg, factory, events)
 

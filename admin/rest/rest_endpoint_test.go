@@ -10,6 +10,8 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/config"
+
+	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 func TestReadConfigs(t *testing.T) {
@@ -68,15 +70,14 @@ func TestAddGlobalDefault(t *testing.T) {
 
 	assertDefaultBucketDoesNotExist(t, s)
 
-	b := config.NewDefaultBucketConfig()
-	b.Name = config.DefaultBucketName
-	e := s.(admin.Administrable).AddBucket(config.GlobalNamespace, b.ToProto())
+	b := config.NewDefaultBucketConfig(config.DefaultBucketName)
+	e := s.(admin.Administrable).AddBucket(config.GlobalNamespace, b)
 	assertNoError(t, e)
 
 	assertDefaultBucketExists(t, s)
 
 	// Now try and add a bucket config again - should error.
-	e = s.(admin.Administrable).AddBucket(config.GlobalNamespace, b.ToProto())
+	e = s.(admin.Administrable).AddBucket(config.GlobalNamespace, b)
 	assertError(t, e)
 }
 
@@ -104,10 +105,9 @@ func TestUpdateGlobalDefault(t *testing.T) {
 
 	assertDefaultBucketExists(t, s)
 
-	b := config.NewDefaultBucketConfig()
+	b := config.NewDefaultBucketConfig(config.DefaultBucketName)
 	b.MaxTokensPerRequest = 2
-	b.Name = config.DefaultBucketName
-	e := s.(admin.Administrable).UpdateBucket(config.GlobalNamespace, b.ToProto())
+	e := s.(admin.Administrable).UpdateBucket(config.GlobalNamespace, b)
 	assertNoError(t, e)
 
 	// Now check that we hit max tokens limits.
@@ -118,7 +118,7 @@ func TestUpdateGlobalDefault(t *testing.T) {
 	}
 
 	b.MaxTokensPerRequest = 10
-	e = s.(admin.Administrable).UpdateBucket(config.GlobalNamespace, b.ToProto())
+	e = s.(admin.Administrable).UpdateBucket(config.GlobalNamespace, b)
 	assertNoError(t, e)
 
 	// Now check again
@@ -134,14 +134,14 @@ func TestAddNamespace(t *testing.T) {
 
 	n := namespaceConfig("ns", true)
 
-	e := s.(admin.Administrable).AddNamespace(n.ToProto())
+	e := s.(admin.Administrable).AddNamespace(n)
 	assertNoError(t, e)
 
 	assertBucketExists(t, s, "ns", "b")
 	assertBucketExists(t, s, "ns", "bb")
 	assertBucketExists(t, s, "ns", "bbb")
 
-	e = s.(admin.Administrable).AddNamespace(n.ToProto())
+	e = s.(admin.Administrable).AddNamespace(n)
 	assertError(t, e)
 
 	assertBucketExists(t, s, "ns", "bbbb")
@@ -178,7 +178,7 @@ func TestUpdateNamespace(t *testing.T) {
 
 	// change config to not allow dynamic buckets
 	n.DynamicBucketTemplate = nil
-	e := s.(admin.Administrable).UpdateNamespace(n.ToProto())
+	e := s.(admin.Administrable).UpdateNamespace(n)
 	assertNoError(t, e)
 
 	// Existing buckets should have been removed.
@@ -203,7 +203,7 @@ func TestAddBucket(t *testing.T) {
 
 	// Add bucket
 	b.Name = "b1"
-	e := s.(admin.Administrable).AddBucket("ns", b.ToProto())
+	e := s.(admin.Administrable).AddBucket("ns", b)
 	assertNoError(t, e)
 
 	// Existing buckets should still be there
@@ -212,7 +212,7 @@ func TestAddBucket(t *testing.T) {
 	assertBucketDoesNotExist(t, s, "ns", "b2")
 
 	// Already exists
-	e = s.(admin.Administrable).AddBucket("ns", b.ToProto())
+	e = s.(admin.Administrable).AddBucket("ns", b)
 	assertError(t, e)
 }
 
@@ -252,41 +252,39 @@ func TestUpdateBucket(t *testing.T) {
 
 	// Update bucket
 	b.MaxTokensPerRequest = 10
-	e = s.(admin.Administrable).UpdateBucket("ns", b.ToProto())
+	e = s.(admin.Administrable).UpdateBucket("ns", b)
 	assertNoError(t, e)
 
 	_, e = s.(quotaservice.QuotaService).Allow("ns", "b", 5, 0)
 	assertNoError(t, e)
 }
 
-func namespaceConfig(n string, dynamic bool, b ...*config.BucketConfig) *config.NamespaceConfig {
-	ns := config.NewDefaultNamespaceConfig()
-	ns.Name = n
+func namespaceConfig(n string, dynamic bool, b ...*pb.BucketConfig) *pb.NamespaceConfig {
+	ns := config.NewDefaultNamespaceConfig(n)
 	for _, bc := range b {
-		ns.AddBucket(bc.Name, bc)
+		config.AddBucket(ns, bc)
 	}
 
 	if dynamic {
-		ns.SetDynamicBucketTemplate(config.NewDefaultBucketConfig())
+		config.SetDynamicBucketTemplate(ns, config.NewDefaultBucketConfig(""))
 	}
 
 	return ns
 }
 
-func bucketConfig(n string) *config.BucketConfig {
-	b := config.NewDefaultBucketConfig()
-	b.Name = n
+func bucketConfig(n string) *pb.BucketConfig {
+	b := config.NewDefaultBucketConfig(n)
 	b.MaxTokensPerRequest = 2
 	return b
 }
 
-func startService(withDefault bool, ns ...*config.NamespaceConfig) (quotaservice.Server, *config.ServiceConfig) {
+func startService(withDefault bool, ns ...*pb.NamespaceConfig) (quotaservice.Server, *pb.ServiceConfig) {
 	c := config.NewDefaultServiceConfig()
-	if !withDefault {
-		c.GlobalDefaultBucket = nil
+	if withDefault {
+		c.GlobalDefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
 	}
 	for _, n := range ns {
-		c.AddNamespace(n.Name, n)
+		config.AddNamespace(c, n)
 	}
 	s := quotaservice.New(c, &quotaservice.MockBucketFactory{}, &quotaservice.MockEndpoint{})
 	s.Start()

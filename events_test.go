@@ -24,30 +24,32 @@ func TestMain(m *testing.M) {
 
 func setUp() {
 	cfg := config.NewDefaultServiceConfig()
-	cfg.GlobalDefaultBucket = config.NewDefaultBucketConfig()
+	cfg.GlobalDefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
 
 	// Namespace "dyn"
-	ns := config.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
-	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
-	ns.DynamicBucketTemplate.MaxIdleMillis = -1
+	ns := config.NewDefaultNamespaceConfig("dyn")
+	tpl := config.NewDefaultBucketConfig("")
+	tpl.MaxTokensPerRequest = 5
+	tpl.MaxIdleMillis = -1
+	config.SetDynamicBucketTemplate(ns, tpl)
 	ns.MaxDynamicBuckets = 2
-	cfg.AddNamespace("dyn", ns)
+	config.AddNamespace(cfg, ns)
 
 	// Namespace "dyn_gc"
-	ns = config.NewDefaultNamespaceConfig()
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig()
-	ns.DynamicBucketTemplate.MaxTokensPerRequest = 5
-	ns.DynamicBucketTemplate.MaxIdleMillis = 100
+	ns = config.NewDefaultNamespaceConfig("dyn_gc")
+	tpl = config.NewDefaultBucketConfig("")
+	tpl.MaxTokensPerRequest = 5
+	tpl.MaxIdleMillis = 100
+	config.SetDynamicBucketTemplate(ns, tpl)
 	ns.MaxDynamicBuckets = 3
-	cfg.AddNamespace("dyn_gc", ns)
+	config.AddNamespace(cfg, ns)
 
 	// Namespace "nodyn"
-	ns = config.NewDefaultNamespaceConfig()
-	b := config.NewDefaultBucketConfig()
+	ns = config.NewDefaultNamespaceConfig("nodyn")
+	b := config.NewDefaultBucketConfig("b")
 	b.MaxTokensPerRequest = 10
-	ns.AddBucket("b", b)
-	cfg.AddNamespace("nodyn", ns)
+	config.AddBucket(ns, b)
+	config.AddNamespace(cfg, ns)
 
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
@@ -73,16 +75,16 @@ func TestTooManyTokens(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	mbf.SetWaitTime("nodyn", "b", 2 * time.Minute)
+	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
 	qs.Allow("nodyn", "b", 1, 1)
 	checkEvent("nodyn", "b", false, EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-events, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
-	mbf.SetWaitTime("nodyn", "b", 2 * time.Nanosecond)
+	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
 	qs.Allow("nodyn", "b", 1, 10)
-	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2 * time.Nanosecond, <-events, t)
+	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-events, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 

@@ -8,6 +8,8 @@ import (
 
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/logging"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // The Server interface is what you get when you create a new quotaservice.
@@ -20,7 +22,7 @@ type Server interface {
 }
 
 // New creates a new quotaservice server.
-func New(config *config.ServiceConfig, bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
+func New(config *pbconfig.ServiceConfig, bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
