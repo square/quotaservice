@@ -145,6 +145,12 @@ func (s *server) Configs() *pb.ServiceConfig {
 	return s.cfgs
 }
 
+// TODO(manik) These methods should just save configs, and not attempt to reload existing buckets.
+// Instead there should be a listener that subscribes to changes in configs, that then reloads
+// existing buckets. This way, changes can get propagated across all quotaservice nodes consistently.
+// Single-node quotaservice deployments would use a config.DiskConfigPersister (should be the default)
+// and multi-node deployments would use a custom implementation of config.ConfigPersister that can
+// propagate changes, e.g., via ZooKeeper.
 func (s *server) DeleteBucket(namespace, name string) error {
 	err := s.bucketContainer.deleteBucket(namespace, name)
 	if err != nil {
