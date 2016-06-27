@@ -1,22 +1,16 @@
+// Licensed under the Apache License, Version 2.0
+// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+
 package admin
 
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/maniksurtani/quotaservice/config"
 	"reflect"
 	"testing"
-)
 
-func TestExtractNamespace(t *testing.T) {
-	ns, n := extractNamespaceName("ns/n")
-	if ns != "ns" {
-		t.Fatal("Expecting namespace 'ns'")
-	}
-	if n != "n" {
-		t.Fatal("Expecting name 'n'")
-	}
-}
+	"github.com/maniksurtani/quotaservice/config"
+)
 
 func TestUnmarshalBucketConfig(t *testing.T) {
 	c := config.NewDefaultBucketConfig("Blah 123")

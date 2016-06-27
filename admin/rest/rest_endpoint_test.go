@@ -21,7 +21,7 @@ func TestReadConfigs(t *testing.T) {
 	mux := http.NewServeMux()
 	p, e := config.NewDiskConfigPersister("/tmp/qscfgs.dat")
 	assertNoError(t, e)
-	s.ServeAdminConsole(mux, "", p)
+	s.ServeAdminConsole(mux, "", p, false)
 	go http.ListenAndServe("127.0.0.1:11111", mux)
 	waitForAdminServer()
 
@@ -46,7 +46,7 @@ func TestReadNamespaceConfigs(t *testing.T) {
 	mux := http.NewServeMux()
 	p, e := config.NewDiskConfigPersister("/tmp/qscfgs.dat")
 	assertNoError(t, e)
-	s.ServeAdminConsole(mux, "", p)
+	s.ServeAdminConsole(mux, "", p, false)
 	go http.ListenAndServe("127.0.0.1:11111", mux)
 	waitForAdminServer()
 

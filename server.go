@@ -109,8 +109,8 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	return w, nil
 }
 
-func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, p config.ConfigPersister) {
-	admin.ServeAdminConsole(s, mux, assetsDir)
+func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, p config.ConfigPersister, development bool) {
+	admin.ServeAdminConsole(s, mux, assetsDir, development)
 	s.p = p
 }
 
