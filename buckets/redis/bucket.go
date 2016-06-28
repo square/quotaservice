@@ -8,12 +8,12 @@ package redis
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
+
+	"gopkg.in/redis.v3"
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
-	"gopkg.in/redis.v3"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -38,9 +38,7 @@ type redisBucket struct {
 
 type bucketFactory struct {
 	cfg               *pbconfig.ServiceConfig
-	m                 *sync.RWMutex
 	client            *redis.Client
-	initialized       bool
 	redisOpts         *redis.Options
 	scriptSHA         string
 	connectionRetries int
@@ -52,22 +50,15 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 	}
 
 	return &bucketFactory{
-		initialized:       false,
-		m:                 &sync.RWMutex{},
 		redisOpts:         redisOpts,
 		connectionRetries: connectionRetries}
 }
 
 func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
-	if !bf.initialized {
-		bf.m.Lock()
-		defer bf.m.Unlock()
+	bf.cfg = cfg
 
-		if !bf.initialized {
-			bf.initialized = true
-			bf.cfg = cfg
-			bf.connectToRedis()
-		}
+	if bf.client == nil {
+		bf.connectToRedis()
 	}
 }
 

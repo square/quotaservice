@@ -38,11 +38,11 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
 		}
 	case "PUT":
-		changeBucket(w, r, func(c *pb.BucketConfig) error {
+		changeBucket(w, r, bucket, func(c *pb.BucketConfig) error {
 			return a.a.UpdateBucket(namespace, c)
 		})
 	case "POST":
-		changeBucket(w, r, func(c *pb.BucketConfig) error {
+		changeBucket(w, r, bucket, func(c *pb.BucketConfig) error {
 			return a.a.AddBucket(namespace, c)
 		})
 	default:
@@ -50,12 +50,16 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func changeBucket(w http.ResponseWriter, r *http.Request, updater func(*pb.BucketConfig) error) {
+func changeBucket(w http.ResponseWriter, r *http.Request, bucket string, updater func(*pb.BucketConfig) error) {
 	c, e := getBucketConfig(r.Body)
 
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
 		return
+	}
+
+	if c.Name == "" {
+		c.Name = bucket
 	}
 
 	e = updater(c)

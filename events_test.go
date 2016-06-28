@@ -53,15 +53,15 @@ func setUp() {
 
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
-	s = New(cfg, mbf, me)
+	p, _ := config.NewMemoryConfigPersister()
+	s = New(mbf, p, me)
+	s.CreateBucketContainer(cfg)
 	events = make(chan Event, 100)
 	s.SetListener(func(e Event) {
 		events <- e
 	}, 100)
 	s.Start()
 	qs = me.QuotaService
-	// New buckets would have been created. Clear all notifications.
-	clearEvents(1)
 }
 
 func TestTokens(t *testing.T) {
@@ -166,10 +166,10 @@ func clearEvents(numEvents int) {
 
 func clearBuckets(ns string) int {
 	cleared := 0
-	for bn, _ := range s.(*server).bucketContainer.namespaces[ns].buckets {
-		if s.(*server).bucketContainer.deleteBucket(ns, bn) == nil {
-			cleared++
-		}
+	namespace := s.(*server).bucketContainer.namespaces[ns]
+	for bn, _ := range namespace.buckets {
+		namespace.removeBucket(bn)
+		cleared++
 	}
 	return cleared
 }

@@ -6,21 +6,20 @@ package quotaservice
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/maniksurtani/quotaservice/admin"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
 
-	"errors"
-
+	proto "github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/config"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Implements the quotaservice.Server interface
 type server struct {
-	cfgs              *pb.ServiceConfig
 	currentStatus     lifecycle.Status
 	stopper           *chan int
 	bucketContainer   *bucketContainer
@@ -29,7 +28,9 @@ type server struct {
 	listener          Listener
 	eventQueueBufSize int
 	producer          *EventProducer
-	p                 config.ConfigPersister
+	cfgs              *pb.ServiceConfig
+	persister         config.ConfigPersister
+	sync.RWMutex      // Embedded mutex
 }
 
 func (s *server) String() string {
@@ -42,9 +43,11 @@ func (s *server) Start() (bool, error) {
 		s.producer = registerListener(s.listener, s.eventQueueBufSize)
 	}
 
-	// Initialize buckets
-	s.bucketFactory.Init(s.cfgs)
-	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s)
+	if s.cfgs == nil {
+		s.CreateBucketContainer(&pb.ServiceConfig{})
+	}
+
+	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
 	for _, rpcServer := range s.rpcEndpoints {
@@ -109,9 +112,8 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	return w, nil
 }
 
-func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, p config.ConfigPersister, development bool) {
+func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, development bool) {
 	admin.ServeAdminConsole(s, mux, assetsDir, development)
-	s.p = p
 }
 
 func (s *server) SetLogger(logger logging.Logger) {
@@ -140,97 +142,91 @@ func (s *server) Emit(e Event) {
 	}
 }
 
+func (s *server) configListener(ch chan struct{}) {
+	for range ch {
+		configReader, err := s.persister.ReadPersistedConfig()
+
+		if err != nil {
+			logging.Println("error reading persisted config", err)
+		}
+
+		newConfig, err := config.Unmarshal(configReader)
+
+		if err != nil {
+			logging.Println("error reading marshalled config", err)
+		}
+
+		s.CreateBucketContainer(newConfig)
+	}
+}
+
+func (s *server) CreateBucketContainer(newConfig *pb.ServiceConfig) {
+	s.Lock()
+	// Initialize buckets
+	s.bucketFactory.Init(newConfig)
+
+	s.cfgs = newConfig
+	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s)
+	s.Unlock()
+}
+
+func (s *server) updateConfig(updater func(*pb.ServiceConfig) error) error {
+	s.Lock()
+	clonedCfg := proto.Clone(s.cfgs).(*pb.ServiceConfig)
+	s.Unlock()
+
+	err := updater(clonedCfg)
+
+	if err != nil {
+		return err
+	}
+
+	r, e := config.Marshal(clonedCfg)
+
+	if e != nil {
+		return e
+	}
+
+	return s.persister.PersistAndNotify(r)
+}
+
 // Implements admin.Administrable
 func (s *server) Configs() *pb.ServiceConfig {
 	return s.cfgs
 }
 
-// TODO(manik) These methods should just save configs, and not attempt to reload existing buckets.
-// Instead there should be a listener that subscribes to changes in configs, that then reloads
-// existing buckets. This way, changes can get propagated across all quotaservice nodes consistently.
-// Single-node quotaservice deployments would use a config.DiskConfigPersister (should be the default)
-// and multi-node deployments would use a custom implementation of config.ConfigPersister that can
-// propagate changes, e.g., via ZooKeeper.
-func (s *server) DeleteBucket(namespace, name string) error {
-	err := s.bucketContainer.deleteBucket(namespace, name)
-	if err != nil {
-		return err
-	}
-
-	s.saveUpdatedConfigs()
-	return nil
-}
-
 func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
-	if !s.bucketContainer.NamespaceExists(namespace) && namespace != config.GlobalNamespace {
-		return errors.New("Namespace doesn't exist")
-	}
-
-	if namespace == config.GlobalNamespace {
-		err := s.bucketContainer.createGlobalDefaultBucket(b)
-		if err != nil {
-			return err
-		}
-	} else {
-		if s.bucketContainer.Exists(namespace, b.Name) {
-			return errors.New("Bucket already exists")
-		}
-
-		s.bucketContainer.RLock()
-		defer s.bucketContainer.RUnlock()
-		ns := s.bucketContainer.namespaces[namespace]
-		s.bucketContainer.createNewNamedBucketFromCfg(namespace, b.Name, ns, b, false)
-	}
-
-	s.saveUpdatedConfigs()
-	return nil
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.CreateBucket(clonedCfg, namespace, b)
+	})
 }
 
 func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig) error {
-	// Simple delete and add?
-	e := s.bucketContainer.deleteBucket(namespace, b.Name)
-	if e != nil {
-		return e
-	}
-
-	return s.AddBucket(namespace, b)
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.UpdateBucket(clonedCfg, namespace, b)
+	})
 }
 
-func (s *server) DeleteNamespace(n string) error {
-	err := s.bucketContainer.deleteNamespace(n)
-	if err != nil {
-		return err
-	}
-
-	s.saveUpdatedConfigs()
-	return nil
+func (s *server) DeleteBucket(namespace, name string) error {
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.DeleteBucket(clonedCfg, namespace, name)
+	})
 }
 
 func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
-	e := s.bucketContainer.createNamespace(n)
-	if e != nil {
-		return e
-	}
-	s.saveUpdatedConfigs()
-	return nil
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.CreateNamespace(clonedCfg, n)
+	})
 }
 
 func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
-	err := s.bucketContainer.deleteNamespace(n.Name)
-	if err != nil {
-		return err
-	}
-
-	return s.AddNamespace(n)
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.UpdateNamespace(clonedCfg, n)
+	})
 }
 
-func (s *server) saveUpdatedConfigs() error {
-	if s.p != nil {
-		r, e := config.Marshal(s.cfgs)
-		if e != nil {
-			return e
-		}
-		return s.p.PersistAndNotify(r)
-	}
-	return nil
+func (s *server) DeleteNamespace(n string) error {
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		return config.DeleteNamespace(clonedCfg, n)
+	})
 }

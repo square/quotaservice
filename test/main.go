@@ -32,19 +32,24 @@ func main() {
 	config.AddBucket(ns, b)
 	config.AddNamespace(cfg, ns)
 
-	server := quotaservice.New(cfg, memory.NewBucketFactory(), grpc.New("localhost:10990"))
+	persister, _ := config.NewMemoryConfigPersister()
+	server := quotaservice.New(memory.NewBucketFactory(),
+		persister,
+		grpc.New("localhost:10990"))
+	server.CreateBucketContainer(cfg)
 	server.Start()
 
 	// Serve Admin Console
 	sm := http.NewServeMux()
-	p, _ := config.NewDiskConfigPersister("/tmp/qscfgs.dat")
-	server.ServeAdminConsole(sm, "admin/public", p, true)
-	http.ListenAndServe("localhost:8080", sm)
+	server.ServeAdminConsole(sm, "admin/public", true)
+	go func() { http.ListenAndServe("localhost:8080", sm) }()
 
 	// Block until SIGTERM, SIGKILL or SIGINT
 	sigs := make(chan os.Signal, 1)
-	var shutdown sync.WaitGroup
 	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
+
+	var shutdown sync.WaitGroup
+	shutdown.Add(1)
 
 	go func() {
 		<-sigs
