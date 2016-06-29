@@ -101,7 +101,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/api/") {
 		params := strings.TrimPrefix(r.URL.Path, "/api/")
 		namespace, name := extractNamespaceName(params)
-		logging.Printf("Request for %v", params)
+		logging.Printf("Request for namespace=%v bucket=%v", namespace, name)
 		switch r.Method {
 		case "DELETE":
 			a.a.DeleteBucket(namespace, name)
@@ -122,7 +122,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				a.a.UpdateBucket(namespace, c)
 			}
 		case "GET":
-			e := a.writeConfigs(namespace, w)
+			e := a.writeConfigs(namespace, name, w)
 			if e != nil {
 				logging.Print("Caught error ", e)
 				http.Error(w, "500 bad content", http.StatusInternalServerError)
@@ -162,7 +162,7 @@ func (a *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *apiHandler) writeConfigs(namespace string, w http.ResponseWriter) (e error) {
+func (a *apiHandler) writeConfigs(namespace, bucket string, w http.ResponseWriter) (e error) {
 	cfgs := a.a.Configs()
 	var b []byte
 
@@ -178,7 +178,19 @@ func (a *apiHandler) writeConfigs(namespace string, w http.ResponseWriter) (e er
 			e = errors.New("Unable to locate namespace " + namespace)
 			return
 		}
-		b, e = json.Marshal(n)
+
+		if bucket != "" {
+			// Retrieve specific bucket.
+			bCfg := n.Buckets[bucket]
+			if bCfg == nil {
+				e = errors.New("Unable to locate bucket " + bucket + " in namespace " + namespace)
+				return
+			}
+			b, e = json.Marshal(bCfg)
+		} else {
+			b, e = json.Marshal(n)
+		}
+
 		if e != nil {
 			return
 		}
@@ -194,10 +206,10 @@ func extractNamespaceName(params string) (string, string) {
 
 	if len(parts) < 2 {
 		if len(parts) < 1 {
-			return config.GlobalNamespace, config.DefaultBucketName
+			return config.GlobalNamespace, ""
 		}
 
-		return parts[0], config.DefaultBucketName
+		return parts[0], ""
 	}
 	return parts[0], parts[1]
 }
