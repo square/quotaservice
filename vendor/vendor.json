@@ -3,6 +3,24 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "fhh/M9XiiWfYk7+iKvBNaDXdo/U=",
+			"path": "github.com/alecthomas/template",
+			"revision": "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0",
+			"revisionTime": "2015-05-30T00:01:04Z"
+		},
+		{
+			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
+			"path": "github.com/alecthomas/template/parse",
+			"revision": "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0",
+			"revisionTime": "2015-05-30T00:01:04Z"
+		},
+		{
+			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
+			"path": "github.com/alecthomas/units",
+			"revision": "6b4e7dc5e3143b85ea77909c72caf89416fc2915",
+			"revisionTime": "2015-01-09T00:21:28Z"
+		},
+		{
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "8d92cf5fc15a4382f8964b08e1f42a75c0591aa3",
 			"revisionTime": "2016-03-19T05:57:00+11:00"
@@ -73,6 +91,12 @@
 			"revisionTime": "2016-02-09T15:38:37-08:00"
 		},
 		{
+			"checksumSHA1": "XfUcEVlm1vWnr83FPvIi9NGBU1A=",
+			"path": "gopkg.in/alecthomas/kingpin.v2",
+			"revision": "24b74030480f0aa98802b51ff4622a7eb09dfddd",
+			"revisionTime": "2016-01-28T05:16:53Z"
+		},
+		{
 			"path": "gopkg.in/bsm/ratelimit.v1",
 			"revision": "f14ad9c78b155f69b480cfa41cb655259baac260",
 			"revisionTime": "2015-12-10T17:49:14Z"
@@ -97,5 +121,6 @@
 			"revision": "f7716cbe52baa25d2e9b0d0da546fcf909fc16b4",
 			"revisionTime": "2015-12-01T14:27:45-02:00"
 		}
-	]
+	],
+	"rootPath": "github.com/maniksurtani/quotaservice"
 }
