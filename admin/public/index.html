@@ -59,8 +59,8 @@
     {{.MaxTokensPerRequest}}</tt>
 </td>
 <td>
-  <button class="pull-right btn btn-xs btn-danger" onclick="deleteBucket('{{.FQN}}')">Remove</button>
-  <button class="pull-right btn btn-xs btn-default" onclick="editBucket('{{.FQN}}')">Edit</button>
+  <button class="pull-right btn btn-xs btn-danger" onclick="deleteBucket('{{FQN .}}')">Remove</button>
+  <button class="pull-right btn btn-xs btn-default" onclick="editBucket('{{FQN .}}')">Edit</button>
 </td>
 {{ else }}
 <td>
