@@ -24,7 +24,6 @@ type bucketContainer struct {
 	n             notifier
 	namespaces    map[string]*namespace
 	defaultBucket *expirableBucket
-	sync.RWMutex  // Embedded mutex
 }
 
 type namespace struct {
@@ -134,8 +133,6 @@ type BucketFactory interface {
 // NewBucketContainer creates a new bucket container.
 func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifier) (bc *bucketContainer) {
 	bc = &bucketContainer{cfg: cfg, bf: bf, n: n, namespaces: make(map[string]*namespace)}
-	bc.Lock()
-	defer bc.Unlock()
 
 	if cfg.GlobalDefaultBucket != nil {
 		bc.createGlobalDefaultBucket(cfg.GlobalDefaultBucket)
@@ -145,8 +142,10 @@ func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifie
 		if nsCfg.Name == "" {
 			nsCfg.Name = name
 		}
-		bc.createNamespaceUnderLock(nsCfg)
+
+		bc.createNamespace(nsCfg)
 	}
+
 	return
 }
 
@@ -159,7 +158,7 @@ func (bc *bucketContainer) newExpirableBucket(namespace, bucketName string, cfg 
 	return &expirableBucket{actualBucket, make(chan struct{}, 1)}
 }
 
-func (bc *bucketContainer) createNamespaceUnderLock(nsCfg *pbconfig.NamespaceConfig) error {
+func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) error {
 	if _, exists := bc.namespaces[nsCfg.Name]; exists {
 		return errors.New("Namespace " + nsCfg.Name + " already exists.")
 	}
@@ -172,6 +171,7 @@ func (bc *bucketContainer) createNamespaceUnderLock(nsCfg *pbconfig.NamespaceCon
 	for bucketName, bucketCfg := range nsCfg.Buckets {
 		bc.createNewNamedBucketFromCfg(nsCfg.Name, bucketName, nsp, bucketCfg, false)
 	}
+
 	bc.namespaces[nsCfg.Name] = nsp
 
 	return nil
@@ -192,9 +192,7 @@ func (bc *bucketContainer) createGlobalDefaultBucket(cfg *pbconfig.BucketConfig)
 // fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
 // buckets or re-create statically defined buckets that have been invalidated.
 func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*expirableBucket, error) {
-	bc.RLock()
 	ns := bc.namespaces[namespace]
-	bc.RUnlock()
 	var bucket *expirableBucket
 	var err error
 
@@ -279,16 +277,11 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 }
 
 func (bc *bucketContainer) NamespaceExists(namespace string) bool {
-	bc.RLock()
-	defer bc.RUnlock()
-
 	_, exists := bc.namespaces[namespace]
 	return exists
 }
 
 func (bc *bucketContainer) Exists(namespace, name string) bool {
-	bc.RLock()
-	defer bc.RUnlock()
 	if ns, exists := bc.namespaces[namespace]; exists {
 		ns.RLock()
 		defer ns.RUnlock()
@@ -297,65 +290,6 @@ func (bc *bucketContainer) Exists(namespace, name string) bool {
 	}
 
 	return false
-}
-
-func (bc *bucketContainer) deleteBucket(namespace, name string) error {
-	ns := bc.namespaces[namespace]
-	if ns != nil {
-		if name == config.DefaultBucketName {
-			ns.defaultBucket.Destroy()
-			ns.cfg.DefaultBucket = nil
-			ns.defaultBucket = nil
-		} else if name == config.DynamicBucketTemplateName {
-			ns.cfg.DynamicBucketTemplate = nil
-		} else {
-			delete(ns.cfg.Buckets, name)
-			if ns.buckets[name] != nil {
-				ns.removeBucket(name)
-			}
-		}
-	} else {
-		if namespace == config.GlobalNamespace {
-			// Global.
-			if name == config.DefaultBucketName {
-				if bc.defaultBucket != nil {
-					bc.defaultBucket.Destroy()
-					bc.defaultBucket = nil
-				}
-			} else {
-				return errors.New("No such bucket " + name + " on global namespace.")
-			}
-		} else {
-			return errors.New("No such namespace " + namespace + ".")
-		}
-	}
-
-	return nil
-}
-
-func (bc *bucketContainer) deleteNamespace(n string) error {
-	bc.Lock()
-	defer bc.Unlock()
-
-	nsp := bc.namespaces[n]
-	if nsp == nil {
-		return errors.New("No such namespace " + n)
-	}
-
-	delete(bc.namespaces, n)
-	bc.deleteBucket(n, config.DefaultBucketName)
-	for b, _ := range nsp.buckets {
-		bc.deleteBucket(n, b)
-	}
-
-	return nil
-}
-
-func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) error {
-	bc.Lock()
-	defer bc.Unlock()
-
-	return bc.createNamespaceUnderLock(nsCfg)
 }
 
 func (bc *bucketContainer) String() string {

@@ -5,9 +5,10 @@
 package quotaservice
 
 import (
-	"github.com/maniksurtani/quotaservice/config"
 	"strconv"
 	"testing"
+
+	"github.com/maniksurtani/quotaservice/config"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -118,47 +119,5 @@ func TestMaxDynamic(t *testing.T) {
 	b := container.createNewNamedBucket("z", "should_fail", container.namespaces["z"])
 	if b != nil {
 		t.Fatal("Should not have created dynamic bucket z:should_fail")
-	}
-}
-
-func TestDelete(t *testing.T) {
-	if !container.Exists("x", "a") {
-		t.Fatal("x:a should exist")
-	}
-
-	container.deleteBucket("x", "a")
-
-	if container.Exists("x", "a") {
-		t.Fatal("x:a should not exist")
-	}
-
-	if container.defaultBucket == nil {
-		t.Fatal("Should have a global default bucket.")
-	}
-
-	container.deleteBucket(config.GlobalNamespace, config.DefaultBucketName)
-
-	if container.defaultBucket != nil {
-		t.Fatal("Should delete global default bucket.")
-	}
-
-	if container.namespaces["x"].defaultBucket == nil {
-		t.Fatal("Default bucket on x should exist")
-	}
-
-	container.deleteBucket("x", config.DefaultBucketName)
-
-	if container.namespaces["x"].defaultBucket != nil {
-		t.Fatal("Default bucket on x should not exist")
-	}
-
-	if container.namespaces["y"] == nil {
-		t.Fatal("Namespace y should exist")
-	}
-
-	container.deleteNamespace("y")
-
-	if container.namespaces["y"] != nil {
-		t.Fatal("Namespace y should not exist")
 	}
 }

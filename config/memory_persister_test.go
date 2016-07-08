@@ -4,14 +4,14 @@
 package config
 
 import (
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 	"reflect"
 	"testing"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
-func TestPersistence(t *testing.T) {
-	persister, e := NewDiskConfigPersister("/tmp/qs_test_persistence")
-	checkError(t, e)
+func TestMemoryPersistence(t *testing.T) {
+	persister := NewMemoryConfigPersister()
 
 	select {
 	case <-persister.ConfigChangedWatcher():
@@ -53,11 +53,5 @@ func TestPersistence(t *testing.T) {
 
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
-	}
-}
-
-func checkError(t *testing.T, e error) {
-	if e != nil {
-		t.Fatal("Not expecting error ", e)
 	}
 }

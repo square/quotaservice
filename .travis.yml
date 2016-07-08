@@ -10,9 +10,11 @@ services:
 before_script:
   - go vet $(go list ./... | grep -v /vendor/)
 
+before_install:
+  - wget http://apache.claz.org/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
+  - tar -zxvf zookeeper*tar.gz
+
 gobuild_args: -race -v
 
 install:
   - export GO15VENDOREXPERIMENT=1
-
-

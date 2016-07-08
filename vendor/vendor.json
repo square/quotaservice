@@ -26,6 +26,12 @@
 			"revisionTime": "2016-03-19T05:57:00+11:00"
 		},
 		{
+			"checksumSHA1": "dF3fORwN1HTgrlrdmll9K2cOjOg=",
+			"path": "github.com/samuel/go-zookeeper/zk",
+			"revision": "e64db453f3512cade908163702045e0f31137843",
+			"revisionTime": "2016-06-16T02:49:54Z"
+		},
+		{
 			"path": "golang.org/x/net/context",
 			"revision": "6c89489cafabcbc76df9dbf84ebf07204673fecf",
 			"revisionTime": "2015-12-19T16:51:57+06:00"

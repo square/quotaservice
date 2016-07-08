@@ -4,19 +4,21 @@
 package quotaservice
 
 import (
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/test/helpers"
 	"testing"
+
+	"github.com/maniksurtani/quotaservice/config"
+	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 func TestWithNoRpcs(t *testing.T) {
 	helpers.ExpectingPanic(t, func() {
-		New(config.NewDefaultServiceConfig(), &MockBucketFactory{})
+		New(&MockBucketFactory{}, &config.MemoryConfigPersister{}, &pb.ServiceConfig{})
 	})
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(config.NewDefaultServiceConfig(), &MockBucketFactory{}, &MockEndpoint{})
+	s := New(&MockBucketFactory{}, &config.MemoryConfigPersister{}, &pb.ServiceConfig{}, &MockEndpoint{})
 	s.Start()
 	defer s.Stop()
 }
