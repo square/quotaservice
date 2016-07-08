@@ -11,7 +11,11 @@ import (
 
 func CreateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconfig.BucketConfig) error {
 	if namespace == GlobalNamespace {
-		// TODO(steved) what to do?
+		if clonedCfg.GlobalDefaultBucket != nil {
+			return errors.New("GlobalDefaultBucket already exists")
+		}
+
+		clonedCfg.GlobalDefaultBucket = b
 	} else {
 		ns := clonedCfg.Namespaces[namespace]
 
@@ -19,7 +23,19 @@ func CreateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconf
 			return errors.New("Namespace doesn't exist")
 		}
 
-		if ns.Buckets[b.Name] != nil {
+		if b.Name == DefaultBucketName {
+			if ns.DefaultBucket != nil {
+				return errors.New("DefaultBucket already exists")
+			}
+
+			ns.DefaultBucket = b
+		} else if b.Name == DynamicBucketTemplateName {
+			if ns.DynamicBucketTemplate != nil {
+				return errors.New("DynamicBucketTemplate already exists")
+			}
+
+			ns.DynamicBucketTemplate = b
+		} else if ns.Buckets[b.Name] != nil {
 			return errors.New("Bucket " + b.Name + " already exists")
 		} else {
 			ns.Buckets[b.Name] = b
@@ -31,7 +47,7 @@ func CreateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconf
 
 func UpdateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconfig.BucketConfig) error {
 	if namespace == GlobalNamespace {
-		// TODO(steved) what to do?
+		clonedCfg.GlobalDefaultBucket = b
 	} else {
 		ns := clonedCfg.Namespaces[namespace]
 
@@ -39,7 +55,13 @@ func UpdateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconf
 			return errors.New("Namespace doesn't exist")
 		}
 
-		ns.Buckets[b.Name] = b
+		if b.Name == DefaultBucketName {
+			ns.DefaultBucket = b
+		} else if b.Name == DynamicBucketTemplateName {
+			ns.DynamicBucketTemplate = b
+		} else {
+			ns.Buckets[b.Name] = b
+		}
 	}
 
 	return nil
@@ -47,7 +69,7 @@ func UpdateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconf
 
 func DeleteBucket(clonedCfg *pbconfig.ServiceConfig, namespace, name string) error {
 	if namespace == GlobalNamespace {
-		// TODO(steved) confirm this whole condition, it's weird
+		clonedCfg.GlobalDefaultBucket = nil
 	} else {
 		ns := clonedCfg.Namespaces[namespace]
 
@@ -55,7 +77,6 @@ func DeleteBucket(clonedCfg *pbconfig.ServiceConfig, namespace, name string) err
 			return errors.New("No such namespace " + namespace + ".")
 		}
 
-		// TODO(steved) should this be applied to all Bucket ops?
 		if name == DefaultBucketName {
 			ns.DefaultBucket = nil
 		} else if name == DynamicBucketTemplateName {
