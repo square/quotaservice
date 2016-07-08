@@ -4,12 +4,14 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 )
 
 type MemoryConfigPersister struct {
-	config  io.Reader
+	config  []byte
 	watcher chan struct{}
 }
 
@@ -19,7 +21,13 @@ func NewMemoryConfigPersister() ConfigPersister {
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	m.config = marshalledConfig
+	bytes, err := ioutil.ReadAll(marshalledConfig)
+
+	if err != nil {
+		return err
+	}
+
+	m.config = bytes
 
 	// ... and notify
 	select {
@@ -33,12 +41,12 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 }
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (m *MemoryConfigPersister) ReadPersistedConfig() (marshalledConfig io.Reader, err error) {
+func (m *MemoryConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 	if m.config == nil {
 		return nil, errors.New("config is empty")
 	}
 
-	return m.config, nil
+	return bytes.NewReader(m.config), nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are

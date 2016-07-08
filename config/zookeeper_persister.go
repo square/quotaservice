@@ -23,7 +23,7 @@ const (
 type ZkConfigPersister struct {
 	conn    *zk.Conn
 	path    string
-	config  io.Reader
+	config  []byte
 	watcher chan struct{}
 	wg      sync.WaitGroup
 }
@@ -107,8 +107,8 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 }
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (z *ZkConfigPersister) ReadPersistedConfig() (marshalledConfig io.Reader, err error) {
-	return z.config, nil
+func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
+	return bytes.NewReader(z.config), nil
 }
 
 func (z *ZkConfigPersister) zkEventListener(ch <-chan zk.Event) {
@@ -136,8 +136,7 @@ func (z *ZkConfigPersister) zkEventListener(ch <-chan zk.Event) {
 }
 
 func (z *ZkConfigPersister) setAndNotify(config []byte) {
-	readerConfig := bytes.NewReader(config)
-	z.config = readerConfig
+	z.config = config
 
 	// ... and notify
 	select {

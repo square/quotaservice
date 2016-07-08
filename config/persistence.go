@@ -10,11 +10,11 @@ import (
 // ConfigPersister is an interface that persists configs and notifies a channel of changes.
 type ConfigPersister interface {
 	// PersistAndNotify persists a marshalled configuration passed in.
-	PersistAndNotify(marshalledConfig io.Reader) error
+	PersistAndNotify(io.Reader) error
 	// ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
 	// detected. Changes are coalesced so that a single notification may be emitted for multiple
 	// changes.
 	ConfigChangedWatcher() chan struct{}
 	// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-	ReadPersistedConfig() (marshalledConfig io.Reader, err error)
+	ReadPersistedConfig() (io.Reader, error)
 }
