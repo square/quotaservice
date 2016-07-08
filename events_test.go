@@ -53,9 +53,8 @@ func setUp() {
 
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
-	p, _ := config.NewMemoryConfigPersister()
-	s = New(mbf, p, me)
-	s.CreateBucketContainer(cfg)
+	p := config.NewMemoryConfigPersister()
+	s = New(mbf, p, cfg, me)
 	events = make(chan Event, 100)
 	s.SetListener(func(e Event) {
 		events <- e

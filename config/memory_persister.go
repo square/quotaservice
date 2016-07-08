@@ -13,8 +13,8 @@ type MemoryConfigPersister struct {
 	watcher chan struct{}
 }
 
-func NewMemoryConfigPersister() (ConfigPersister, error) {
-	return &MemoryConfigPersister{nil, make(chan struct{}, 1)}, nil
+func NewMemoryConfigPersister() ConfigPersister {
+	return &MemoryConfigPersister{nil, make(chan struct{}, 1)}
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.

@@ -32,11 +32,10 @@ func main() {
 	config.AddBucket(ns, b)
 	config.AddNamespace(cfg, ns)
 
-	persister, _ := config.NewMemoryConfigPersister()
 	server := quotaservice.New(memory.NewBucketFactory(),
-		persister,
+		config.NewMemoryConfigPersister(),
+		cfg,
 		grpc.New("localhost:10990"))
-	server.CreateBucketContainer(cfg)
 	server.Start()
 
 	// Serve Admin Console

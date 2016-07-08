@@ -43,10 +43,6 @@ func (s *server) Start() (bool, error) {
 		s.producer = registerListener(s.listener, s.eventQueueBufSize)
 	}
 
-	if s.cfgs == nil {
-		s.CreateBucketContainer(&pb.ServiceConfig{})
-	}
-
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
@@ -156,11 +152,11 @@ func (s *server) configListener(ch chan struct{}) {
 			logging.Println("error reading marshalled config", err)
 		}
 
-		s.CreateBucketContainer(newConfig)
+		s.createBucketContainer(newConfig)
 	}
 }
 
-func (s *server) CreateBucketContainer(newConfig *pb.ServiceConfig) {
+func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
 	s.Lock()
 	// Initialize buckets
 	s.bucketFactory.Init(newConfig)

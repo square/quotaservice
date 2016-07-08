@@ -11,8 +11,7 @@ import (
 )
 
 func TestMemoryPersistence(t *testing.T) {
-	persister, e := NewMemoryConfigPersister()
-	checkError(t, e)
+	persister := NewMemoryConfigPersister()
 
 	select {
 	case <-persister.ConfigChangedWatcher():
