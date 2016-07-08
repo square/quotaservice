@@ -153,7 +153,7 @@ func TestSetAndNotify(t *testing.T) {
 }
 
 func createExistingNode() {
-	conn, _, err := zk.Connect(servers, SessionTimeout)
+	conn, _, err := zk.Connect(servers, sessionTimeout)
 
 	if err != nil {
 		panic(err)
