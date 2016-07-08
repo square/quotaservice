@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	SessionTimeout = 3 * time.Second
+	sessionTimeout = 3 * time.Second
+	watchRetries   = 3
 )
 
 type ZkConfigPersister struct {
@@ -28,7 +29,7 @@ type ZkConfigPersister struct {
 }
 
 func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error) {
-	conn, _, err := zk.Connect(servers, SessionTimeout)
+	conn, _, err := zk.Connect(servers, sessionTimeout)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error
 func createAndSetWatch(conn *zk.Conn, path string) ([]byte, <-chan zk.Event, error) {
 	var err error
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < watchRetries; i++ {
 		exists, _, err := conn.Exists(path)
 
 		if err != nil {
