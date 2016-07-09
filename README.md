@@ -50,14 +50,15 @@ In order of priority.
 * Explicit calls to the quota service's API on whether an RPC should be allowed to proceed or not. Services are expected to use this API *before* actually making the RPC it needs to make.
 * Weighted quotas.
 * Expose a listener on the server, so events can be tracked and statistics gathered.
+* REST/HTTP endpoint.
 
 ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
+* Admin CLI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Naïve client(s) that integrate with gRPC.
 
 ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
 * Smart client, with client-side buckets and asynchronous, bulk token updates from the quota service.
-* REST/HTTP endpoint.
 * Allow for bursting (hard limits vs soft limits)
 * Sharded back-end
 
