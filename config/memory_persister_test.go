@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 func TestMemoryPersistence(t *testing.T) {
@@ -34,9 +35,9 @@ func TestMemoryPersistence(t *testing.T) {
 
 	// Store s.
 	r, e := Marshal(s)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 	e = persister.PersistAndNotify(r)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 
 	// Test notification
 	select {
@@ -47,9 +48,9 @@ func TestMemoryPersistence(t *testing.T) {
 	}
 
 	r, e = persister.ReadPersistedConfig()
-	checkError(t, e)
+	helpers.CheckError(t, e)
 	unmarshalled, e := Unmarshal(r)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
