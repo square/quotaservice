@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maniksurtani/quotaservice/test/helpers"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -18,10 +19,7 @@ var servers []string
 
 func TestMain(m *testing.M) {
 	t, err := zk.StartTestCluster(1, nil, nil)
-
-	if err != nil {
-		panic(err)
-	}
+	helpers.PanicError(err)
 
 	defer t.Stop()
 	servers = make([]string, 1)
@@ -44,31 +42,22 @@ func TestNewPathError(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	p, err := NewZkConfigPersister("/quotaservice", servers)
-
-	if err != nil {
-		t.Fatalf("Received error on create: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
 
 	select {
 	case <-p.ConfigChangedWatcher():
-		// this is good
+	// this is good
 	default:
 		t.Error("Config channel should not be empty!")
 	}
 
 	cfg, err := p.ReadPersistedConfig()
-
-	if err != nil {
-		t.Fatal("Received error on ReadPersistedConfig")
-	}
+	helpers.CheckError(t, err)
 
 	cfgArray, err := ioutil.ReadAll(cfg)
-
-	if err != nil {
-		t.Fatal("Received error on ReadAll")
-	}
+	helpers.CheckError(t, err)
 
 	if len(cfgArray) > 0 {
 		t.Errorf("Received non-empty cfg on new node: %+v", cfgArray)
@@ -77,31 +66,22 @@ func TestNew(t *testing.T) {
 
 func TestNewExisting(t *testing.T) {
 	p, err := NewZkConfigPersister("/existing", servers)
-
-	if err != nil {
-		t.Fatalf("Received error on create: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
 
 	select {
 	case <-p.ConfigChangedWatcher():
-		// this is good
+	// this is good
 	default:
 		t.Fatal("Config channel should not be empty!")
 	}
 
 	cfg, err := p.ReadPersistedConfig()
-
-	if err != nil {
-		t.Fatalf("Received error on ReadPersistedConfig: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	newConfig, err := Unmarshal(cfg)
-
-	if err != nil {
-		t.Fatalf("Received error on Unmarshal: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	if newConfig.Namespaces["test"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
@@ -110,22 +90,17 @@ func TestNewExisting(t *testing.T) {
 
 func TestSetAndNotify(t *testing.T) {
 	p, err := NewZkConfigPersister("/existing", servers)
-
-	if err != nil {
-		t.Fatalf("Received error on create: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
+
 	<-p.ConfigChangedWatcher()
 
 	cfg := NewDefaultServiceConfig()
 	cfg.Namespaces["foo"] = NewDefaultNamespaceConfig("foo")
 
 	r, err := Marshal(cfg)
-
-	if err != nil {
-		t.Fatalf("Received error on marshal: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	p.PersistAndNotify(r)
 
@@ -136,16 +111,10 @@ func TestSetAndNotify(t *testing.T) {
 	}
 
 	ioCfg, err := p.ReadPersistedConfig()
-
-	if err != nil {
-		t.Fatalf("Received error on ReadPersistedConfig: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	newConfig, err := Unmarshal(ioCfg)
-
-	if err != nil {
-		t.Fatalf("Received error on Unmarshal: %+v", err)
-	}
+	helpers.CheckError(t, err)
 
 	if newConfig.Namespaces["foo"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
@@ -154,10 +123,7 @@ func TestSetAndNotify(t *testing.T) {
 
 func createExistingNode() {
 	conn, _, err := zk.Connect(servers, sessionTimeout)
-
-	if err != nil {
-		panic(err)
-	}
+	helpers.PanicError(err)
 
 	defer conn.Close()
 
@@ -165,20 +131,11 @@ func createExistingNode() {
 	cfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
 
 	reader, err := Marshal(cfg)
-
-	if err != nil {
-		panic(err)
-	}
+	helpers.PanicError(err)
 
 	bytes, err := ioutil.ReadAll(reader)
-
-	if err != nil {
-		panic(err)
-	}
+	helpers.PanicError(err)
 
 	_, err = conn.Create("/existing", bytes, 0, zk.WorldACL(zk.PermAll))
-
-	if err != nil {
-		panic(err)
-	}
+	helpers.PanicError(err)
 }

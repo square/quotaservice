@@ -6,13 +6,13 @@ package config
 import (
 	"reflect"
 	"testing"
-
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 func TestDiskPersistence(t *testing.T) {
 	persister, e := NewDiskConfigPersister("/tmp/qs_test_persistence")
-	checkError(t, e)
+	helpers.CheckError(t, e)
 
 	select {
 	case <-persister.ConfigChangedWatcher():
@@ -35,9 +35,9 @@ func TestDiskPersistence(t *testing.T) {
 
 	// Store s.
 	r, e := Marshal(s)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 	e = persister.PersistAndNotify(r)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 
 	// Test notification
 	select {
@@ -48,17 +48,11 @@ func TestDiskPersistence(t *testing.T) {
 	}
 
 	r, e = persister.ReadPersistedConfig()
-	checkError(t, e)
+	helpers.CheckError(t, e)
 	unmarshalled, e := Unmarshal(r)
-	checkError(t, e)
+	helpers.CheckError(t, e)
 
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
-	}
-}
-
-func checkError(t *testing.T, e error) {
-	if e != nil {
-		t.Fatal("Not expecting error ", e)
 	}
 }
