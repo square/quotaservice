@@ -44,16 +44,15 @@ The quota service and clients are all completely open source, under the Apache S
 In order of priority.
 
 ![Status](https://img.shields.io/badge/status-complete-green.svg)
-
 * Provide service that maintains in-memory data structures tracking quotas.
 * Statically configure the service via a YAML configuration file.
 * Explicit calls to the quota service's API on whether an RPC should be allowed to proceed or not. Services are expected to use this API *before* actually making the RPC it needs to make.
 * Weighted quotas.
 * Expose a listener on the server, so events can be tracked and statistics gathered.
 * REST/HTTP endpoint.
+* Admin CLI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 
 ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
-* Admin CLI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Naïve client(s) that integrate with gRPC.
 
