@@ -1,0 +1,41 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 1;
+}
+
+.confirmation {
+  h4 {
+    line-height: 25px;
+  }
+
+  .code {
+    margin: 5px 0 0 0;
+    font-family: monospace;
+    font-size: 0.9em;
+    line-height: 140%;
+    white-space: pre-wrap;
+
+    padding: 0.5em 1em;
+
+    overflow: auto;
+
+    border: $border-grey;
+    color: #5e676d;
+    background-color: white;
+  }
+
+  background-color: $background-grey;
+  border: $border-grey;
+  border-radius: 5px;
+  box-shadow: 2px 2px 10px rgba(220, 220, 220, 1.0);
+  padding: 10px;
+
+  flex: 1;
+  max-width: 40%;
+  max-height: 80%;
+}

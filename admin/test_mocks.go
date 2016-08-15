@@ -27,6 +27,14 @@ func (m *MockAdministrable) Configs() *pb.ServiceConfig {
 	return m.cfg
 }
 
+func (m *MockAdministrable) UpdateConfig(config *pb.ServiceConfig) error {
+	if m.errors {
+		return errors.New("UpdateConfig")
+	}
+
+	return nil
+}
+
 func (m *MockAdministrable) DeleteBucket(namespace string, name string) error {
 	if m.errors {
 		return errors.New("DeleteBucket")

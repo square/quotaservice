@@ -5,17 +5,34 @@ go:
   - 1.6
   - 1.7rc1
 
+cache:
+  directories:
+    - admin/public/node_modules
+
 services:
   - redis-server
+
+env:
+  global:
+    - GO15VENDOREXPERIMENT=1
+  matrix:
+    - TEST=UI
+    - TEST=DEFAULT
+
+matrix:
+  exclude:
+    - go: 1.5
+      env: TEST=UI
+    - go: 1.7rc1
+      env: TEST=UI
+  fast_finish: true
+
+install:
+  - wget http://apache.claz.org/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
+  - tar -zxf zookeeper*tar.gz
+  - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
 
 before_script:
   - go vet $(go list ./... | grep -v /vendor/)
 
-before_install:
-  - wget http://apache.claz.org/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
-  - tar -zxf zookeeper*tar.gz
-
-gobuild_args: -race -v
-
-install:
-  - export GO15VENDOREXPERIMENT=1
+script: test/script.sh

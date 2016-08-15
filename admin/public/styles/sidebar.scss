@@ -1,0 +1,22 @@
+.sidebar {
+  background-color: $background-grey;
+  border-right: $border-grey;
+  padding: 5px;
+  min-width: 215px;
+
+  > div {
+    margin-bottom: 10px;
+  }
+}
+
+.error {
+  font-weight: bold;
+  background-color: #c86767;
+  color: #ffffff;
+  margin: 10px 0 10px 0;
+  border-radius: 5px;
+  padding: 5px 10px 5px 10px;
+  box-shadow: 2px 2px 10px rgb(220, 220, 220);
+}
+
+

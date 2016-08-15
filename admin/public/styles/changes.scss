@@ -1,0 +1,34 @@
+.change {
+  padding: 5px;
+
+  .change-text {
+    .fa {
+      vertical-align: middle;
+      font-size: 8px;
+      margin-right: 2px;
+    }
+  }
+}
+
+.changes {
+  background-color: white;
+  border: $border-grey;
+  margin-top: 5px;
+  max-height: 50%;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.past {
+  background-color: rgba(113, 166, 210, 0.4);
+  font-weight: bold;
+}
+
+.future {
+  color: rgba(180, 180, 180, 1.0);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+}

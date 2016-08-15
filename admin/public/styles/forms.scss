@@ -1,0 +1,25 @@
+.input-box {
+  align-items: center;
+  white-space: nowrap;
+
+  label.input-label {
+    line-height: 27px;
+    flex: 1;
+    padding: 0;
+    margin: 0 10px 0 0;
+  }
+
+  .input-field {
+    &, input { text-align: right; }
+  }
+
+  input {
+    font-size: 0.9em;
+    height: 21px;
+
+    &.input-lg {
+      width: 280px;
+    }
+  }
+}
+

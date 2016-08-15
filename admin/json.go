@@ -17,7 +17,14 @@ func writeJSONError(w http.ResponseWriter, err *HttpError) {
 	response["error"] = http.StatusText(err.status)
 	response["description"] = err.message
 
+	logging.Printf("Response error: %+v", response)
+
 	w.WriteHeader(err.status)
+	writeJSON(w, response)
+}
+
+func writeJSONOk(w http.ResponseWriter) {
+	response := make(map[string]string)
 	writeJSON(w, response)
 }
 
