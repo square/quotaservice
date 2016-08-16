@@ -9,7 +9,7 @@ For development, as long as your QuotaService is running the admin API at port 8
 
 ```
 $ nvm use
-Now using node v6.2.1 (npm v3.9.3)
+Now using node v6.3.1 (npm v3.10.3)
 $ npm install
 ...
 $ npm run start
