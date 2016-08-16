@@ -3,7 +3,7 @@ language: go
 go:
   - 1.5
   - 1.6
-  - 1.7rc1
+  - 1.7
 
 cache:
   directories:
