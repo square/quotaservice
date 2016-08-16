@@ -19,7 +19,7 @@ import (
 func main() {
 	cfg := config.NewDefaultServiceConfig()
 	ns := config.NewDefaultNamespaceConfig("test.namespace")
-	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig("")
+	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DynamicBucketTemplateName)
 	ns.DynamicBucketTemplate.Size = 100000000000
 	ns.DynamicBucketTemplate.FillRate = 100000000
 	b := config.NewDefaultBucketConfig("xyz")

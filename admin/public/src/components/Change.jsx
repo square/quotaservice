@@ -19,13 +19,13 @@ export default class Change extends Component {
     switch(change.type) {
       case ADD_NAMESPACE:
       case ADD_BUCKET:
-        return <span className="change-text"><i className="fa fa-plus"/>{change.key}</span>
+        return <span className="change-text">add {change.key}</span>
       case UPDATE_NAMESPACE:
       case UPDATE_BUCKET:
-        return <span className="change-text"><i className="fa fa-pencil"/>{change.key} to "{change.value}"</span>
+        return <span className="change-text">set {change.key} to "{change.value}"</span>
       case REMOVE_NAMESPACE:
       case REMOVE_BUCKET:
-        return <span className="change-text"><i className="fa fa-minus"/>{change.key}</span>
+        return <span className="change-text">remove {change.key}</span>
       default:
         return `Unknown change: ${JSON.stringify(change)}`
     }

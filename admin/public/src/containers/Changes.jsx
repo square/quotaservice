@@ -44,7 +44,7 @@ export default class Changes extends Component {
         </div>
         <div>
           <button className='btn btn-danger' title='Refresh configuration' onClick={handleRefresh}>
-            <i className='fa fa-refresh' />
+            Refresh
           </button>
           <button className='btn btn-primary' onClick={handleCommit}>Save</button>
         </div>

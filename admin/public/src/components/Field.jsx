@@ -29,9 +29,15 @@ export default class Field extends Component {
 
     if (value === '') {
       handleChange(null)
-    } else if (!Number.isNaN(intValue)) {
+    } else if (this.validInteger(intValue)) {
       handleChange(intValue)
     }
+  }
+
+  validInteger(int) {
+    return !Number.isNaN(int) &&
+      int > Number.MIN_SAFE_INTEGER &&
+      int < Number.MAX_SAFE_INTEGER
   }
 
   render() {
