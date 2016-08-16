@@ -18,6 +18,7 @@ export function commitNamespaces() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: json,
+        credentials: 'same-origin',
         types: [REQUEST, COMMIT_SUCCESS, FAILURE]
       }
     })
@@ -29,6 +30,7 @@ export function fetchNamespaces() {
     [CALL_API]: {
       endpoint: '/api',
       method: 'GET',
+      credentials: 'same-origin',
       types: [REQUEST, FETCH_SUCCESS, FAILURE]
     }
   })
