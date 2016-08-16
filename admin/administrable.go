@@ -11,11 +11,13 @@ import (
 type Administrable interface {
 	Configs() *pb.ServiceConfig
 
-	DeleteBucket(namespace, name string) error
-	AddBucket(namespace string, b *pb.BucketConfig) error
-	UpdateBucket(namespace string, b *pb.BucketConfig) error
+	UpdateConfig(*pb.ServiceConfig) error
 
-	DeleteNamespace(namespace string) error
-	AddNamespace(n *pb.NamespaceConfig) error
-	UpdateNamespace(n *pb.NamespaceConfig) error
+	DeleteBucket(string, string) error
+	AddBucket(string, *pb.BucketConfig) error
+	UpdateBucket(string, *pb.BucketConfig) error
+
+	DeleteNamespace(string) error
+	AddNamespace(*pb.NamespaceConfig) error
+	UpdateNamespace(*pb.NamespaceConfig) error
 }

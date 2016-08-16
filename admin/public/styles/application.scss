@@ -1,0 +1,92 @@
+@import "_variables.scss";
+
+@import "confirmation.scss";
+@import "buckets.scss";
+@import "buttons.scss";
+@import "changes.scss";
+@import "forms.scss";
+@import "loader.scss";
+@import "sidebar.scss";
+@import "namespaces.scss";
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font: 14px sans-serif;
+
+  & > div, & > div > div {
+    height: 100%;
+    min-height: 100%;
+  }
+}
+
+.fill-height-container {
+  min-height: 100%;
+}
+
+.flex-container {
+  display: flex;
+
+  &.flex-end {
+    justify-content: flex-end;
+  }
+
+  &.flex-centered {
+    justify-content: center;
+    align-items: center;
+  }
+
+  &.flex-column {
+    flex-direction: column;
+  }
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: -5px;
+
+  & > * {
+    margin-top: 5px;
+  }
+}
+
+.flex-box {
+  flex: 1;
+}
+
+.flex-box-md {
+  flex: 2;
+}
+
+.flex-box-lg {
+  flex: 5;
+}
+
+.flex-tile {
+  margin: 5px;
+}
+
+hr {
+  height: 1px;
+  background-color: lightgrey;
+  border: 0;
+}
+
+h1, h2, h3, h4 { margin: 0; }
+
+.blur {
+  -webkit-filter: blur(5px);
+}
+
+.hide {
+  display: none;
+}
+
+.production {
+  color: #99221e;
+}
+
+.development {
+  color: #20862d;
+}

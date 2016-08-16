@@ -191,6 +191,14 @@ func (s *server) Configs() *pb.ServiceConfig {
 	return s.cfgs
 }
 
+func (s *server) UpdateConfig(c *pb.ServiceConfig) error {
+	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+		config.ApplyDefaults(c)
+		*clonedCfg = *c
+		return nil
+	})
+}
+
 func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
 	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
 		return config.CreateBucket(clonedCfg, namespace, b)

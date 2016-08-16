@@ -63,7 +63,7 @@ func TestGet(t *testing.T) {
 
 	body := string(bytes)
 
-	if !strings.HasPrefix(body, "<!DOCTYPE html>") {
+	if !strings.HasPrefix(body, "<!doctype html>") {
 		t.Fatalf("Received invalid html from /admin/:\n%s", body)
 	}
 }

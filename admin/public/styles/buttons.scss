@@ -1,0 +1,59 @@
+.btn {
+  white-space: nowrap;
+  border-radius: 5px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9em;
+  padding: 5px 10px 5px 10px;
+  text-decoration: none;
+  margin-right: 5px;
+  border: 0;
+  background-image: linear-gradient(to bottom, rgb(170, 170, 170), rgb(190, 190, 190));
+  box-shadow: 2px 2px 10px rgb(220, 220, 220);
+
+  &.btn-primary {
+    font-weight: bold;
+    background-image: linear-gradient(to bottom, rgb(113, 166, 210), rgb(103, 156, 200));
+  }
+
+  &.btn-primary:hover {
+    background-image: linear-gradient(to bottom, rgb(93, 146, 190), rgb(113, 166, 210));
+  }
+
+  &.btn-danger {
+    font-weight: bold;
+    background-image: linear-gradient(to bottom, rgb(210, 113, 113), rgb(200, 103, 103));
+  }
+
+  &.btn-danger:hover {
+    background-image: linear-gradient(to bottom, rgb(200, 103, 103), rgb(200, 93, 93));
+  }
+
+  &.btn-attached {
+    border-radius: 0 5px 5px 0;
+  }
+
+  &:hover {
+    cursor: pointer;
+    text-decoration: none;
+    background-image: linear-gradient(to bottom, rgb(160, 160, 160), rgb(180, 180, 180));
+  }
+
+  &:focus {
+    outline: 0;
+  }
+
+  &:last-child {
+    margin-right: 0;
+  }
+
+  &:disabled {
+    background-image: linear-gradient(to bottom, rgb(200, 200, 200), rgb(220, 220, 220));
+  }
+
+  &:disabled:hover {
+    cursor: not-allowed;
+    text-decoration: none;
+    background-image: linear-gradient(to bottom, rgb(200, 200, 200), rgb(220, 220, 220));
+  }
+}

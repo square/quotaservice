@@ -1,0 +1,51 @@
+.flex-container .namespace {
+  background-color: $background-grey;
+  border: $border-grey;
+  border-radius: 5px;
+  box-shadow: 2px 2px 10px rgba(220, 220, 220, 1.0);
+  padding: 10px;
+  min-width: 250px;
+
+  /*
+   * This is a workaround for safari's bug
+   * where min-width isn't respected on
+   * https://github.com/philipwalton/flexbugs#11-min-and-max-size-declarations-are-ignored-when-wrapping-flex-items
+   */
+  flex: 1 0 250px;
+
+  p.title {
+    font-size: 1.1em;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+  }
+}
+
+.namespaces {
+  align-items: flex-start;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  .namespace {
+    cursor: pointer;
+  }
+}
+
+.selected-namespace {
+  background-color: rgba(255, 255, 255, 0.85);
+  justify-content: center;
+}
+
+.namespace-navbar {
+  align-items: center;
+  justify-content: space-between;
+
+  button.btn:last-child { margin-left: 5px; }
+}
+
+@media screen and (max-width: 580px) {
+  .namespaces.flexed {
+    display: none;
+  }
+}

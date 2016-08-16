@@ -36,6 +36,8 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
+		} else {
+			writeJSONOk(w)
 		}
 	case "PUT":
 		changeBucket(w, r, bucket, func(c *pb.BucketConfig) error {
@@ -66,6 +68,8 @@ func changeBucket(w http.ResponseWriter, r *http.Request, bucket string, updater
 
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+	} else {
+		writeJSONOk(w)
 	}
 }
 

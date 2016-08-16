@@ -1,0 +1,29 @@
+.namespace {
+  .buckets {
+    margin-top: 0;
+
+    .bucket:last-child {
+      margin: 0;
+    }
+
+    .bucket {
+      margin: 0 0 5px 0;
+
+      .input-box:hover {
+        background-color: rgba(113, 166, 210, 0.4);
+      }
+
+      .legend {
+        justify-content: space-between;
+        align-content: center;
+        margin-bottom: 5px;
+      }
+
+      h4 {
+        font-weight: bold;
+        margin: 0 5px 0 0;
+        padding: 5px 0 5px 0;
+      }
+    }
+  }
+}

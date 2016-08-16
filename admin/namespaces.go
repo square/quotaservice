@@ -35,15 +35,21 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 		if err != nil {
 			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
+		} else {
+			writeJSONOk(w)
 		}
 	case "PUT":
 		changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
 			return a.a.UpdateNamespace(c)
 		})
 	case "POST":
-		changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
-			return a.a.AddNamespace(c)
-		})
+		if ns == "" {
+			updateConfig(a, w, r)
+		} else {
+			changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
+				return a.a.AddNamespace(c)
+			})
+		}
 	default:
 		writeJSONError(w, &HttpError{"Unknown method " + r.Method, http.StatusBadRequest})
 	}
@@ -67,6 +73,28 @@ func writeNamespace(a *namespacesAPIHandler, w http.ResponseWriter, namespace st
 	return nil
 }
 
+func updateConfig(a *namespacesAPIHandler, w http.ResponseWriter, r *http.Request) {
+	c := &pb.ServiceConfig{}
+	e := unmarshalJSON(r.Body, c)
+
+	if e != nil {
+		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		return
+	}
+
+	e = a.a.UpdateConfig(c)
+
+	if e != nil {
+		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+	} else {
+		err := writeNamespace(a, w, "")
+
+		if err != nil {
+			writeJSONError(w, err)
+		}
+	}
+}
+
 func changeNamespace(w http.ResponseWriter, r *http.Request, updater func(*pb.NamespaceConfig) error) {
 	c, e := getNamespaceConfig(r.Body)
 
@@ -79,6 +107,8 @@ func changeNamespace(w http.ResponseWriter, r *http.Request, updater func(*pb.Na
 
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+	} else {
+		writeJSONOk(w)
 	}
 }
 
