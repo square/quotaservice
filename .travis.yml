@@ -25,7 +25,6 @@ matrix:
       env: TEST=UI
     - go: 1.6
       env: TEST=UI
-  fast_finish: true
 
 install:
   - wget http://apache.claz.org/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
@@ -40,3 +39,4 @@ script: test/script.sh
 notifications:
   slack:
     secure: n5zCkLHWP1cbvS1nsD97YDx37P+VSmx6GAP8zE0+QZC79lNAT7Y0IQuRKoEL9vQ1RZ4ph1KNsGi6aZZYfzUviq+I4rvrkMpGEtGKTlzZRZDfphaUNFldCBE9ctLhVgqr0ShXyMp1IzywVESOJuYPGnnXXaStF+GUMGR5KE4RjlAATfpPyHaUTxjFZPSclf3sqyNZIpl3kPUDw0/v+PeGXnd5GKryGv8NhrHRAcSR30VORk58JbRQbPDwIZ/deKFkRhoG0BtjlI2I5uRraptvVGdJw2C8zMfe2fOAjOHG6ifryTLcBuftn2iVvez1GuNKe4xTK/kGkKEncYZVJRCHeunoUyNtWTRBQ2lMJm1N4KDdlFDJ5khcFdGK0KZDh+jWlfca6Nvi7Ysx02NZjTqnVsmyjS4Pu9J/vewqEmoO5mQY/bfHKV8qN7V86BfC7n5UBIgqJSTNdHd/x3CylqF5D0i9ttjlPn0kSbMJsf+CD3/ugQdJbLZabcmb2Lp2b2jOhMqYIlhIKCpp/8QYtTmw8U67/H+XQvwBORCwwkBk+fRMTaUYcyC+rmjNnPwBq7dZmRvpC0vISGRDBtpniblEsFp0BQcgWx+tCnTry0ZSSvWX/oBS/MUQ/Lg9fplbknvs/2vPVije8U0RYmdJ/gCHE6X0PBzdafO0VaT55+wR8GI=
+    on_success: never
