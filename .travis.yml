@@ -23,7 +23,7 @@ matrix:
   exclude:
     - go: 1.5
       env: TEST=UI
-    - go: 1.7rc1
+    - go: 1.6
       env: TEST=UI
   fast_finish: true
 
