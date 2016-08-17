@@ -119,6 +119,29 @@ func TestSetAndNotify(t *testing.T) {
 	if newConfig.Namespaces["foo"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
 	}
+
+	cfg.Namespaces["bar"] = NewDefaultNamespaceConfig("bar")
+
+	r, err = Marshal(cfg)
+	helpers.CheckError(t, err)
+
+	p.PersistAndNotify(r)
+
+	select {
+	case <-p.ConfigChangedWatcher():
+	case <-time.After(time.Second * 1):
+		t.Fatalf("Did not receive notification!")
+	}
+
+	ioCfg, err = p.ReadPersistedConfig()
+	helpers.CheckError(t, err)
+
+	newConfig, err = Unmarshal(ioCfg)
+	helpers.CheckError(t, err)
+
+	if newConfig.Namespaces["bar"] == nil {
+		t.Errorf("Config is not valid: %+v", newConfig)
+	}
 }
 
 func createExistingNode() {
