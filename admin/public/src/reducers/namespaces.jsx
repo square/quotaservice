@@ -165,8 +165,7 @@ function handleRequest(state, action) {
     case COMMIT_SUCCESS:
       return INITIAL_HISTORY
     case FETCH_SUCCESS:
-      return Object.assign({}, state, {
-        inRequest: false,
+      return Object.assign({}, INITIAL_HISTORY, {
         items: Immutable.from(action.payload.namespaces || {})
       })
   }
