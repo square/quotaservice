@@ -25,6 +25,7 @@ type ZkConfigPersister struct {
 	path    string
 	config  []byte
 	watcher chan struct{}
+	stopper chan struct{}
 	wg      sync.WaitGroup
 }
 
@@ -45,7 +46,8 @@ func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error
 	persister := &ZkConfigPersister{
 		conn:    conn,
 		path:    path,
-		watcher: make(chan struct{}, 1)}
+		watcher: make(chan struct{}, 1),
+		stopper: make(chan struct{}, 1)}
 
 	persister.setAndNotify(conf)
 
@@ -112,27 +114,29 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 }
 
 func (z *ZkConfigPersister) zkEventListener(ch <-chan zk.Event) {
-	for event := range ch {
-		if event.Err != nil {
-			logging.Print("Received error from zookeeper", event)
-			continue
+	var config []byte
+	var err error
+
+	for {
+		select {
+		case event := <-ch:
+			if event.Err != nil {
+				logging.Print("Received error from zookeeper", event)
+			}
+		case <-z.stopper:
+			z.wg.Done()
+			return
 		}
 
-		if event.Type != zk.EventNodeDataChanged {
-			continue
-		}
-
-		config, _, err := z.conn.Get(z.path)
+		config, _, ch, err = z.conn.GetW(z.path)
 
 		if err != nil {
-			logging.Printf("Received error from zookeeper when fetching %s: %+v", event, z.path)
+			logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
 			continue
 		}
 
 		z.setAndNotify(config)
 	}
-
-	z.wg.Done()
 }
 
 func (z *ZkConfigPersister) setAndNotify(config []byte) {
@@ -155,7 +159,10 @@ func (z *ZkConfigPersister) ConfigChangedWatcher() chan struct{} {
 }
 
 func (z *ZkConfigPersister) Close() {
+	z.stopper <- struct{}{}
+	z.wg.Wait()
+
+	close(z.stopper)
 	close(z.watcher)
 	z.conn.Close()
-	z.wg.Wait()
 }
