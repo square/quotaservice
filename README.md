@@ -51,9 +51,9 @@ In order of priority.
 * Expose a listener on the server, so events can be tracked and statistics gathered.
 * REST/HTTP endpoint.
 * Admin CLI to add services and quotas to the quota service to allow reconfiguration without redeployment.
+* Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 
 ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
-* Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Naïve client(s) that integrate with gRPC.
 
 ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
