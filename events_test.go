@@ -9,11 +9,12 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/events"
 )
 
 var s Server
 var qs QuotaService
-var events chan Event
+var eventsChan chan events.Event
 var mbf *MockBucketFactory
 
 func TestMain(m *testing.M) {
@@ -55,9 +56,9 @@ func setUp() {
 	me := &MockEndpoint{}
 	p := config.NewMemoryConfigPersister()
 	s = New(mbf, p, cfg, me)
-	events = make(chan Event, 100)
-	s.SetListener(func(e Event) {
-		events <- e
+	eventsChan = make(chan events.Event, 100)
+	s.SetListener(func(e events.Event) {
+		eventsChan <- e
 	}, 100)
 	s.Start()
 	qs = me.QuotaService
@@ -65,37 +66,37 @@ func setUp() {
 
 func TestTokens(t *testing.T) {
 	qs.Allow("nodyn", "b", 1, 0)
-	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 0, <-events, t)
+	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyTokens(t *testing.T) {
 	qs.Allow("nodyn", "b", 100, 0)
-	checkEvent("nodyn", "b", false, EVENT_TOO_MANY_TOKENS_REQUESTED, 100, 0, <-events, t)
+	checkEvent("nodyn", "b", false, events.EVENT_TOO_MANY_TOKENS_REQUESTED, 100, 0, <-eventsChan, t)
 }
 
 func TestTimeout(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
 	qs.Allow("nodyn", "b", 1, 1)
-	checkEvent("nodyn", "b", false, EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-events, t)
+	checkEvent("nodyn", "b", false, events.EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
 	qs.Allow("nodyn", "b", 1, 10)
-	checkEvent("nodyn", "b", false, EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-events, t)
+	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestNoSuchBucket(t *testing.T) {
 	qs.Allow("nodyn", "x", 1, 0)
-	checkEvent("nodyn", "x", false, EVENT_BUCKET_MISS, 0, 0, <-events, t)
+	checkEvent("nodyn", "x", false, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestNewDynBucket(t *testing.T) {
 	qs.Allow("dyn", "b", 1, 0)
-	checkEvent("dyn", "b", true, EVENT_BUCKET_CREATED, 0, 0, <-events, t)
-	checkEvent("dyn", "b", true, EVENT_TOKENS_SERVED, 1, 0, <-events, t)
+	checkEvent("dyn", "b", true, events.EVENT_BUCKET_CREATED, 0, 0, <-eventsChan, t)
+	checkEvent("dyn", "b", true, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyDynBuckets(t *testing.T) {
@@ -105,7 +106,7 @@ func TestTooManyDynBuckets(t *testing.T) {
 	clearEvents(4 + n)
 
 	qs.Allow("dyn", "e", 1, 0)
-	checkEvent("dyn", "e", true, EVENT_BUCKET_MISS, 0, 0, <-events, t)
+	checkEvent("dyn", "e", true, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestBucketRemoval(t *testing.T) {
@@ -118,12 +119,12 @@ func TestBucketRemoval(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	for i := 0; i < 3; i++ {
-		e := <-events
-		checkEvent("dyn_gc", e.BucketName(), true, EVENT_BUCKET_REMOVED, 0, 0, e, t)
+		e := <-eventsChan
+		checkEvent("dyn_gc", e.BucketName(), true, events.EVENT_BUCKET_REMOVED, 0, 0, e, t)
 	}
 }
 
-func checkEvent(namespace, name string, dyn bool, eventType EventType, tokens int64, waitTime time.Duration, actual Event, t *testing.T) {
+func checkEvent(namespace, name string, dyn bool, eventType events.EventType, tokens int64, waitTime time.Duration, actual events.Event, t *testing.T) {
 	if actual == nil {
 		t.Fatalf("Expecting event; was nil.")
 	}
@@ -155,7 +156,7 @@ func checkEvent(namespace, name string, dyn bool, eventType EventType, tokens in
 
 func clearEvents(numEvents int) {
 	eventsLeft := numEvents
-	for _ = range events {
+	for _ = range eventsChan {
 		eventsLeft--
 		if eventsLeft == 0 {
 			return

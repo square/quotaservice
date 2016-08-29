@@ -2,6 +2,7 @@ import React, { Component, PropTypes } from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 
+import Stats from './Stats.jsx'
 import Namespace from './Namespace.jsx'
 import NamespaceTile from './NamespaceTile.jsx'
 import Sidebar from './Sidebar.jsx'
@@ -10,6 +11,7 @@ import Confirmation from '../components/Confirmation.jsx'
 import * as HistoryActions from '../actions/history.jsx'
 import * as NamespacesActions from '../actions/namespaces.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
+import * as StatsActions from '../actions/stats.jsx'
 
 class QuotaService extends Component {
   componentDidMount() {
@@ -25,13 +27,17 @@ class QuotaService extends Component {
   }
 
   renderSelectedNamespace() {
-    const { selectedNamespace, actions } = this.props
+    const {
+      selectedNamespace, stats, actions
+    } = this.props
 
     if (!selectedNamespace)
       return
 
-    return (<div className='flex-container flex-box-md selected-namespace'>
-      <Namespace namespace={selectedNamespace} {...actions} />
+    return (<div className='flex-container flex-box-lg selected-namespace'>
+      {stats.show ?
+        <Stats namespace={selectedNamespace} stats={stats} {...actions} /> :
+        <Namespace namespace={selectedNamespace} {...actions} />}
     </div>)
   }
 
@@ -47,7 +53,7 @@ class QuotaService extends Component {
 
     const classNames = ['namespaces', 'flex-container', 'flex-box-lg']
 
-    // Hides this div for small screens <= 580px
+    // Hides this div for small screens <= 1000px
     if (selectedNamespace) {
       classNames.push('flexed')
     }
@@ -94,28 +100,32 @@ class QuotaService extends Component {
 QuotaService.propTypes = {
   actions: PropTypes.object.isRequired,
   namespaces: PropTypes.object.isRequired,
+  stats: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
   env: PropTypes.object.isRequired
 }
 
 export default connect(
   state => {
-    let selectedNamespace = state.selectedNamespace
+    let { selectedNamespace } = state
 
     if (selectedNamespace) {
-      selectedNamespace = state.namespaces.items[state.selectedNamespace]
+      let namespace = state.namespaces.items[selectedNamespace]
+
+      return Object.assign({}, state, {
+        selectedNamespace: namespace
+      })
     }
 
-    return Object.assign({}, state, {
-      selectedNamespace: selectedNamespace
-    })
+    return state
   },
   dispatch => {
     return {
       actions: Object.assign({},
         bindActionCreators(NamespacesActions, dispatch),
         bindActionCreators(HistoryActions, dispatch),
-        bindActionCreators(MutableActions, dispatch)
+        bindActionCreators(MutableActions, dispatch),
+        bindActionCreators(StatsActions, dispatch)
       )
     }
   }

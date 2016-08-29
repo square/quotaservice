@@ -160,7 +160,8 @@ function handleRequest(state, action) {
     case REQUEST:
       return Object.assign({}, state, {
         inRequest: true,
-        error: null
+        error: null,
+        commit: false
       })
     case COMMIT_SUCCESS:
       return INITIAL_HISTORY

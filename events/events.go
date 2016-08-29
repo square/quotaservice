@@ -1,12 +1,13 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-package quotaservice
+package events
 
 import (
 	"time"
 
 	"fmt"
+
 	"github.com/maniksurtani/quotaservice/logging"
 )
 
@@ -68,9 +69,12 @@ func (ep *EventProducer) notifyListeners(l Listener) {
 	}
 }
 
+// Listener is a function that consumes an Event
 type Listener func(details Event)
 
-func registerListener(listener Listener, bufsize int) *EventProducer {
+// RegisterListener takes a Listener and a buffer size and
+// returns an EventProducer that consumes events and notifies listeners
+func RegisterListener(listener Listener, bufsize int) *EventProducer {
 	if listener == nil {
 		panic("Cannot register a nil listener")
 	}
@@ -145,7 +149,8 @@ func (t *tokenWaitEvent) WaitTime() time.Duration {
 	return t.waitTime
 }
 
-func newTokensServedEvent(namespace, bucketName string, dynamic bool, numTokens int64, waitTime time.Duration) Event {
+// NewTokensServedEvent creates a new event with the type EVENT_TOKENS_SERVED
+func NewTokensServedEvent(namespace, bucketName string, dynamic bool, numTokens int64, waitTime time.Duration) Event {
 	return &tokenWaitEvent{
 		tokenEvent: &tokenEvent{
 			namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TOKENS_SERVED),
@@ -153,27 +158,32 @@ func newTokensServedEvent(namespace, bucketName string, dynamic bool, numTokens 
 		waitTime: waitTime}
 }
 
-func newTimedOutEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
+// NewTimedOutEvent creates a new event with the type EVENT_TIMEOUT_SERVING_TOKENS
+func NewTimedOutEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
 	return &tokenEvent{
 		namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TIMEOUT_SERVING_TOKENS),
 		numTokens:  numTokens}
 }
 
-func newTooManyTokensRequestedEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
+// NewTooManyTokensRequestedEvent creates a new event with the type EVENT_TOO_MANY_TOKENS_REQUESTED
+func NewTooManyTokensRequestedEvent(namespace, bucketName string, dynamic bool, numTokens int64) Event {
 	return &tokenEvent{
 		namedEvent: newNamedEvent(namespace, bucketName, dynamic, EVENT_TOO_MANY_TOKENS_REQUESTED),
 		numTokens:  numTokens}
 }
 
-func newBucketMissedEvent(namespace, bucketName string, dynamic bool) Event {
+// NewBucketMissedEvent creates a new event with the type EVENT_BUCKET_MISS
+func NewBucketMissedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_MISS)
 }
 
-func newBucketCreatedEvent(namespace, bucketName string, dynamic bool) Event {
+// NewBucketCreatedEvent creates a new event with the type EVENT_BUCKET_CREATED
+func NewBucketCreatedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_CREATED)
 }
 
-func newBucketRemovedEvent(namespace, bucketName string, dynamic bool) Event {
+// NewBucketRemovedEvent creates a new event with the type EVENT_BUCKET_REMOVED
+func NewBucketRemovedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_REMOVED)
 }
 

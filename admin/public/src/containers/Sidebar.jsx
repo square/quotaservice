@@ -85,7 +85,13 @@ export default class Sidebar extends Component {
   render() {
     const { env, selectedNamespace } = this.props
 
-    return (<div className='flex-box-md sidebar'>
+    let classNames = ['flex-box-md', 'sidebar']
+
+    if (selectedNamespace) {
+      classNames.push('flexed')
+    }
+
+    return (<div className={classNames.join(' ')}>
       <div>
         <h1 className={env.environment}>QuotaService</h1>
         <small>{env.version}</small>

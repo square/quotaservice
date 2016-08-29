@@ -62,7 +62,7 @@ func writeNamespace(a *namespacesAPIHandler, w http.ResponseWriter, namespace st
 	if namespace == "" || namespace == config.GlobalNamespace {
 		object = cfgs
 	} else {
-		if cfgs.Namespaces[namespace] == nil {
+		if _, exists := cfgs.Namespaces[namespace]; !exists {
 			return &HttpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
 		}
 

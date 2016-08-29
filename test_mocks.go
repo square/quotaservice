@@ -5,9 +5,11 @@ package quotaservice
 
 import (
 	"fmt"
-	"github.com/maniksurtani/quotaservice/config"
 	"sync"
 	"time"
+
+	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/events"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -71,10 +73,10 @@ func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg 
 }
 
 type MockEmitter struct {
-	Events chan Event
+	Events chan events.Event
 }
 
-func (m *MockEmitter) Emit(e Event) {
+func (m *MockEmitter) Emit(e events.Event) {
 	if m.Events != nil {
 		m.Events <- e
 	}

@@ -5,6 +5,7 @@ package admin
 
 import (
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/stats"
 )
 
 // Administrable defines something that can be administered via this package.
@@ -20,4 +21,8 @@ type Administrable interface {
 	DeleteNamespace(string) error
 	AddNamespace(*pb.NamespaceConfig) error
 	UpdateNamespace(*pb.NamespaceConfig) error
+
+	TopDynamicHits(string) []*stats.BucketScore
+	TopDynamicMisses(string) []*stats.BucketScore
+	DynamicBucketStats(string, string) *stats.BucketScores
 }
