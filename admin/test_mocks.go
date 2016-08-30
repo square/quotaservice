@@ -8,6 +8,7 @@ import (
 
 	"github.com/maniksurtani/quotaservice/config"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/stats"
 )
 
 type MockAdministrable struct {
@@ -81,4 +82,28 @@ func (m *MockAdministrable) UpdateNamespace(n *pb.NamespaceConfig) error {
 	}
 
 	return nil
+}
+
+func (m *MockAdministrable) TopDynamicHits(namespace string) []*stats.BucketScore {
+	if m.errors {
+		return nil
+	}
+
+	return make([]*stats.BucketScore, 0)
+}
+
+func (m *MockAdministrable) TopDynamicMisses(namespace string) []*stats.BucketScore {
+	if m.errors {
+		return nil
+	}
+
+	return make([]*stats.BucketScore, 0)
+}
+
+func (m *MockAdministrable) DynamicBucketStats(namespace, bucket string) *stats.BucketScores {
+	if m.errors {
+		return nil
+	}
+
+	return &stats.BucketScores{0, 0}
 }

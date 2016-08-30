@@ -8,8 +8,16 @@ export default class Bucket extends Component {
     }
   }
 
+  renderShowDynamicStats() {
+    const { handleShowDynamicStats } = this.props
+
+    return (<div className="input-btn">
+      <button className="btn" onClick={handleShowDynamicStats}>Dynamic Bucket Stats</button>
+    </div>)
+  }
+
   render() {
-    const { bucket, handleRemove } = this.props
+    const { bucket, handleRemove, showDynamicStats } = this.props
 
     return (<div className="bucket flex-tile flex-box">
       <div className="flex-container legend">
@@ -46,12 +54,15 @@ export default class Bucket extends Component {
         value={bucket.max_tokens_per_request}
         handleChange={this.handleChange}
         placeholder="50" />
+      {showDynamicStats && this.renderShowDynamicStats()}
     </div>)
   }
 }
 
 Bucket.propTypes = {
   bucket: PropTypes.object.isRequired,
+  showDynamicStats: PropTypes.bool.isRequired,
   handleRemove: PropTypes.func.isRequired,
-  handleChange: PropTypes.func.isRequired
+  handleChange: PropTypes.func.isRequired,
+  handleShowDynamicStats: PropTypes.func.isRequired
 }

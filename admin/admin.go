@@ -60,11 +60,15 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 	bucketsHandler := NewBucketsAPIHandler(a)
 	namespacesHandler := NewNamespacesAPIHandler(a)
 
-	apiHandler := loggingHandler(apiRequestHandler(
-		namespacesHandler, bucketsHandler))
+	apiHandler := loggingHandler(jsonResponseHandler(apiRequestHandler(
+		namespacesHandler, bucketsHandler)))
 
 	mux.Handle("/api", apiHandler)
 	mux.Handle("/api/", apiHandler)
+
+	statsHandler := loggingHandler(jsonResponseHandler(NewStatsAPIHandler(a)))
+	mux.Handle("/api/stats", statsHandler)
+	mux.Handle("/api/stats/", statsHandler)
 }
 
 func (r *ResponseWrapper) Write(p []byte) (int, error) {
@@ -90,10 +94,15 @@ func (r *ResponseWrapper) log() {
 		r.elapsedTime.Seconds())
 }
 
-func apiRequestHandler(namespacesHandler, bucketsHandler http.Handler) http.Handler {
+func jsonResponseHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
 
+func apiRequestHandler(namespacesHandler, bucketsHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params := strings.SplitN(strings.Trim(r.URL.Path, "/"), "/", 3)
 
 		// [api, {namespace}, {bucket}]

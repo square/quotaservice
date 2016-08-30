@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice/admin"
+	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice/stats"
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/config"
@@ -25,9 +27,10 @@ type server struct {
 	bucketContainer   *bucketContainer
 	bucketFactory     BucketFactory
 	rpcEndpoints      []RpcEndpoint
-	listener          Listener
+	listener          events.Listener
+	statsListener     stats.Listener
 	eventQueueBufSize int
-	producer          *EventProducer
+	producer          *events.EventProducer
 	cfgs              *pb.ServiceConfig
 	persister         config.ConfigPersister
 	sync.RWMutex      // Embedded mutex
@@ -39,9 +42,15 @@ func (s *server) String() string {
 
 func (s *server) Start() (bool, error) {
 	// Set up listeners
-	if s.listener != nil {
-		s.producer = registerListener(s.listener, s.eventQueueBufSize)
-	}
+	s.producer = events.RegisterListener(func(e events.Event) {
+		if s.listener != nil {
+			s.listener(e)
+		}
+
+		if s.statsListener != nil {
+			s.statsListener.HandleEvent(e)
+		}
+	}, s.eventQueueBufSize)
 
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
@@ -70,17 +79,17 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
-		s.Emit(newBucketMissedEvent(namespace, name, true))
+		s.Emit(events.NewBucketMissedEvent(namespace, name, true))
 		return 0, newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name), ER_TOO_MANY_BUCKETS)
 	}
 
 	if b == nil {
-		s.Emit(newBucketMissedEvent(namespace, name, false))
+		s.Emit(events.NewBucketMissedEvent(namespace, name, false))
 		return 0, newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 	}
 
 	if b.Config().MaxTokensPerRequest < tokensRequested && b.Config().MaxTokensPerRequest > 0 {
-		s.Emit(newTooManyTokensRequestedEvent(namespace, name, b.Dynamic(), tokensRequested))
+		s.Emit(events.NewTooManyTokensRequestedEvent(namespace, name, b.Dynamic(), tokensRequested))
 		return 0, newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
@@ -99,12 +108,12 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 
 	if !success {
 		// Could not claim tokens within the given max wait time
-		s.Emit(newTimedOutEvent(namespace, name, b.Dynamic(), tokensRequested))
+		s.Emit(events.NewTimedOutEvent(namespace, name, b.Dynamic(), tokensRequested))
 		return 0, newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
 	}
 
 	// The only positive result
-	s.Emit(newTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, w))
+	s.Emit(events.NewTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, w))
 	return w, nil
 }
 
@@ -119,7 +128,15 @@ func (s *server) SetLogger(logger logging.Logger) {
 	logging.SetLogger(logger)
 }
 
-func (s *server) SetListener(listener Listener, eventQueueBufSize int) {
+func (s *server) SetStatsListener(listener stats.Listener) {
+	if s.currentStatus == lifecycle.Started {
+		panic("Cannot add listener after server has started!")
+	}
+
+	s.statsListener = listener
+}
+
+func (s *server) SetListener(listener events.Listener, eventQueueBufSize int) {
 	if s.currentStatus == lifecycle.Started {
 		panic("Cannot add listener after server has started!")
 	}
@@ -132,7 +149,7 @@ func (s *server) SetListener(listener Listener, eventQueueBufSize int) {
 	s.eventQueueBufSize = eventQueueBufSize
 }
 
-func (s *server) Emit(e Event) {
+func (s *server) Emit(e events.Event) {
 	if s.producer != nil {
 		s.producer.Emit(e)
 	}
@@ -233,4 +250,28 @@ func (s *server) DeleteNamespace(n string) error {
 	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
 		return config.DeleteNamespace(clonedCfg, n)
 	})
+}
+
+func (s *server) TopDynamicHits(namespace string) []*stats.BucketScore {
+	if s.statsListener == nil {
+		return nil
+	}
+
+	return s.statsListener.TopHits(namespace)
+}
+
+func (s *server) TopDynamicMisses(namespace string) []*stats.BucketScore {
+	if s.statsListener == nil {
+		return nil
+	}
+
+	return s.statsListener.TopMisses(namespace)
+}
+
+func (s *server) DynamicBucketStats(namespace, bucket string) *stats.BucketScores {
+	if s.statsListener == nil {
+		return nil
+	}
+
+	return s.statsListener.Get(namespace, bucket)
 }

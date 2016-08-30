@@ -13,7 +13,6 @@
 .changes {
   background-color: white;
   border: $border-grey;
-  margin-top: 5px;
   max-height: 50%;
   word-break: break-all;
   white-space: pre-wrap;
@@ -31,4 +30,27 @@
 
 .actions {
   display: flex;
+  align-items: flex-start;
+
+  .flex-box {
+    margin-bottom: 5px;
+  }
+
+  .flex-box:last-child {
+    text-align: right;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .actions {
+    flex-direction: column;
+  }
+}
+
+@media screen and (max-width: 1300px) {
+  .flexed {
+    .actions {
+      flex-direction: column;
+    }
+  }
 }

@@ -18,10 +18,6 @@ func TestNamespacesGetEmpty(t *testing.T) {
 
 	configResponse := &pb.ServiceConfig{}
 	doNamespacesRequest(t, a, configResponse, "GET", "/api/", "")
-
-	if configResponse == nil {
-		t.Errorf("Received \"%+v\" but was expecting global config", configResponse)
-	}
 }
 
 func TestNamespacesGetNonExistent(t *testing.T) {

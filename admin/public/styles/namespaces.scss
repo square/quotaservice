@@ -42,9 +42,17 @@
   justify-content: space-between;
 
   button.btn:last-child { margin-left: 5px; }
+
+  margin-bottom: 10px;
 }
 
-@media screen and (max-width: 580px) {
+@media screen and (min-width: 1000px) {
+  .selected-namespace.flex-box-lg {
+    flex: 3;
+  }
+}
+
+@media screen and (max-width: 1000px) {
   .namespaces.flexed {
     display: none;
   }

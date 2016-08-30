@@ -1,6 +1,7 @@
 ### Quotaservice UI
 
 ![quotaservice](images/quotaservice.gif)
+![quotaservice-stats](images/quotaservice-stats.gif)
 
 #### How?
 

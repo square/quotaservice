@@ -81,9 +81,9 @@ func getBucketConfig(r io.Reader) (*pb.BucketConfig, error) {
 }
 
 func writeBucket(a *bucketsAPIHandler, w http.ResponseWriter, namespace, bucket string) *HttpError {
-	namespaceConfig := a.a.Configs().Namespaces[namespace]
+	namespaceConfig, exists := a.a.Configs().Namespaces[namespace]
 
-	if namespaceConfig == nil {
+	if !exists {
 		return &HttpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
 	}
 
@@ -92,9 +92,9 @@ func writeBucket(a *bucketsAPIHandler, w http.ResponseWriter, namespace, bucket 
 		return &HttpError{"No bucket given", http.StatusNotFound}
 	}
 
-	bucketConfig := namespaceConfig.Buckets[bucket]
+	bucketConfig, exists := namespaceConfig.Buckets[bucket]
 
-	if bucketConfig == nil {
+	if !exists {
 		return &HttpError{"Unable to locate bucket " + bucket + " in namespace " + namespace, http.StatusNotFound}
 	}
 

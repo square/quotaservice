@@ -1,11 +1,13 @@
 package buckets
 
 import (
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/config"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/maniksurtani/quotaservice"
+	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/events"
 )
 
 func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
@@ -58,8 +60,8 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	config.SetDynamicBucketTemplate(nsCfg, tpl)
 	config.AddNamespace(cfg, nsCfg)
 
-	events := &quotaservice.MockEmitter{Events: make(chan quotaservice.Event, 100)}
-	container := quotaservice.NewBucketContainer(cfg, factory, events)
+	eventsEmitter := &quotaservice.MockEmitter{Events: make(chan events.Event, 100)}
+	container := quotaservice.NewBucketContainer(cfg, factory, eventsEmitter)
 
 	// No GC should happen here as long as we are in use.
 	for i := 0; i < 10; i++ {
@@ -82,7 +84,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 		bucketNames[i] = strconv.Itoa(i)
 	}
 
-	waitForGC(events.Events, "n", bucketNames)
+	waitForGC(eventsEmitter.Events, "n", bucketNames)
 
 	for _, bName := range bucketNames {
 		// Check that the bucket has been GC'd
@@ -92,14 +94,14 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	}
 }
 
-func waitForGC(events chan quotaservice.Event, namespace string, buckets []string) {
+func waitForGC(eventsChan chan events.Event, namespace string, buckets []string) {
 	bucketMap := make(map[string]bool)
 	for _, b := range buckets {
 		bucketMap[b] = true
 	}
 
-	for e := range events {
-		if e.EventType() == quotaservice.EVENT_BUCKET_REMOVED && e.Namespace() == namespace {
+	for e := range eventsChan {
+		if e.EventType() == events.EVENT_BUCKET_REMOVED && e.Namespace() == namespace {
 			bucketMap[e.BucketName()] = false
 		}
 

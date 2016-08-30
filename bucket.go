@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/logging"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
@@ -36,7 +37,7 @@ type namespace struct {
 }
 
 type notifier interface {
-	Emit(e Event)
+	Emit(e events.Event)
 }
 
 // Bucket is an abstraction of a token bucket.
@@ -116,7 +117,7 @@ func (ns *namespace) removeBucket(bucketName string) {
 	bucket := ns.buckets[bucketName]
 	if bucket != nil {
 		delete(ns.buckets, bucketName)
-		ns.n.Emit(newBucketRemovedEvent(ns.name, bucketName, bucket.Dynamic()))
+		ns.n.Emit(events.NewBucketRemovedEvent(ns.name, bucketName, bucket.Dynamic()))
 		bucket.Destroy()
 	}
 }
@@ -265,7 +266,7 @@ func (bc *bucketContainer) countDynamicBuckets(namespace string) int32 {
 }
 
 func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *pbconfig.BucketConfig, dyn bool) *expirableBucket {
-	bc.n.Emit(newBucketCreatedEvent(namespace, bucketName, dyn))
+	bc.n.Emit(events.NewBucketCreatedEvent(namespace, bucketName, dyn))
 	bucket := bc.newExpirableBucket(namespace, bucketName, bCfg, dyn)
 	ns.buckets[bucketName] = bucket
 	bucket.ReportActivity()

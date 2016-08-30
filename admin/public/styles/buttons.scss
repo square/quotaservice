@@ -4,7 +4,9 @@
   color: #ffffff;
   font-family: inherit;
   font-size: 0.9em;
-  padding: 5px 10px 5px 10px;
+  font-weight: bold;
+  line-height: 21px;
+  padding: 3px 10px 3px 10px;
   text-decoration: none;
   margin-right: 5px;
   border: 0;
@@ -21,7 +23,6 @@
   }
 
   &.btn-danger {
-    font-weight: bold;
     background-image: linear-gradient(to bottom, rgb(210, 113, 113), rgb(200, 103, 103));
   }
 
@@ -48,6 +49,7 @@
   }
 
   &:disabled {
+    font-weight: normal;
     background-image: linear-gradient(to bottom, rgb(200, 200, 200), rgb(220, 220, 220));
   }
 

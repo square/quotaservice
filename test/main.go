@@ -14,6 +14,7 @@ import (
 	"github.com/maniksurtani/quotaservice/buckets/memory"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
+	"github.com/maniksurtani/quotaservice/stats"
 )
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 		config.NewMemoryConfigPersister(),
 		cfg,
 		grpc.New("localhost:10990"))
+	server.SetStatsListener(stats.NewMemoryStatsListener())
 	server.Start()
 
 	// Serve Admin Console

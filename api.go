@@ -7,8 +7,10 @@ import (
 	"net/http"
 
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/logging"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/maniksurtani/quotaservice/stats"
 )
 
 // The Server interface is what you get when you create a new quotaservice.
@@ -17,11 +19,15 @@ type Server interface {
 	Stop() (bool, error)
 	SetLogger(logger logging.Logger)
 	ServeAdminConsole(*http.ServeMux, string, bool)
-	SetListener(listener Listener, eventQueueBufSize int)
+	SetListener(listener events.Listener, eventQueueBufSize int)
+	SetStatsListener(listener stats.Listener)
 }
 
 func NewWithDefaultConfig(bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
-	return New(bucketFactory, config.NewMemoryConfigPersister(), &pb.ServiceConfig{}, rpcEndpoints...)
+	return New(bucketFactory,
+		config.NewMemoryConfigPersister(),
+		&pb.ServiceConfig{},
+		rpcEndpoints...)
 }
 
 // New creates a new quotaservice server.
