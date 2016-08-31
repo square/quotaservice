@@ -34,6 +34,11 @@ message AllowRequest {
    * Max wait time, in millis. Defaults to 0, which assumes no waiting.
    */
   int64 max_wait_millis_override = 4;
+  /**
+   * Whether to override max wait time with the above value.
+   * Defaults to false, which falls back to the bucket's configured value.
+   */
+  bool max_wait_time_override = 5;
 }
 
 message AllowResponse {

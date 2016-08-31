@@ -65,54 +65,54 @@ func setUp() {
 }
 
 func TestTokens(t *testing.T) {
-	qs.Allow("nodyn", "b", 1, 0)
+	qs.Allow("nodyn", "b", 1, 0, false)
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyTokens(t *testing.T) {
-	qs.Allow("nodyn", "b", 100, 0)
+	qs.Allow("nodyn", "b", 100, 0, false)
 	checkEvent("nodyn", "b", false, events.EVENT_TOO_MANY_TOKENS_REQUESTED, 100, 0, <-eventsChan, t)
 }
 
 func TestTimeout(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
-	qs.Allow("nodyn", "b", 1, 1)
+	qs.Allow("nodyn", "b", 1, 1, false)
 	checkEvent("nodyn", "b", false, events.EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
-	qs.Allow("nodyn", "b", 1, 10)
+	qs.Allow("nodyn", "b", 1, 10, false)
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestNoSuchBucket(t *testing.T) {
-	qs.Allow("nodyn", "x", 1, 0)
+	qs.Allow("nodyn", "x", 1, 0, false)
 	checkEvent("nodyn", "x", false, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestNewDynBucket(t *testing.T) {
-	qs.Allow("dyn", "b", 1, 0)
+	qs.Allow("dyn", "b", 1, 0, false)
 	checkEvent("dyn", "b", true, events.EVENT_BUCKET_CREATED, 0, 0, <-eventsChan, t)
 	checkEvent("dyn", "b", true, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyDynBuckets(t *testing.T) {
 	n := clearBuckets("dyn")
-	qs.Allow("dyn", "c", 1, 0)
-	qs.Allow("dyn", "d", 1, 0)
+	qs.Allow("dyn", "c", 1, 0, false)
+	qs.Allow("dyn", "d", 1, 0, false)
 	clearEvents(4 + n)
 
-	qs.Allow("dyn", "e", 1, 0)
+	qs.Allow("dyn", "e", 1, 0, false)
 	checkEvent("dyn", "e", true, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestBucketRemoval(t *testing.T) {
-	qs.Allow("dyn_gc", "b", 1, 0)
-	qs.Allow("dyn_gc", "c", 1, 0)
-	qs.Allow("dyn_gc", "d", 1, 0)
+	qs.Allow("dyn_gc", "b", 1, 0, false)
+	qs.Allow("dyn_gc", "c", 1, 0, false)
+	qs.Allow("dyn_gc", "d", 1, 0, false)
 	clearEvents(6)
 
 	// GC thread should run every 100ms for this namespace. Make sure it runs at least once.

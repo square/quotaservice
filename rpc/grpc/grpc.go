@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 
+	"time"
+
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/lifecycle"
 	"github.com/maniksurtani/quotaservice/logging"
@@ -15,7 +17,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"time"
 )
 
 type GrpcEndpoint struct {
@@ -73,7 +74,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 		tokensRequested = req.TokensRequested
 	}
 
-	wait, err := g.qs.Allow(req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride)
+	wait, err := g.qs.Allow(req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride, req.MaxWaitTimeOverride)
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {

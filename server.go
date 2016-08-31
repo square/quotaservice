@@ -75,7 +75,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64) (time.Duration, error) {
+func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, error) {
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
@@ -96,7 +96,7 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	}
 
 	maxWaitTime := time.Millisecond
-	if maxWaitMillisOverride > -1 && maxWaitMillisOverride < b.Config().WaitTimeoutMillis {
+	if maxWaitTimeOverride && maxWaitMillisOverride < b.Config().WaitTimeoutMillis {
 		// Use the max wait time override from the request.
 		maxWaitTime *= time.Duration(maxWaitMillisOverride)
 	} else {
