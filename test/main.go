@@ -13,8 +13,14 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/rpc/grpc"
 	"github.com/maniksurtani/quotaservice/stats"
+)
+
+const (
+	ADMIN_SERVER = "localhost:8080"
+	GRPC_SERVER  = "localhost:10990"
 )
 
 func main() {
@@ -36,14 +42,17 @@ func main() {
 	server := quotaservice.New(memory.NewBucketFactory(),
 		config.NewMemoryConfigPersister(),
 		cfg,
-		grpc.New("localhost:10990"))
+		grpc.New(GRPC_SERVER))
 	server.SetStatsListener(stats.NewMemoryStatsListener())
 	server.Start()
 
 	// Serve Admin Console
+	logging.Printf("Starting admin server on %v\n", ADMIN_SERVER)
 	sm := http.NewServeMux()
 	server.ServeAdminConsole(sm, "admin/public", true)
-	go func() { http.ListenAndServe("localhost:8080", sm) }()
+	go func() {
+		http.ListenAndServe(ADMIN_SERVER, sm)
+	}()
 
 	// Block until SIGTERM, SIGKILL or SIGINT
 	sigs := make(chan os.Signal, 1)
