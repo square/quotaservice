@@ -40,8 +40,7 @@ func main() {
 	config.AddNamespace(cfg, ns)
 
 	server := quotaservice.New(memory.NewBucketFactory(),
-		config.NewMemoryConfigPersister(),
-		cfg,
+		config.NewMemoryConfig(cfg),
 		grpc.New(GRPC_SERVER))
 	server.SetStatsListener(stats.NewMemoryStatsListener())
 	server.Start()

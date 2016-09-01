@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react'
 import Changes from './Changes.jsx'
+import Configs from './Configs.jsx'
 import AddField from '../components/AddField.jsx'
 import Error from '../components/Error.jsx'
 
@@ -68,7 +69,7 @@ export default class Sidebar extends Component {
   renderChanges() {
     const {
       changes, undo, redo,
-      fetchNamespaces, commit,
+      fetchConfigs, commit,
       lastUpdated
     } = this.props
 
@@ -77,13 +78,22 @@ export default class Sidebar extends Component {
       handleUndo={undo}
       handleRedo={redo}
       handleCommit={commit}
-      handleRefresh={fetchNamespaces}
+      handleRefresh={fetchConfigs}
       changes={changes}
     />)
   }
 
+  renderConfigs() {
+    const { configs, loadConfig } = this.props
+
+    return (<Configs
+      configs={configs}
+      loadConfig={loadConfig}
+    />)
+  }
+
   render() {
-    const { env, selectedNamespace } = this.props
+    const { version, env, selectedNamespace } = this.props
 
     let classNames = ['flex-box-md', 'sidebar']
 
@@ -94,12 +104,13 @@ export default class Sidebar extends Component {
     return (<div className={classNames.join(' ')}>
       <div>
         <h1 className={env.environment}>QuotaService</h1>
-        <small>{env.version}</small>
+        <h4>v{version}</h4>
       </div>
       {this.renderAddNamespace()}
       {selectedNamespace && this.renderAddBucket()}
       {this.renderError()}
       {this.renderChanges()}
+      {this.renderConfigs()}
     </div>)
   }
 }
@@ -107,13 +118,16 @@ export default class Sidebar extends Component {
 Sidebar.propTypes = {
   changes: PropTypes.object.isRequired,
   error: PropTypes.object,
+  version: PropTypes.number.isRequired,
   selectedNamespace: PropTypes.object,
+  configs: PropTypes.object.isRequired,
   undo: PropTypes.func.isRequired,
   redo: PropTypes.func.isRequired,
   commit: PropTypes.func.isRequired,
-  fetchNamespaces: PropTypes.func.isRequired,
+  fetchConfigs: PropTypes.func.isRequired,
   addNamespace: PropTypes.func.isRequired,
   addBucket: PropTypes.func.isRequired,
+  loadConfig: PropTypes.func.isRequired,
   lastUpdated: PropTypes.number,
   env: PropTypes.object.isRequired
 }

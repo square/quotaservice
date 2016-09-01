@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 )
 
@@ -22,7 +23,8 @@ func ExpectingPanic(t *testing.T, f func()) {
 // CheckError tests if the error is not nil, and fails the test if so.
 func CheckError(t *testing.T, e error) {
 	if e != nil {
-		t.Fatal("Not expecting error ", e)
+		_, file, line, _ := runtime.Caller(1)
+		t.Fatalf("Not expecting error %+v from (%s:%d)", e, file, line)
 	}
 }
 

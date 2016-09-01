@@ -9,19 +9,21 @@ import (
 	"io/ioutil"
 
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 	"gopkg.in/yaml.v2"
-	"encoding/json"
 )
 
 const (
-	GlobalNamespace = "___GLOBAL___"
-	DefaultBucketName = "___DEFAULT_BUCKET___"
+	GlobalNamespace           = "___GLOBAL___"
+	DefaultBucketName         = "___DEFAULT_BUCKET___"
 	DynamicBucketTemplateName = "___DYNAMIC_BUCKET_TPL___"
-	initial_version = 0
+	initial_version           = 0
 )
 
 func ApplyDefaults(sc *pb.ServiceConfig) {
@@ -140,6 +142,8 @@ func NewDefaultServiceConfig() *pb.ServiceConfig {
 	return &pb.ServiceConfig{
 		GlobalDefaultBucket: nil,
 		Namespaces:          make(map[string]*pb.NamespaceConfig),
+		User:                "quotaservice",
+		Date:                time.Now().Unix(),
 		Version:             initial_version}
 }
 
@@ -181,6 +185,18 @@ func NamespaceFromJSON(j []byte) (*pb.NamespaceConfig, error) {
 
 func FullyQualifiedName(namespace, bucketName string) string {
 	return namespace + ":" + bucketName
+}
+
+func NewMemoryConfig(p *pb.ServiceConfig) ConfigPersister {
+	marshalled, e := Marshal(p)
+
+	if e != nil {
+		panic(e)
+	}
+
+	persister := NewMemoryConfigPersister()
+	persister.PersistAndNotify(marshalled)
+	return persister
 }
 
 func Marshal(p *pb.ServiceConfig) (io.Reader, error) {

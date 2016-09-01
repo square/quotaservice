@@ -12,11 +12,12 @@ import (
 
 type MemoryConfigPersister struct {
 	config  []byte
+	configs map[string][]byte
 	watcher chan struct{}
 }
 
 func NewMemoryConfigPersister() ConfigPersister {
-	return &MemoryConfigPersister{nil, make(chan struct{}, 1)}
+	return &MemoryConfigPersister{nil, make(map[string][]byte), make(chan struct{}, 1)}
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
@@ -25,6 +26,10 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 
 	if err != nil {
 		return err
+	}
+
+	if m.config != nil {
+		m.configs[hashConfig(m.config)] = m.config
 	}
 
 	m.config = bytes
@@ -47,6 +52,17 @@ func (m *MemoryConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 	}
 
 	return bytes.NewReader(m.config), nil
+}
+
+// ReadHistoricalConfigs returns an array of previously persisted configs
+func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+	readers := make([]io.Reader, 0)
+
+	for _, v := range m.configs {
+		readers = append(readers, bytes.NewReader(v))
+	}
+
+	return readers, nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are

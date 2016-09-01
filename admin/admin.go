@@ -69,6 +69,10 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 	statsHandler := loggingHandler(jsonResponseHandler(NewStatsAPIHandler(a)))
 	mux.Handle("/api/stats", statsHandler)
 	mux.Handle("/api/stats/", statsHandler)
+
+	configsHandler := loggingHandler(jsonResponseHandler(NewConfigsAPIHandler(a)))
+	mux.Handle("/api/configs", configsHandler)
+	mux.Handle("/api/configs/", configsHandler)
 }
 
 func (r *ResponseWrapper) Write(p []byte) (int, error) {
@@ -139,4 +143,12 @@ func loggingHandler(next http.Handler) http.Handler {
 		response.elapsedTime = finishTime.Sub(startTime)
 		response.log()
 	})
+}
+
+func getUsername(r *http.Request) string {
+	if username, exists := r.Header["X-Forwarded-User"]; exists {
+		return username[0]
+	}
+
+	return "quotaservice"
 }

@@ -54,14 +54,16 @@ func setUp() {
 
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
-	p := config.NewMemoryConfigPersister()
-	s = New(mbf, p, cfg, me)
+	p := config.NewMemoryConfig(cfg)
+	s = New(mbf, p, me)
 	eventsChan = make(chan events.Event, 100)
 	s.SetListener(func(e events.Event) {
 		eventsChan <- e
 	}, 100)
 	s.Start()
 	qs = me.QuotaService
+	// EVENTS_BUCKET_CREATED event
+	_ = <-eventsChan
 }
 
 func TestTokens(t *testing.T) {

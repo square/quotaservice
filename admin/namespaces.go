@@ -82,7 +82,7 @@ func updateConfig(a *namespacesAPIHandler, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	e = a.a.UpdateConfig(c)
+	e = a.a.UpdateConfig(c, getUsername(r))
 
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})

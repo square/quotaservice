@@ -4,6 +4,8 @@
 package config
 
 import (
+	"crypto/md5"
+	"fmt"
 	"io"
 )
 
@@ -17,4 +19,10 @@ type ConfigPersister interface {
 	ConfigChangedWatcher() chan struct{}
 	// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
 	ReadPersistedConfig() (io.Reader, error)
+	// Returns an array of readers of historical configurations.
+	ReadHistoricalConfigs() ([]io.Reader, error)
+}
+
+func hashConfig(config []byte) string {
+	return fmt.Sprintf("%x", md5.Sum(config))
 }

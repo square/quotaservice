@@ -10,7 +10,6 @@ import QuotaService from './containers/QuotaService.jsx'
 const store = configureStore()
 
 const env = {
-  version: document.getElementById('version').content,
   environment: process.env.NODE_ENV || 'development'
 }
 

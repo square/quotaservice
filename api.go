@@ -9,7 +9,6 @@ import (
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/logging"
-	pb "github.com/maniksurtani/quotaservice/protos/config"
 	"github.com/maniksurtani/quotaservice/stats"
 )
 
@@ -25,13 +24,12 @@ type Server interface {
 
 func NewWithDefaultConfig(bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	return New(bucketFactory,
-		config.NewMemoryConfigPersister(),
-		&pb.ServiceConfig{},
+		config.NewMemoryConfig(config.NewDefaultServiceConfig()),
 		rpcEndpoints...)
 }
 
 // New creates a new quotaservice server.
-func New(bucketFactory BucketFactory, persister config.ConfigPersister, configs *pb.ServiceConfig, rpcEndpoints ...RpcEndpoint) Server {
+func New(bucketFactory BucketFactory, persister config.ConfigPersister, rpcEndpoints ...RpcEndpoint) Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
@@ -40,6 +38,5 @@ func New(bucketFactory BucketFactory, persister config.ConfigPersister, configs 
 		persister:     persister,
 		bucketFactory: bucketFactory,
 		rpcEndpoints:  rpcEndpoints}
-	s.createBucketContainer(configs)
 	return s
 }
