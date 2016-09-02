@@ -11,11 +11,11 @@ type QuotaService interface {
 	// It will reserve the tokens, and tell the caller how long it would have to wait before the
 	// tokens are assumed to be available. In that case, the tokens are reserved, and cannot be put
 	// back. Wait times will need to be below the maximum allowed wait time for that namespace and
-	// name, and this can be overridden by maxWaitMillisOverride, as long as it is lower than the
-	// maximum. A returned waitTime of 0 means tokens can be used immediately. Errors indicate
+	// name, and this can be overridden by maxWaitMillisOverride, as long as it maxWaitTimeOverride
+	// is set. A returned waitTime of 0 means tokens can be used immediately. Errors indicate
 	// tokens could not be obtained, and will contain more context once cast to
 	// quotaservice.QoutaServiceError.
-	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64) (waitTime time.Duration, err error)
+	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (waitTime time.Duration, err error)
 }
 
 // RpcEndpoint defines a subsystem that listens on a network socket for external systems to
