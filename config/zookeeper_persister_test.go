@@ -152,18 +152,6 @@ func TestHistoricalConfigs(t *testing.T) {
 
 	<-p.ConfigChangedWatcher()
 
-	cfg := NewDefaultServiceConfig()
-	cfg.Namespaces["foo"] = NewDefaultNamespaceConfig("foo")
-
-	r, err := Marshal(cfg)
-	helpers.CheckError(t, err)
-
-	p.PersistAndNotify(r)
-
-	// There is no signal for children being updated,
-	// so we just have to sleep for a bit here
-	time.Sleep(time.Second * 1)
-
 	cfgs, err := p.ReadHistoricalConfigs()
 	helpers.CheckError(t, err)
 
@@ -194,6 +182,11 @@ func createExistingNode(path string) {
 	bytes, err := ioutil.ReadAll(reader)
 	helpers.PanicError(err)
 
-	_, err = conn.Create(path, bytes, 0, zk.WorldACL(zk.PermAll))
+	key := hashConfig(bytes)
+
+	_, err = conn.Create(path, []byte(key), 0, zk.WorldACL(zk.PermAll))
+	helpers.PanicError(err)
+
+	_, err = conn.Create(fmt.Sprintf("%s/%s", path, key), bytes, 0, zk.WorldACL(zk.PermAll))
 	helpers.PanicError(err)
 }

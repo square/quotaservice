@@ -5,19 +5,20 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"io/ioutil"
 )
 
 type MemoryConfigPersister struct {
-	config  []byte
+	config  string
 	configs map[string][]byte
 	watcher chan struct{}
 }
 
 func NewMemoryConfigPersister() ConfigPersister {
-	return &MemoryConfigPersister{nil, make(map[string][]byte), make(chan struct{}, 1)}
+	return &MemoryConfigPersister{
+		configs: make(map[string][]byte),
+		watcher: make(chan struct{}, 1)}
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
@@ -28,11 +29,8 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 		return err
 	}
 
-	if m.config != nil {
-		m.configs[hashConfig(m.config)] = m.config
-	}
-
-	m.config = bytes
+	m.config = hashConfig(bytes)
+	m.configs[m.config] = bytes
 
 	// ... and notify
 	select {
@@ -47,11 +45,7 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
 func (m *MemoryConfigPersister) ReadPersistedConfig() (io.Reader, error) {
-	if m.config == nil {
-		return nil, errors.New("config is empty")
-	}
-
-	return bytes.NewReader(m.config), nil
+	return bytes.NewReader(m.configs[m.config]), nil
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs

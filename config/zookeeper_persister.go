@@ -30,14 +30,14 @@ type ZkWatch struct {
 }
 
 type ZkConfigPersister struct {
-	config  []byte
+	config  string
 	configs map[string][]byte
 	path    string
 
 	watcher chan struct{}
 
-	conn               *zk.Conn
-	currentW, archiveW *ZkWatch
+	conn  *zk.Conn
+	watch *ZkWatch
 
 	wg sync.WaitGroup
 	sync.RWMutex
@@ -63,22 +63,14 @@ func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error
 		watcher: make(chan struct{}, 1),
 		configs: make(map[string][]byte)}
 
-	currentW, err := persister.createWatch(persister.currentConfigEventListener)
+	watch, err := persister.createWatch(persister.currentConfigEventListener)
 
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
 
-	archiveW, err := persister.createWatch(persister.archivedConfigsEventListener)
-
-	if err != nil {
-		conn.Close()
-		return nil, err
-	}
-
-	persister.currentW = currentW
-	persister.archiveW = archiveW
+	persister.watch = watch
 
 	return persister, nil
 }
@@ -161,13 +153,13 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 		return e
 	}
 
-	err := z.archiveConfig(z.config)
+	key, err := z.archiveConfig(b)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = z.conn.Set(z.path, b, -1)
+	_, err = z.conn.Set(z.path, []byte(key), -1)
 
 	// There is no notification, that happens when zookeeper alerts the watcher
 
@@ -179,11 +171,18 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 	z.RLock()
 	defer z.RUnlock()
 
-	return bytes.NewReader(z.config), nil
+	return bytes.NewReader(z.configs[z.config]), nil
 }
 
-func (z *ZkConfigPersister) archivedConfigsEventListener() (<-chan zk.Event, error) {
-	children, _, ch, err := z.conn.ChildrenW(z.path)
+func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
+	config, _, ch, err := z.conn.GetW(z.path)
+
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		return nil, err
+	}
+
+	children, _, err := z.conn.Children(z.path)
 
 	if err != nil {
 		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
@@ -206,21 +205,7 @@ func (z *ZkConfigPersister) archivedConfigsEventListener() (<-chan zk.Event, err
 		}
 	}
 
-	return ch, nil
-}
-
-func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
-	config, _, ch, err := z.conn.GetW(z.path)
-
-	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
-		return nil, err
-	}
-
-	z.Lock()
-	defer z.Unlock()
-
-	z.config = config
+	z.config = string(config)
 
 	select {
 	case z.watcher <- struct{}{}:
@@ -232,12 +217,11 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	return ch, nil
 }
 
-func (z *ZkConfigPersister) archiveConfig(config []byte) error {
+func (z *ZkConfigPersister) archiveConfig(config []byte) (string, error) {
 	key := hashConfig(config)
 	path := fmt.Sprintf("%s/%s", z.path, key)
-
 	_, err := z.conn.Create(path, config, 0, zk.WorldACL(zk.PermAll))
-	return err
+	return key, err
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
@@ -264,12 +248,10 @@ func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 // Closes makes sure all event listeners are done
 // and then closes the connection
 func (z *ZkConfigPersister) Close() {
-	z.archiveW.stopper <- struct{}{}
-	z.currentW.stopper <- struct{}{}
+	z.watch.stopper <- struct{}{}
 	z.wg.Wait()
 
-	close(z.currentW.stopper)
-	close(z.archiveW.stopper)
+	close(z.watch.stopper)
 	close(z.watcher)
 
 	z.conn.Close()

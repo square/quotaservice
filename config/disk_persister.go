@@ -47,26 +47,28 @@ func writeFile(path string, bytes []byte) error {
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	if _, err := os.Stat(d.location); err == nil {
-		b, e := ioutil.ReadFile(d.location)
-		if e != nil {
-			return e
-		}
-
-		path := fmt.Sprintf("%s-%s", d.location, hashConfig(b))
-		e = writeFile(path, b)
-		if e != nil {
-			return e
-		}
-	}
-
 	b, e := ioutil.ReadAll(marshalledConfig)
 
 	if e != nil {
 		return e
 	}
 
-	e = writeFile(d.location, b)
+	path := fmt.Sprintf("%s-%s", d.location, hashConfig(b))
+	e = writeFile(path, b)
+
+	if e != nil {
+		return e
+	}
+
+	if _, e := os.Stat(d.location); e == nil {
+		e = os.Remove(d.location)
+
+		if e != nil {
+			return e
+		}
+	}
+
+	e = os.Symlink(path, d.location)
 
 	if e != nil {
 		return e
@@ -84,7 +86,7 @@ func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error
 }
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (d *DiskConfigPersister) ReadPersistedConfig() (marshalledConfig io.Reader, err error) {
+func (d *DiskConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 	return os.Open(d.location)
 }
 

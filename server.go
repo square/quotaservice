@@ -170,12 +170,14 @@ func (s *server) configListener(ch chan struct{}) {
 
 		if err != nil {
 			logging.Println("error reading persisted config", err)
+			continue
 		}
 
 		newConfig, err := config.Unmarshal(configReader)
 
 		if err != nil {
 			logging.Println("error reading marshalled config", err)
+			continue
 		}
 
 		s.createBucketContainer(newConfig)
@@ -297,8 +299,7 @@ func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
 		return nil, err
 	}
 
-	unmarshalledConfigs := make(SortedConfigs, len(configs)+1)
-	unmarshalledConfigs[0] = s.cfgs
+	unmarshalledConfigs := make(SortedConfigs, len(configs))
 
 	for i, newConfig := range configs {
 		unmarshalledConfig, err := config.Unmarshal(newConfig)
@@ -307,7 +308,7 @@ func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
 			return nil, err
 		}
 
-		unmarshalledConfigs[i+1] = unmarshalledConfig
+		unmarshalledConfigs[i] = unmarshalledConfig
 	}
 
 	sort.Sort(unmarshalledConfigs)

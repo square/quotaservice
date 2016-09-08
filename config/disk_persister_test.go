@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 	"github.com/maniksurtani/quotaservice/test/helpers"
 )
@@ -56,21 +55,6 @@ func TestDiskPersistence(t *testing.T) {
 
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
-	}
-
-	// Store a new s
-	newCfg := proto.Clone(s).(*pbconfig.ServiceConfig)
-	newCfg.Version = 93
-
-	r, e = Marshal(newCfg)
-	helpers.CheckError(t, e)
-	e = persister.PersistAndNotify(r)
-	helpers.CheckError(t, e)
-
-	select {
-	case <-persister.ConfigChangedWatcher():
-	default:
-		t.Fatal("Config channel should not be empty!")
 	}
 
 	cfgs, e := persister.ReadHistoricalConfigs()
