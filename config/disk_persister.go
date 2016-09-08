@@ -4,10 +4,11 @@
 package config
 
 import (
-	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 // DiskConfigPersister is a ConfigPersister that saves configs to the local filesystem.
@@ -33,20 +34,43 @@ func NewDiskConfigPersister(location string) (ConfigPersister, error) {
 	return d, nil
 }
 
+func writeFile(path string, bytes []byte) error {
+	f, e := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+
+	if e != nil {
+		return e
+	}
+
+	f.Write(bytes)
+	return f.Close()
+}
+
 // PersistAndNotify persists a marshalled configuration passed in.
 func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	f, e := os.OpenFile(d.location, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
-	if e != nil {
-		return e
-	}
-
 	b, e := ioutil.ReadAll(marshalledConfig)
+
 	if e != nil {
 		return e
 	}
 
-	f.Write(b)
-	if e = f.Close(); e != nil {
+	path := fmt.Sprintf("%s-%s", d.location, hashConfig(b))
+	e = writeFile(path, b)
+
+	if e != nil {
+		return e
+	}
+
+	if _, e := os.Stat(d.location); e == nil {
+		e = os.Remove(d.location)
+
+		if e != nil {
+			return e
+		}
+	}
+
+	e = os.Symlink(path, d.location)
+
+	if e != nil {
 		return e
 	}
 
@@ -62,13 +86,31 @@ func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error
 }
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (d *DiskConfigPersister) ReadPersistedConfig() (marshalledConfig io.Reader, err error) {
-	b, e := ioutil.ReadFile(d.location)
-	if e != nil {
-		return nil, e
+func (d *DiskConfigPersister) ReadPersistedConfig() (io.Reader, error) {
+	return os.Open(d.location)
+}
+
+// ReadHistoricalConfigs returns an array of previously persisted configs
+func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+	files, err := filepath.Glob(fmt.Sprintf("%s-*", d.location))
+
+	if err != nil {
+		return nil, err
 	}
 
-	return bytes.NewReader(b), nil
+	configs := make([]io.Reader, len(files))
+
+	for i, file := range files {
+		reader, e := os.Open(file)
+
+		if e != nil {
+			return nil, e
+		}
+
+		configs[i] = reader
+	}
+
+	return configs, nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are

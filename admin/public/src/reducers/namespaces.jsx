@@ -1,8 +1,6 @@
-import {
-  FETCH_SUCCESS, COMMIT_SUCCESS,
-  FAILURE, REQUEST,
-  SELECT_NAMESPACE
-} from '../actions/namespaces.jsx'
+import Immutable from 'seamless-immutable'
+
+import { SELECT_NAMESPACE } from '../actions/namespaces.jsx'
 
 import {
   ADD_NAMESPACE, UPDATE_NAMESPACE, REMOVE_NAMESPACE,
@@ -10,8 +8,7 @@ import {
 } from '../actions/mutable.jsx'
 
 import { INITIAL_HISTORY } from './history.jsx'
-
-import Immutable from 'seamless-immutable'
+import { CONFIGS_REQUEST, LOAD_CONFIG } from '../actions/configs.jsx'
 
 // These are special buckets that exist on the top-level
 // namespace object and need to be special-cased
@@ -138,37 +135,15 @@ export function namespaces(state, action) {
       return updateBucket(state, action)
     case REMOVE_BUCKET:
       return removeBucket(state, action)
-    case REQUEST:
-    case COMMIT_SUCCESS:
-    case FETCH_SUCCESS:
-    case FAILURE:
-      return handleRequest(state, action)
+    case LOAD_CONFIG:
+      return Object.assign({}, INITIAL_HISTORY, {
+        version: action.config.version,
+        items: Immutable.from(action.config.namespaces || {})
+      })
+    case CONFIGS_REQUEST:
+      return INITIAL_HISTORY
     default:
       return state
-  }
-}
-
-function handleRequest(state, action) {
-  if (action.error) {
-    return Object.assign({}, state, {
-      inRequest: false,
-      error: action.payload
-    })
-  }
-
-  switch (action.type) {
-    case REQUEST:
-      return Object.assign({}, state, {
-        inRequest: true,
-        error: null,
-        commit: false
-      })
-    case COMMIT_SUCCESS:
-      return INITIAL_HISTORY
-    case FETCH_SUCCESS:
-      return Object.assign({}, INITIAL_HISTORY, {
-        items: Immutable.from(action.payload.namespaces || {})
-      })
   }
 }
 
@@ -176,7 +151,7 @@ export function selectedNamespace(state = null, action) {
   switch (action.type) {
     case SELECT_NAMESPACE:
       return action.namespace
-    case REQUEST:
+    case CONFIGS_REQUEST:
       return null
     default:
       return state

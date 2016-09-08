@@ -14,7 +14,6 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-var t zk.TestCluster
 var servers []string
 
 func TestMain(m *testing.M) {
@@ -25,7 +24,8 @@ func TestMain(m *testing.M) {
 	servers = make([]string, 1)
 	servers[0] = fmt.Sprintf("localhost:%d", t.Servers[0].Port)
 
-	createExistingNode()
+	createExistingNode("/existing")
+	createExistingNode("/historic")
 	r := m.Run()
 
 	os.Exit(r)
@@ -144,7 +144,30 @@ func TestSetAndNotify(t *testing.T) {
 	}
 }
 
-func createExistingNode() {
+func TestHistoricalConfigs(t *testing.T) {
+	p, err := NewZkConfigPersister("/historic", servers)
+	helpers.CheckError(t, err)
+
+	defer p.(*ZkConfigPersister).Close()
+
+	<-p.ConfigChangedWatcher()
+
+	cfgs, err := p.ReadHistoricalConfigs()
+	helpers.CheckError(t, err)
+
+	if len(cfgs) != 1 {
+		t.Fatalf("Historical configs are not correct: %+v", cfgs)
+	}
+
+	newConfig, err := Unmarshal(cfgs[0])
+	helpers.CheckError(t, err)
+
+	if newConfig.Namespaces["test"] == nil {
+		t.Errorf("Config is not valid: %+v", newConfig)
+	}
+}
+
+func createExistingNode(path string) {
 	conn, _, err := zk.Connect(servers, sessionTimeout)
 	helpers.PanicError(err)
 
@@ -159,6 +182,11 @@ func createExistingNode() {
 	bytes, err := ioutil.ReadAll(reader)
 	helpers.PanicError(err)
 
-	_, err = conn.Create("/existing", bytes, 0, zk.WorldACL(zk.PermAll))
+	key := hashConfig(bytes)
+
+	_, err = conn.Create(path, []byte(key), 0, zk.WorldACL(zk.PermAll))
+	helpers.PanicError(err)
+
+	_, err = conn.Create(fmt.Sprintf("%s/%s", path, key), bytes, 0, zk.WorldACL(zk.PermAll))
 	helpers.PanicError(err)
 }

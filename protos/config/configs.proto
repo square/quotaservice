@@ -22,7 +22,10 @@ package quotaservice.configs;
 message ServiceConfig {
   BucketConfig global_default_bucket = 1;
   map<string, NamespaceConfig> namespaces = 2;
+  // Metadata for the configuration
   int32 version = 3;
+  string user = 4;
+  int64 date = 5;
 }
 
 message NamespaceConfig {

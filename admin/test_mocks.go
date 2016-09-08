@@ -28,7 +28,7 @@ func (m *MockAdministrable) Configs() *pb.ServiceConfig {
 	return m.cfg
 }
 
-func (m *MockAdministrable) UpdateConfig(config *pb.ServiceConfig) error {
+func (m *MockAdministrable) UpdateConfig(config *pb.ServiceConfig, user string) error {
 	if m.errors {
 		return errors.New("UpdateConfig")
 	}
@@ -106,4 +106,12 @@ func (m *MockAdministrable) DynamicBucketStats(namespace, bucket string) *stats.
 	}
 
 	return &stats.BucketScores{0, 0}
+}
+
+func (m *MockAdministrable) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
+	if m.errors {
+		return nil, errors.New("HistoricalConfigs")
+	}
+
+	return make([]*pb.ServiceConfig, 1), nil
 }

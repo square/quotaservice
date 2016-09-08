@@ -1,6 +1,5 @@
-import {
-  REQUEST, SELECT_NAMESPACE
-} from '../actions/namespaces.jsx'
+import { SELECT_NAMESPACE } from '../actions/namespaces.jsx'
+import { CONFIGS_REQUEST } from '../actions/configs.jsx'
 
 import {
   STATS_TOGGLE,
@@ -19,7 +18,7 @@ export function stats(state = INITIAL_STATS, action) {
         show: !state.show
       })
     case SELECT_NAMESPACE:
-    case REQUEST:
+    case CONFIGS_REQUEST:
       return INITIAL_STATS
     case STATS_REQUEST:
     case STATS_FAILURE:

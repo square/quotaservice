@@ -1,0 +1,35 @@
+.configs {
+  border: 1px solid lightgrey;
+  background-color: white;
+
+  max-height: 25%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.config {
+  padding: 5px;
+  cursor: pointer;
+  border-bottom: 1px solid lightgrey;
+
+  .date {
+    font-weight: bold;
+  }
+
+  .user {
+    font-weight: bold;
+    font-size: 0.9em;
+  }
+
+  .sha {
+    font-style: italic;
+  }
+}
+
+.selected, .config:hover {
+  background-color: rgba(113, 166, 210, 0.4);
+}
+
+.config:last-child {
+  border-bottom: 0;
+}

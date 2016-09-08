@@ -11,8 +11,9 @@ import (
 // Administrable defines something that can be administered via this package.
 type Administrable interface {
 	Configs() *pb.ServiceConfig
+	HistoricalConfigs() ([]*pb.ServiceConfig, error)
 
-	UpdateConfig(*pb.ServiceConfig) error
+	UpdateConfig(*pb.ServiceConfig, string) error
 
 	DeleteBucket(string, string) error
 	AddBucket(string, *pb.BucketConfig) error

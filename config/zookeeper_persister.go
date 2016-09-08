@@ -6,6 +6,7 @@ package config
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -17,16 +18,29 @@ import (
 
 const (
 	sessionTimeout = 3 * time.Second
-	watchRetries   = 3
+	createRetries  = 3
 )
 
+type eventListener func() (<-chan zk.Event, error)
+
+type ZkWatch struct {
+	listener eventListener
+	channel  <-chan zk.Event
+	stopper  chan struct{}
+}
+
 type ZkConfigPersister struct {
-	conn    *zk.Conn
+	config  string
+	configs map[string][]byte
 	path    string
-	config  []byte
+
 	watcher chan struct{}
-	stopper chan struct{}
-	wg      sync.WaitGroup
+
+	conn  *zk.Conn
+	watch *ZkWatch
+
+	wg sync.WaitGroup
+	sync.RWMutex
 }
 
 func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error) {
@@ -36,7 +50,7 @@ func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error
 		return nil, err
 	}
 
-	conf, ch, err := createAndSetWatch(conn, path)
+	err = createPath(conn, path)
 
 	if err != nil {
 		conn.Close()
@@ -47,43 +61,80 @@ func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error
 		conn:    conn,
 		path:    path,
 		watcher: make(chan struct{}, 1),
-		stopper: make(chan struct{}, 1)}
+		configs: make(map[string][]byte)}
 
-	persister.setAndNotify(conf)
+	watch, err := persister.createWatch(persister.currentConfigEventListener)
 
-	persister.wg.Add(1)
-	go persister.zkEventListener(ch)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	persister.watch = watch
 
 	return persister, nil
 }
 
-// Sets a watch on the given path. If the path does not exist, it tries to create it.
-// However, it tries multiple times in case there's a race with another quotaservice node coming up
-func createAndSetWatch(conn *zk.Conn, path string) ([]byte, <-chan zk.Event, error) {
-	var err error
+func (z *ZkConfigPersister) createWatch(listener eventListener) (*ZkWatch, error) {
+	watch := &ZkWatch{
+		listener: listener,
+		stopper:  make(chan struct{}, 1)}
 
-	for i := 0; i < watchRetries; i++ {
-		exists, _, err := conn.Exists(path)
+	channel, err := listener()
+
+	if err != nil {
+		return nil, err
+	}
+
+	watch.channel = channel
+
+	z.wg.Add(1)
+	go z.waitForEvents(watch)
+
+	return watch, nil
+}
+
+func (z *ZkConfigPersister) waitForEvents(watch *ZkWatch) {
+	defer z.wg.Done()
+
+	for {
+		select {
+		case event := <-watch.channel:
+			if event.Err != nil {
+				logging.Print("Received error from zookeeper", event)
+			}
+		case <-watch.stopper:
+			return
+		}
+
+		channel, err := watch.listener()
 
 		if err != nil {
+			logging.Printf("Received error from zookeeper executing listener: %+v", err)
 			continue
 		}
 
-		if !exists {
-			_, err = conn.Create(path, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		watch.channel = channel
+	}
+}
 
-			if err != nil {
-				continue
-			}
+// Tries to create the configuration path, if it doesn't exist
+// It tries multiple times in case there's a race with another quotaservice node coming up
+func createPath(conn *zk.Conn, path string) (err error) {
+	for i := 0; i < createRetries; i++ {
+		exists, _, err := conn.Exists(path)
+
+		if exists && err == nil {
+			return nil
 		}
 
-		conf, _, ch, err := conn.GetW(path)
+		_, err = conn.Create(path, []byte{}, 0, zk.WorldACL(zk.PermAll))
 
 		if err == nil {
-			return conf, ch, nil
+			return nil
 		}
 
-		logging.Printf("Could not set zk watch, sleeping for 100ms")
+		logging.Printf("Could not create zk path, sleeping for 100ms")
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -91,17 +142,24 @@ func createAndSetWatch(conn *zk.Conn, path string) ([]byte, <-chan zk.Event, err
 		err = errors.New("could not create and get path " + path)
 	}
 
-	return nil, nil, err
+	return err
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 	b, e := ioutil.ReadAll(marshalledConfig)
+
 	if e != nil {
 		return e
 	}
 
-	_, err := z.conn.Set(z.path, b, -1)
+	key, err := z.archiveConfig(b)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = z.conn.Set(z.path, []byte(key), -1)
 
 	// There is no notification, that happens when zookeeper alerts the watcher
 
@@ -110,45 +168,60 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 
 // ReadPersistedConfig provides a reader to a marshalled config previously persisted.
 func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
-	return bytes.NewReader(z.config), nil
+	z.RLock()
+	defer z.RUnlock()
+
+	return bytes.NewReader(z.configs[z.config]), nil
 }
 
-func (z *ZkConfigPersister) zkEventListener(ch <-chan zk.Event) {
-	var config []byte
-	var err error
+func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
+	config, _, ch, err := z.conn.GetW(z.path)
 
-	for {
-		select {
-		case event := <-ch:
-			if event.Err != nil {
-				logging.Print("Received error from zookeeper", event)
-			}
-		case <-z.stopper:
-			z.wg.Done()
-			return
-		}
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		return nil, err
+	}
 
-		config, _, ch, err = z.conn.GetW(z.path)
+	children, _, err := z.conn.Children(z.path)
+
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
+		return nil, err
+	}
+
+	z.Lock()
+	defer z.Unlock()
+
+	z.configs = make(map[string][]byte)
+
+	for _, child := range children {
+		path := fmt.Sprintf("%s/%s", z.path, child)
+		data, _, err := z.conn.Get(path)
 
 		if err != nil {
-			logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
-			continue
+			logging.Printf("Received error from zookeeper when fetching %s: %+v", path, err)
+		} else {
+			z.configs[child] = data
 		}
-
-		z.setAndNotify(config)
 	}
-}
 
-func (z *ZkConfigPersister) setAndNotify(config []byte) {
-	z.config = config
+	z.config = string(config)
 
-	// ... and notify
 	select {
 	case z.watcher <- struct{}{}:
 		// Notified
 	default:
 		// Doesn't matter; another notification is pending.
 	}
+
+	return ch, nil
+}
+
+func (z *ZkConfigPersister) archiveConfig(config []byte) (string, error) {
+	key := hashConfig(config)
+	path := fmt.Sprintf("%s/%s", z.path, key)
+	_, err := z.conn.Create(path, config, 0, zk.WorldACL(zk.PermAll))
+	return key, err
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
@@ -158,11 +231,28 @@ func (z *ZkConfigPersister) ConfigChangedWatcher() chan struct{} {
 	return z.watcher
 }
 
+// ReadHistoricalConfigs returns an array of previously persisted configs
+func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+	z.RLock()
+	defer z.RUnlock()
+
+	readers := make([]io.Reader, 0)
+
+	for _, config := range z.configs {
+		readers = append(readers, bytes.NewReader(config))
+	}
+
+	return readers, nil
+}
+
+// Closes makes sure all event listeners are done
+// and then closes the connection
 func (z *ZkConfigPersister) Close() {
-	z.stopper <- struct{}{}
+	z.watch.stopper <- struct{}{}
 	z.wg.Wait()
 
-	close(z.stopper)
+	close(z.watch.stopper)
 	close(z.watcher)
+
 	z.conn.Close()
 }

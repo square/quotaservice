@@ -1,7 +1,10 @@
+import Immutable from 'seamless-immutable'
+
 import { UNDO, REDO, CANCEL_COMMIT, COMMIT, CLEAR } from '../actions/history.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
 
 export const INITIAL_HISTORY = {
+  items: Immutable.from({}),
   history: {
     past: [],
     future: []

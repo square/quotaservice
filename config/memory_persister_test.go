@@ -55,4 +55,18 @@ func TestMemoryPersistence(t *testing.T) {
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
+
+	cfgs, e := persister.ReadHistoricalConfigs()
+	helpers.CheckError(t, e)
+
+	if len(cfgs) != 1 {
+		t.Fatalf("Historical configs is not correct! %+v", cfgs)
+	}
+
+	unmarshalled, e = Unmarshal(cfgs[0])
+	helpers.CheckError(t, e)
+
+	if !reflect.DeepEqual(s, unmarshalled) {
+		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
+	}
 }

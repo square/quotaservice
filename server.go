@@ -6,6 +6,7 @@ package quotaservice
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 // Implements the quotaservice.Server interface
 type server struct {
 	currentStatus     lifecycle.Status
-	stopper           *chan int
 	bucketContainer   *bucketContainer
 	bucketFactory     BucketFactory
 	rpcEndpoints      []RpcEndpoint
@@ -41,6 +41,12 @@ func (s *server) String() string {
 }
 
 func (s *server) Start() (bool, error) {
+	bufSize := s.eventQueueBufSize
+
+	if bufSize < 1 {
+		bufSize = 1
+	}
+
 	// Set up listeners
 	s.producer = events.RegisterListener(func(e events.Event) {
 		if s.listener != nil {
@@ -50,7 +56,7 @@ func (s *server) Start() (bool, error) {
 		if s.statsListener != nil {
 			s.statsListener.HandleEvent(e)
 		}
-	}, s.eventQueueBufSize)
+	}, bufSize)
 
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
@@ -76,7 +82,10 @@ func (s *server) Stop() (bool, error) {
 }
 
 func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, error) {
+	s.RLock()
 	b, e := s.bucketContainer.FindBucket(namespace, name)
+	s.RUnlock()
+
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
 		s.Emit(events.NewBucketMissedEvent(namespace, name, true))
@@ -161,12 +170,14 @@ func (s *server) configListener(ch chan struct{}) {
 
 		if err != nil {
 			logging.Println("error reading persisted config", err)
+			continue
 		}
 
 		newConfig, err := config.Unmarshal(configReader)
 
 		if err != nil {
 			logging.Println("error reading marshalled config", err)
+			continue
 		}
 
 		s.createBucketContainer(newConfig)
@@ -208,9 +219,14 @@ func (s *server) Configs() *pb.ServiceConfig {
 	return s.cfgs
 }
 
-func (s *server) UpdateConfig(c *pb.ServiceConfig) error {
+func (s *server) UpdateConfig(c *pb.ServiceConfig, user string) error {
 	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
 		config.ApplyDefaults(c)
+
+		c.User = user
+		c.Date = time.Now().Unix()
+		c.Version = clonedCfg.Version + 1
+
 		*clonedCfg = *c
 		return nil
 	})
@@ -274,4 +290,28 @@ func (s *server) DynamicBucketStats(namespace, bucket string) *stats.BucketScore
 	}
 
 	return s.statsListener.Get(namespace, bucket)
+}
+
+func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
+	configs, err := s.persister.ReadHistoricalConfigs()
+
+	if err != nil {
+		return nil, err
+	}
+
+	unmarshalledConfigs := make(SortedConfigs, len(configs))
+
+	for i, newConfig := range configs {
+		unmarshalledConfig, err := config.Unmarshal(newConfig)
+
+		if err != nil {
+			return nil, err
+		}
+
+		unmarshalledConfigs[i] = unmarshalledConfig
+	}
+
+	sort.Sort(unmarshalledConfigs)
+
+	return unmarshalledConfigs, nil
 }

@@ -12,17 +12,18 @@ import * as HistoryActions from '../actions/history.jsx'
 import * as NamespacesActions from '../actions/namespaces.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
 import * as StatsActions from '../actions/stats.jsx'
+import * as ConfigsActions from '../actions/configs.jsx'
 
 class QuotaService extends Component {
   componentDidMount() {
-    this.props.actions.fetchNamespaces()
+    this.props.actions.fetchConfigs()
   }
 
   componentWillReceiveProps(nextProps) {
-    const { namespaces } = nextProps
+    const { configs, actions } = nextProps
 
-    if (!namespaces.inRequest && !namespaces.error && namespaces.items === undefined) {
-      this.props.actions.fetchNamespaces()
+    if (!configs.inRequest && !configs.error && configs.items === undefined) {
+      actions.fetchConfigs()
     }
   }
 
@@ -42,10 +43,10 @@ class QuotaService extends Component {
   }
 
   renderNamespaces() {
-    const { actions, namespaces, selectedNamespace } = this.props
-    const { items, inRequest } = namespaces
+    const { actions, configs, namespaces, selectedNamespace } = this.props
+    const { items, } = namespaces
 
-    if (inRequest) {
+    if (configs.inRequest) {
       return (<div className='flex-container flex-box-lg'>
         <div className='loader'>Loading...</div>
       </div>)
@@ -65,6 +66,11 @@ class QuotaService extends Component {
     </div>)
   }
 
+  handleCommitConfig = () => {
+    const { actions, namespaces } = this.props
+    actions.commitConfig(namespaces.items)
+  }
+
   renderConfirmation() {
     const { namespaces, actions } = this.props
     const json = JSON.stringify(namespaces.items, null, 4)
@@ -72,13 +78,14 @@ class QuotaService extends Component {
     return (<Confirmation
       json={json}
       handleCancel={actions.cancelCommit}
-      handleSubmit={actions.commitNamespaces}
+      handleSubmit={this.handleCommitConfig}
     />)
   }
 
   render() {
-    const { actions, namespaces, env, selectedNamespace } = this.props
-    const { lastUpdated, error, history, commit } = namespaces
+    const { actions, namespaces, env, selectedNamespace, configs } = this.props
+    const { history, commit, version } = namespaces
+    const { lastUpdated, error } = configs
 
     const classNames = ['flex-container', 'fill-height-container']
 
@@ -89,7 +96,16 @@ class QuotaService extends Component {
     return (<div>
       {commit && this.renderConfirmation()}
       <div className={classNames.join(' ')}>
-        <Sidebar selectedNamespace={selectedNamespace} env={env} lastUpdated={lastUpdated} changes={history} error={error} {...actions} />
+        <Sidebar
+          selectedNamespace={selectedNamespace}
+          env={env}
+          version={version || 0}
+          lastUpdated={lastUpdated}
+          changes={history}
+          configs={configs}
+          error={error}
+          {...actions}
+        />
         {this.renderNamespaces()}
         {this.renderSelectedNamespace()}
       </div>
@@ -101,6 +117,7 @@ QuotaService.propTypes = {
   actions: PropTypes.object.isRequired,
   namespaces: PropTypes.object.isRequired,
   stats: PropTypes.object.isRequired,
+  configs: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
   env: PropTypes.object.isRequired
 }
@@ -125,7 +142,8 @@ export default connect(
         bindActionCreators(NamespacesActions, dispatch),
         bindActionCreators(HistoryActions, dispatch),
         bindActionCreators(MutableActions, dispatch),
-        bindActionCreators(StatsActions, dispatch)
+        bindActionCreators(StatsActions, dispatch),
+        bindActionCreators(ConfigsActions, dispatch)
       )
     }
   }
