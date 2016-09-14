@@ -23,20 +23,7 @@ func TestGetDevelopment(t *testing.T) {
 
 	defer os.Remove("public/tempfile.html")
 
-	res, err := http.Get(ts.URL + "/admin/tempfile.html")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	bytes, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	body := string(bytes)
+	body := getUrl(ts.URL+"/admin/tempfile.html", t)
 
 	if body != "hello" {
 		t.Fatalf("development did not reload and catch /admin/tempfile:\n%s", body)
@@ -48,7 +35,27 @@ func TestGet(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	res, err := http.Get(ts.URL + "/admin/")
+	body := getUrl(ts.URL+"/admin/", t)
+
+	if !strings.HasPrefix(body, "<!doctype html>") {
+		t.Fatalf("Received invalid html from /admin/:\n%s", body)
+	}
+}
+
+func TestGetNotFound(t *testing.T) {
+	handler := NewUIHandler(NewMockAdministrable(), "public", false)
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	body := getUrl(ts.URL+"/admin/thisdoesnotexist.html", t)
+
+	if body != "404 page not found\n" {
+		t.Fatalf("Did not receive 404 from /admin/thisdoesnotexist.html:\n\"%s\"", body)
+	}
+}
+
+func getUrl(url string, t *testing.T) string {
+	res, err := http.Get(url)
 
 	if err != nil {
 		t.Fatal(err)
@@ -61,9 +68,5 @@ func TestGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	body := string(bytes)
-
-	if !strings.HasPrefix(body, "<!doctype html>") {
-		t.Fatalf("Received invalid html from /admin/:\n%s", body)
-	}
+	return string(bytes)
 }

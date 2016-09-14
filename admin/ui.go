@@ -48,10 +48,16 @@ func (h *uiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		tpl = "index.html"
 	}
 
+	if h.templates.Lookup(tpl) == nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	err := h.templates.ExecuteTemplate(w, tpl, h.a.Configs())
+
 	if err != nil {
 		logging.Printf("Caught error %v serving URL %v", err, r.URL.Path)
-		http.NotFound(w, r)
+		http.Error(w, "500 internal server error", http.StatusInternalServerError)
 	}
 }
 
