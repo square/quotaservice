@@ -114,11 +114,14 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
 			keepTrying = false
 		default:
+			// Always close connections on errors to prevent results leaking.
+			if err := b.factory.client.Close(); err != nil {
+				logging.Printf("Received error on redis client close: %+v", err)
+			}
+
 			if res.Err() != nil && res.Err().Error() == "redis: client is closed" {
 				b.factory.connectToRedis()
 			} else {
-				// Always close connections on errors to prevent results leaking.
-				b.factory.client.Close()
 				logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 					waitTimeNanos, waitTimeNanos, res)
 				b.factory.connectToRedis()
