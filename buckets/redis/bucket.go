@@ -139,15 +139,16 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	return waitTime, true
 }
 
-func toInt64(s interface{}, defaultValue int64) (v int64) {
+func toInt64(s interface{}, defaultValue int64) int64 {
 	if s != nil {
-		var err error
-		v, err = strconv.ParseInt(s.(string), 10, 64)
+		v, err := strconv.ParseInt(s.(string), 10, 64)
 		if err != nil {
 			logging.Printf("Cannot convert '%v' to int64", s)
+			return defaultValue
 		}
+		return v
 	}
-	return
+	return defaultValue
 }
 
 func (b *redisBucket) Config() *pbconfig.BucketConfig {
