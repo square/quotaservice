@@ -36,7 +36,7 @@ func (m *MockAdministrable) UpdateConfig(config *pb.ServiceConfig, user string) 
 	return nil
 }
 
-func (m *MockAdministrable) DeleteBucket(namespace string, name string) error {
+func (m *MockAdministrable) DeleteBucket(namespace, name, user string) error {
 	if m.errors {
 		return errors.New("DeleteBucket")
 	}
@@ -44,7 +44,7 @@ func (m *MockAdministrable) DeleteBucket(namespace string, name string) error {
 	return nil
 }
 
-func (m *MockAdministrable) AddBucket(namespace string, b *pb.BucketConfig) error {
+func (m *MockAdministrable) AddBucket(namespace string, b *pb.BucketConfig, user string) error {
 	if m.errors {
 		return errors.New("AddBucket")
 	}
@@ -52,7 +52,7 @@ func (m *MockAdministrable) AddBucket(namespace string, b *pb.BucketConfig) erro
 	return nil
 }
 
-func (m *MockAdministrable) UpdateBucket(namespace string, b *pb.BucketConfig) error {
+func (m *MockAdministrable) UpdateBucket(namespace string, b *pb.BucketConfig, user string) error {
 	if m.errors {
 		return errors.New("UpdateBucket")
 	}
@@ -60,7 +60,7 @@ func (m *MockAdministrable) UpdateBucket(namespace string, b *pb.BucketConfig) e
 	return nil
 }
 
-func (m *MockAdministrable) DeleteNamespace(namespace string) error {
+func (m *MockAdministrable) DeleteNamespace(namespace, user string) error {
 	if m.errors {
 		return errors.New("DeleteNamespace")
 	}
@@ -68,7 +68,7 @@ func (m *MockAdministrable) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (m *MockAdministrable) AddNamespace(n *pb.NamespaceConfig) error {
+func (m *MockAdministrable) AddNamespace(n *pb.NamespaceConfig, user string) error {
 	if m.errors {
 		return errors.New("AddNamespace")
 	}
@@ -76,7 +76,7 @@ func (m *MockAdministrable) AddNamespace(n *pb.NamespaceConfig) error {
 	return nil
 }
 
-func (m *MockAdministrable) UpdateNamespace(n *pb.NamespaceConfig) error {
+func (m *MockAdministrable) UpdateNamespace(n *pb.NamespaceConfig, user string) error {
 	if m.errors {
 		return errors.New("UpdateNamespace")
 	}

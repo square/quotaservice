@@ -15,13 +15,13 @@ type Administrable interface {
 
 	UpdateConfig(*pb.ServiceConfig, string) error
 
-	DeleteBucket(string, string) error
-	AddBucket(string, *pb.BucketConfig) error
-	UpdateBucket(string, *pb.BucketConfig) error
+	DeleteBucket(string, string, string) error
+	AddBucket(string, *pb.BucketConfig, string) error
+	UpdateBucket(string, *pb.BucketConfig, string) error
 
-	DeleteNamespace(string) error
-	AddNamespace(*pb.NamespaceConfig) error
-	UpdateNamespace(*pb.NamespaceConfig) error
+	DeleteNamespace(string, string) error
+	AddNamespace(*pb.NamespaceConfig, string) error
+	UpdateNamespace(*pb.NamespaceConfig, string) error
 
 	TopDynamicHits(string) []*stats.BucketScore
 	TopDynamicMisses(string) []*stats.BucketScore
