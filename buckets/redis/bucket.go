@@ -16,6 +16,7 @@ import (
 	"github.com/maniksurtani/quotaservice/logging"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	"sync"
 )
 
 // Suffixes for Redis keys
@@ -42,6 +43,7 @@ type bucketFactory struct {
 	redisOpts         *redis.Options
 	scriptSHA         string
 	connectionRetries int
+	mu                sync.Mutex
 }
 
 func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaservice.BucketFactory {
@@ -55,14 +57,17 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 }
 
 func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
+	bf.mu.Lock()
+	defer bf.mu.Unlock()
+
 	bf.cfg = cfg
 
 	if bf.client == nil {
-		bf.connectToRedis()
+		bf.connectToRedisLocked()
 	}
 }
 
-func (bf *bucketFactory) connectToRedis() {
+func (bf *bucketFactory) connectToRedisLocked() {
 	// Set up connection to Redis
 	bf.client = redis.NewClient(bf.redisOpts)
 	redisResults := bf.client.Time().Val()
@@ -73,6 +78,15 @@ func (bf *bucketFactory) connectToRedis() {
 		logging.Printf("Connection established. Time on Redis server: %v", t)
 	}
 	bf.scriptSHA = loadScript(bf.client)
+}
+
+func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
+	bf.mu.Lock()
+	defer bf.mu.Unlock()
+
+	if oldClient == bf.client {
+		bf.connectToRedisLocked()
+	}
 }
 
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
@@ -108,7 +122,8 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	keepTrying := true
 	var waitTime time.Duration
 	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
-		res := b.factory.client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
+		client := b.factory.client
+		res := client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
 		switch waitTimeNanos := res.Val().(type) {
 		case int64:
 			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
@@ -120,11 +135,11 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 			}
 
 			if res.Err() != nil && res.Err().Error() == "redis: client is closed" {
-				b.factory.connectToRedis()
+				b.factory.reconnectToRedis(client)
 			} else {
 				logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 					waitTimeNanos, waitTimeNanos, res)
-				b.factory.connectToRedis()
+				b.factory.reconnectToRedis(client)
 			}
 		}
 	}
