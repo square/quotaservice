@@ -22,6 +22,7 @@ func NewNamespacesAPIHandler(admin Administrable) (a *namespacesAPIHandler) {
 
 func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ns := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api"), "/")
+	user := getUsername(r)
 
 	switch r.Method {
 	case "GET":
@@ -31,7 +32,7 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			writeJSONError(w, err)
 		}
 	case "DELETE":
-		err := a.a.DeleteNamespace(ns)
+		err := a.a.DeleteNamespace(ns, user)
 
 		if err != nil {
 			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
@@ -40,14 +41,14 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	case "PUT":
 		changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
-			return a.a.UpdateNamespace(c)
+			return a.a.UpdateNamespace(c, user)
 		})
 	case "POST":
 		if ns == "" {
 			updateConfig(a, w, r)
 		} else {
 			changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
-				return a.a.AddNamespace(c)
+				return a.a.AddNamespace(c, user)
 			})
 		}
 	default:

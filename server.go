@@ -194,7 +194,7 @@ func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
 	s.Unlock()
 }
 
-func (s *server) updateConfig(updater func(*pb.ServiceConfig) error) error {
+func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {
 	s.Lock()
 	clonedCfg := proto.Clone(s.cfgs).(*pb.ServiceConfig)
 	s.Unlock()
@@ -204,6 +204,12 @@ func (s *server) updateConfig(updater func(*pb.ServiceConfig) error) error {
 	if err != nil {
 		return err
 	}
+
+	config.ApplyDefaults(clonedCfg)
+
+	clonedCfg.User = user
+	clonedCfg.Date = time.Now().Unix()
+	clonedCfg.Version = clonedCfg.Version + 1
 
 	r, e := config.Marshal(clonedCfg)
 
@@ -220,50 +226,44 @@ func (s *server) Configs() *pb.ServiceConfig {
 }
 
 func (s *server) UpdateConfig(c *pb.ServiceConfig, user string) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
-		config.ApplyDefaults(c)
-
-		c.User = user
-		c.Date = time.Now().Unix()
-		c.Version = clonedCfg.Version + 1
-
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		*clonedCfg = *c
 		return nil
 	})
 }
 
-func (s *server) AddBucket(namespace string, b *pb.BucketConfig) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) AddBucket(namespace string, b *pb.BucketConfig, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.CreateBucket(clonedCfg, namespace, b)
 	})
 }
 
-func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.UpdateBucket(clonedCfg, namespace, b)
 	})
 }
 
-func (s *server) DeleteBucket(namespace, name string) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) DeleteBucket(namespace, name, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.DeleteBucket(clonedCfg, namespace, name)
 	})
 }
 
-func (s *server) AddNamespace(n *pb.NamespaceConfig) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) AddNamespace(n *pb.NamespaceConfig, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.CreateNamespace(clonedCfg, n)
 	})
 }
 
-func (s *server) UpdateNamespace(n *pb.NamespaceConfig) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) UpdateNamespace(n *pb.NamespaceConfig, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.UpdateNamespace(clonedCfg, n)
 	})
 }
 
-func (s *server) DeleteNamespace(n string) error {
-	return s.updateConfig(func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) DeleteNamespace(n, user string) error {
+	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
 		return config.DeleteNamespace(clonedCfg, n)
 	})
 }
