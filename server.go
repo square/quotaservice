@@ -197,6 +197,7 @@ func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
 func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {
 	s.Lock()
 	clonedCfg := proto.Clone(s.cfgs).(*pb.ServiceConfig)
+	currentVersion := clonedCfg.Version
 	s.Unlock()
 
 	err := updater(clonedCfg)
@@ -209,7 +210,7 @@ func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error
 
 	clonedCfg.User = user
 	clonedCfg.Date = time.Now().Unix()
-	clonedCfg.Version = clonedCfg.Version + 1
+	clonedCfg.Version = currentVersion + 1
 
 	r, e := config.Marshal(clonedCfg)
 
@@ -222,6 +223,8 @@ func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error
 
 // Implements admin.Administrable
 func (s *server) Configs() *pb.ServiceConfig {
+	s.RLock()
+	defer s.RUnlock()
 	return s.cfgs
 }
 
