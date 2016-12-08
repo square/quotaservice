@@ -1,6 +1,6 @@
 # Quota Service
 [![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE)
-![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")
+[![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")](https://travis-ci.org/maniksurtani/quotaservice)
 [![GoDoc](https://godoc.org/github.com/maniksurtani/quotaservice?status.png)](https://godoc.org/github.com/maniksurtani/quotaservice)
 ![Project Status](https://img.shields.io/badge/status-beta-orange.svg)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/maniksurtani/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
