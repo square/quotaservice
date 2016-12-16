@@ -59,7 +59,6 @@ function addBucket(state, action) {
   const bucketKey = BUCKET_KEY_MAP[action.bucket]
 
   if (bucketKey) {
-    action.bucket = bucketKey
     bucketPath = [bucketKey]
   }
 
