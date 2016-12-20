@@ -88,6 +88,26 @@ func TestNewExisting(t *testing.T) {
 	}
 }
 
+func TestSetExisting(t *testing.T) {
+	p, err := NewZkConfigPersister("/existing", servers)
+	helpers.CheckError(t, err)
+
+	defer p.(*ZkConfigPersister).Close()
+
+	select {
+	case <-p.ConfigChangedWatcher():
+	// this is good
+	default:
+		t.Fatal("Config channel should not be empty!")
+	}
+
+	cfg, err := p.ReadPersistedConfig()
+	helpers.CheckError(t, err)
+
+	err = p.PersistAndNotify(cfg)
+	helpers.CheckError(t, err)
+}
+
 func TestSetAndNotify(t *testing.T) {
 	p, err := NewZkConfigPersister("/existing", servers)
 	helpers.CheckError(t, err)
