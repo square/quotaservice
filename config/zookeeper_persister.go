@@ -226,7 +226,7 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 func (z *ZkConfigPersister) archiveConfig(config []byte) (string, error) {
 	key := hashConfig(config)
 
-	if key == hashConfig(z.configs[z.config]) {
+	if key == z.config {
 		return key, nil
 	}
 
