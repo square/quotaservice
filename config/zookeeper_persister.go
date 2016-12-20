@@ -30,9 +30,15 @@ type ZkWatch struct {
 }
 
 type ZkConfigPersister struct {
-	config  string
+	// Current configuration hash
+	config string
+
+	// Historical map of configurations
+	// hash -> marshalled config
 	configs map[string][]byte
-	path    string
+
+	// Base Zookeeper path
+	path string
 
 	watcher chan struct{}
 
