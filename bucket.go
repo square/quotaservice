@@ -169,6 +169,11 @@ func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) erro
 		nsp.defaultBucket = bc.newExpirableBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
 	}
 
+	// Lock bucket for duration since the
+	// ns.watch goroutine is created in createNewNamedBucketFromCfg
+	nsp.Lock()
+	defer nsp.Unlock()
+
 	for bucketName, bucketCfg := range nsCfg.Buckets {
 		bc.createNewNamedBucketFromCfg(nsCfg.Name, bucketName, nsp, bucketCfg, false)
 	}
@@ -274,6 +279,7 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	if bucketName != config.DefaultBucketName {
 		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
 	}
+
 	return bucket
 }
 
