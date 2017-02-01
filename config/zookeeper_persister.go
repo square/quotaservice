@@ -153,6 +153,9 @@ func createPath(conn *zk.Conn, path string) (err error) {
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
+	z.Lock()
+	defer z.Unlock()
+
 	b, e := ioutil.ReadAll(marshalledConfig)
 
 	if e != nil {
@@ -181,6 +184,9 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 }
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
+	z.Lock()
+	defer z.Unlock()
+
 	config, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
@@ -194,9 +200,6 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
 		return nil, err
 	}
-
-	z.Lock()
-	defer z.Unlock()
 
 	z.configs = make(map[string][]byte)
 
