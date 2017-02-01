@@ -49,8 +49,18 @@ type ZkConfigPersister struct {
 	sync.RWMutex
 }
 
+type zkLogger struct{}
+
+var _ zk.Logger = &zkLogger{}
+
+func (_ *zkLogger) Printf(format string, args ...interface{}) {
+	logging.Printf(format, args...)
+}
+
 func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error) {
-	conn, _, err := zk.Connect(servers, sessionTimeout)
+	conn, _, err := zk.Connect(servers, sessionTimeout, func(c *zk.Conn) {
+		c.SetLogger(&zkLogger{})
+	})
 
 	if err != nil {
 		return nil, err
@@ -162,13 +172,17 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 		return e
 	}
 
-	key, err := z.archiveConfig(b)
+	key := hashConfig(b)
 
-	if err != nil {
+	if key == z.config {
+		return nil
+	}
+
+	if err := z.archiveConfig(key, b); err != nil {
 		return err
 	}
 
-	_, err = z.conn.Set(z.path, []byte(key), -1)
+	_, err := z.conn.Set(z.path, []byte(key), -1)
 
 	// There is no notification, that happens when zookeeper alerts the watcher
 
@@ -186,13 +200,6 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
 	z.Lock()
 	defer z.Unlock()
-
-	config, _, ch, err := z.conn.GetW(z.path)
-
-	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
-		return nil, err
-	}
 
 	children, _, err := z.conn.Children(z.path)
 
@@ -214,6 +221,13 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		}
 	}
 
+	config, _, ch, err := z.conn.GetW(z.path)
+
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		return nil, err
+	}
+
 	z.config = string(config)
 
 	select {
@@ -226,16 +240,10 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	return ch, nil
 }
 
-func (z *ZkConfigPersister) archiveConfig(config []byte) (string, error) {
-	key := hashConfig(config)
-
-	if key == z.config {
-		return key, nil
-	}
-
+func (z *ZkConfigPersister) archiveConfig(key string, config []byte) error {
 	path := fmt.Sprintf("%s/%s", z.path, key)
 	_, err := z.conn.Create(path, config, 0, zk.WorldACL(zk.PermAll))
-	return key, err
+	return err
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
