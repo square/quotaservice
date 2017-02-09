@@ -201,6 +201,7 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*exp
 	ns := bc.namespaces[namespace]
 	var bucket *expirableBucket
 	var err error
+	reportActivity := true
 
 	if ns == nil {
 		// Namespace doesn't exist. Use default bucket if possible.
@@ -220,6 +221,7 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*exp
 				// need to check if an instance has been created concurrently.
 				bucket = ns.buckets[bucketName]
 				if bucket == nil {
+					reportActivity = false // createNewNamedBucket will report activity
 					bucket = bc.createNewNamedBucket(namespace, bucketName, ns)
 					if bucket == nil {
 						err = errors.New("Cannot create dynamic bucket")
@@ -232,7 +234,7 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*exp
 		}
 	}
 
-	if bucket != nil {
+	if bucket != nil && reportActivity {
 		bucket.ReportActivity()
 	}
 
