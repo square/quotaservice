@@ -11,6 +11,7 @@ import (
 	"github.com/maniksurtani/quotaservice/config"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	"runtime"
 )
 
 var cfg = func() *pbconfig.ServiceConfig {
@@ -67,6 +68,7 @@ func TestFallbackToDefaultBucket(t *testing.T) {
 }
 
 func TestDynamicBucket(t *testing.T) {
+	initGoroutineCount := runtime.NumGoroutine()
 	b, _ := container.FindBucket("y", "new")
 	if b == nil {
 		t.Fatal("Should create new bucket.")
@@ -74,6 +76,20 @@ func TestDynamicBucket(t *testing.T) {
 
 	if b != container.namespaces["y"].buckets["new"] {
 		t.Fatal("Should create new bucket.")
+	}
+
+	b2, _ := container.FindBucket("y", "new")
+	if b == nil {
+		t.Fatal("Should return a bucket.")
+	}
+
+	if b != b2 {
+		t.Fatal("Should not create a new bucket.")
+	}
+
+	numGoroutines := runtime.NumGoroutine()
+	if numGoroutines != initGoroutineCount + 1 {
+		t.Fatalf("Expected no more than 1 additional goroutine to be created, but was %v.", numGoroutines - initGoroutineCount)
 	}
 }
 

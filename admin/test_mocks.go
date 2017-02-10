@@ -105,7 +105,7 @@ func (m *MockAdministrable) DynamicBucketStats(namespace, bucket string) *stats.
 		return nil
 	}
 
-	return &stats.BucketScores{0, 0}
+	return &stats.BucketScores{Hits: 0, Misses: 0}
 }
 
 func (m *MockAdministrable) HistoricalConfigs() ([]*pb.ServiceConfig, error) {

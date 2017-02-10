@@ -97,9 +97,9 @@ func TestTop10Hits(t *testing.T) {
 
 	hits := listener.TopHits("test")
 	correctHits := []*stats.BucketScore{
-		&stats.BucketScore{"dyn-2", 10},
-		&stats.BucketScore{"dyn-1", 3},
-		&stats.BucketScore{"dyn-3", 1}}
+		{Bucket: "dyn-2", Score: 10},
+		{Bucket: "dyn-1", Score: 3},
+		{Bucket: "dyn-3", Score: 1}}
 
 	if !reflect.DeepEqual(hits, correctHits) {
 		t.Fatalf("Hits top10 is not correct %+v", hits)
@@ -120,9 +120,9 @@ func TestTop10Misses(t *testing.T) {
 
 	misses := listener.TopMisses("test")
 	correctMisses := []*stats.BucketScore{
-		&stats.BucketScore{"dyn-2", 3},
-		&stats.BucketScore{"dyn-3", 2},
-		&stats.BucketScore{"dyn-1", 1}}
+		{Bucket: "dyn-2", Score: 3},
+		{Bucket: "dyn-3", Score: 2},
+		{Bucket: "dyn-1", Score: 1}}
 
 	if !reflect.DeepEqual(misses, correctMisses) {
 		t.Fatalf("Misses top10 is not correct %+v", misses)
