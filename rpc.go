@@ -15,7 +15,7 @@ type QuotaService interface {
 	// is set. A returned waitTime of 0 means tokens can be used immediately. Errors indicate
 	// tokens could not be obtained, and will contain more context once cast to
 	// quotaservice.QoutaServiceError.
-	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (waitTime time.Duration, err error)
+	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (waitTime time.Duration, dynamic bool, err error)
 }
 
 // RpcEndpoint defines a subsystem that listens on a network socket for external systems to

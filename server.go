@@ -16,7 +16,7 @@ import (
 	"github.com/maniksurtani/quotaservice/logging"
 	"github.com/maniksurtani/quotaservice/stats"
 
-	proto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/config"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -81,7 +81,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, error) {
+func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, bool, error) {
 	s.RLock()
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	s.RUnlock()
@@ -89,17 +89,17 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	if e != nil {
 		// Attempted to create a dynamic bucket and failed.
 		s.Emit(events.NewBucketMissedEvent(namespace, name, true))
-		return 0, newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name), ER_TOO_MANY_BUCKETS)
+		return 0, true, newError("Cannot create dynamic bucket "+config.FullyQualifiedName(namespace, name), ER_TOO_MANY_BUCKETS)
 	}
 
 	if b == nil {
 		s.Emit(events.NewBucketMissedEvent(namespace, name, false))
-		return 0, newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
+		return 0, false, newError("No such bucket "+config.FullyQualifiedName(namespace, name), ER_NO_BUCKET)
 	}
 
 	if b.Config().MaxTokensPerRequest < tokensRequested && b.Config().MaxTokensPerRequest > 0 {
 		s.Emit(events.NewTooManyTokensRequestedEvent(namespace, name, b.Dynamic(), tokensRequested))
-		return 0, newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
+		return 0, b.Dynamic(), newError(fmt.Sprintf("Too many tokens requested. Bucket %v:%v, tokensRequested=%v, maxTokensPerRequest=%v",
 			namespace, name, tokensRequested, b.Config().MaxTokensPerRequest),
 			ER_TOO_MANY_TOKENS_REQUESTED)
 	}
@@ -118,12 +118,12 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 	if !success {
 		// Could not claim tokens within the given max wait time
 		s.Emit(events.NewTimedOutEvent(namespace, name, b.Dynamic(), tokensRequested))
-		return 0, newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
+		return 0, b.Dynamic(), newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
 	}
 
 	// The only positive result
 	s.Emit(events.NewTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, w))
-	return w, nil
+	return w, b.Dynamic(), nil
 }
 
 func (s *server) ServeAdminConsole(mux *http.ServeMux, assetsDir string, development bool) {
