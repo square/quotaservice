@@ -18,18 +18,25 @@ func TestWithNoRpcs(t *testing.T) {
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(&MockBucketFactory{}, &config.MemoryConfigPersister{}, &MockEndpoint{})
+	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), &MockEndpoint{})
 	s.Start()
 	defer s.Stop()
 }
 
 func TestUpdateConfig(t *testing.T) {
-	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), &MockEndpoint{}).(*server)
+	p := config.NewMemoryConfigPersister()
+	s := New(&MockBucketFactory{}, p, &MockEndpoint{}).(*server)
 
 	originalConfig := config.NewDefaultServiceConfig()
 	originalConfig.Version = 2
 	originalConfig.Date = time.Now().Unix() - 10
-	s.createBucketContainer(originalConfig)
+	marshalledConfig, err := config.Marshal(originalConfig)
+
+	if err != nil {
+		t.Fatal("Error when updating config", err)
+	}
+
+	p.PersistAndNotify(marshalledConfig)
 
 	s.Start()
 	defer s.Stop()
@@ -42,7 +49,7 @@ func TestUpdateConfig(t *testing.T) {
 
 	start := time.Now()
 
-	for s.Configs() == originalConfig {
+	for s.Configs().Version == originalConfig.Version {
 		if time.Since(start) > time.Second {
 			t.Fatal("Timeout waiting for config to change!")
 		}

@@ -58,6 +58,8 @@ func (s *server) Start() (bool, error) {
 		}
 	}, bufSize)
 
+	<-s.persister.ConfigChangedWatcher()
+	s.readUpdatedConfig()
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
@@ -166,22 +168,26 @@ func (s *server) Emit(e events.Event) {
 
 func (s *server) configListener(ch chan struct{}) {
 	for range ch {
-		configReader, err := s.persister.ReadPersistedConfig()
-
-		if err != nil {
-			logging.Println("error reading persisted config", err)
-			continue
-		}
-
-		newConfig, err := config.Unmarshal(configReader)
-
-		if err != nil {
-			logging.Println("error reading marshalled config", err)
-			continue
-		}
-
-		s.createBucketContainer(newConfig)
+		s.readUpdatedConfig()
 	}
+}
+
+func (s *server) readUpdatedConfig() {
+	configReader, err := s.persister.ReadPersistedConfig()
+
+	if err != nil {
+		logging.Println("error reading persisted config", err)
+		return
+	}
+
+	newConfig, err := config.Unmarshal(configReader)
+
+	if err != nil {
+		logging.Println("error reading marshalled config", err)
+		return
+	}
+
+	s.createBucketContainer(newConfig)
 }
 
 func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
