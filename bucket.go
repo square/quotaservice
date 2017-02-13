@@ -28,12 +28,13 @@ type bucketContainer struct {
 }
 
 type namespace struct {
-	n             notifier
-	name          string
-	cfg           *pbconfig.NamespaceConfig
-	buckets       map[string]*expirableBucket
-	defaultBucket *expirableBucket
-	sync.RWMutex  // Embedded mutex
+	n                  notifier
+	name               string
+	cfg                *pbconfig.NamespaceConfig
+	buckets            map[string]*expirableBucket
+	dynamicBucketCount int32
+	defaultBucket      *expirableBucket
+	sync.RWMutex       // Embedded mutex
 }
 
 type notifier interface {
@@ -117,6 +118,9 @@ func (ns *namespace) removeBucket(bucketName string) {
 	bucket := ns.buckets[bucketName]
 	if bucket != nil {
 		delete(ns.buckets, bucketName)
+		if bucket.Dynamic() {
+			ns.dynamicBucketCount--
+		}
 		ns.n.Emit(events.NewBucketRemovedEvent(ns.name, bucketName, bucket.Dynamic()))
 		bucket.Destroy()
 	}
@@ -248,10 +252,9 @@ func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns
 	dyn := false
 	if bCfg == nil {
 		// Dynamic.
-		numDynamicBuckets := bc.countDynamicBuckets(namespace)
-		if numDynamicBuckets >= ns.cfg.MaxDynamicBuckets && ns.cfg.MaxDynamicBuckets > 0 {
+		if ns.dynamicBucketCount >= ns.cfg.MaxDynamicBuckets && ns.cfg.MaxDynamicBuckets > 0 {
 			logging.Printf("Bucket %v:%v numDynamicBuckets=%v maxDynamicBuckets=%v. Not creating more dynamic buckets.",
-				namespace, bucketName, numDynamicBuckets, ns.cfg.MaxDynamicBuckets)
+				namespace, bucketName, ns.dynamicBucketCount, ns.cfg.MaxDynamicBuckets)
 			return nil
 		}
 
@@ -276,6 +279,11 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	bc.n.Emit(events.NewBucketCreatedEvent(namespace, bucketName, dyn))
 	bucket := bc.newExpirableBucket(namespace, bucketName, bCfg, dyn)
 	ns.buckets[bucketName] = bucket
+
+	if dyn {
+		ns.dynamicBucketCount++
+	}
+
 	bucket.ReportActivity()
 
 	if bucketName != config.DefaultBucketName {
