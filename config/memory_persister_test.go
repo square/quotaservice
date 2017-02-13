@@ -16,9 +16,9 @@ func TestMemoryPersistence(t *testing.T) {
 
 	select {
 	case <-persister.ConfigChangedWatcher():
-		t.Fatal("Config channel should be empty!")
-	default:
 		// This is good.
+	default:
+		t.Fatal("Config channel should not be empty!")
 	}
 
 	s := &pbconfig.ServiceConfig{

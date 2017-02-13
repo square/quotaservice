@@ -16,9 +16,12 @@ type MemoryConfigPersister struct {
 }
 
 func NewMemoryConfigPersister() ConfigPersister {
+	watcher := make(chan struct{}, 1)
+	watcher <- struct{}{}
+
 	return &MemoryConfigPersister{
 		configs: make(map[string][]byte),
-		watcher: make(chan struct{}, 1)}
+		watcher: watcher}
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
