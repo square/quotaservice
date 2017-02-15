@@ -71,3 +71,34 @@ func TestUpdateConfig(t *testing.T) {
 		t.Errorf("Date %+v was not updated from %+v", s.cfgs.Date, originalConfig.Date)
 	}
 }
+
+func TestTooManyTokensRequested(t *testing.T) {
+	cfg := config.NewDefaultServiceConfig()
+	nsc := config.NewDefaultNamespaceConfig("dummy")
+	bc := config.NewDefaultBucketConfig("dummy")
+	bc.MaxTokensPerRequest = 5
+	config.AddBucket(nsc, bc)
+	config.AddNamespace(cfg, nsc)
+
+	s := New(&MockBucketFactory{}, config.NewMemoryConfig(cfg), &MockEndpoint{}).(*server)
+	s.Start()
+	defer s.Stop()
+
+	w, _, e := s.Allow("dummy", "dummy", 1, 0, false)
+	if e != nil {
+		t.Fatal("Wasn't expecting an error to s.Allow()", e)
+	}
+
+	if w > 0 {
+		t.Fatalf("Wait time should be 0, not %v", w)
+	}
+
+	w, _, e = s.Allow("dummy", "dummy", 10, 0, false)
+	if e == nil {
+		t.Fatal("Expecting an error to s.Allow()", e)
+	}
+
+	if e.(QuotaServiceError).Reason != ER_TOO_MANY_TOKENS_REQUESTED {
+		t.Fatalf("Expected Reason to be %v but was %v", ER_TOO_MANY_TOKENS_REQUESTED, e.(QuotaServiceError).Reason)
+	}
+}
