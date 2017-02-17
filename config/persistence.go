@@ -16,7 +16,7 @@ type ConfigPersister interface {
 	// ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
 	// detected. Changes are coalesced so that a single notification may be emitted for multiple
 	// changes.
-	ConfigChangedWatcher() chan struct{}
+	ConfigChangedWatcher() <-chan struct{}
 	// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
 	ReadPersistedConfig() (io.Reader, error)
 	// Returns an array of readers of historical configurations.

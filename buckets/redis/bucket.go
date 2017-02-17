@@ -27,14 +27,15 @@ const (
 
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
 type redisBucket struct {
-	dynamic               bool
-	cfg                   *pbconfig.BucketConfig
-	factory               *bucketFactory
-	nanosBetweenTokens    string
-	maxTokensToAccumulate string
-	maxIdleTimeMillis     string
-	maxDebtNanos          string
-	redisKeys             []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
+	dynamic                    bool
+	cfg                        *pbconfig.BucketConfig
+	factory                    *bucketFactory
+	nanosBetweenTokens         string
+	maxTokensToAccumulate      string
+	maxIdleTimeMillis          string
+	maxDebtNanos               string
+	redisKeys                  []string // {tokensNextAvailableRedisKey, accumulatedTokensRedisKey}
+	quotaservice.DefaultBucket          // Extension for default methods on interface
 }
 
 type bucketFactory struct {
@@ -104,7 +105,8 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.B
 		idle,
 		strconv.FormatInt(cfg.MaxDebtMillis*1e6, 10), // Convert millis to nanos
 		[]string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix),
-			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)}}
+			toRedisKey(namespace, bucketName, accumulatedTokensSuffix)},
+		*new(quotaservice.DefaultBucket)}
 
 	return rb
 }
@@ -175,10 +177,6 @@ func (b *redisBucket) Config() *pbconfig.BucketConfig {
 
 func (b *redisBucket) Dynamic() bool {
 	return b.dynamic
-}
-
-func (b *redisBucket) Destroy() {
-	// No-op
 }
 
 func checkScriptExists(c *redis.Client, sha string) bool {

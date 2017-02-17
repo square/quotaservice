@@ -16,6 +16,7 @@ import (
 
 type MockBucket struct {
 	sync.RWMutex
+	DefaultBucket
 	WaitTime              time.Duration
 	namespace, bucketName string
 	dyn                   bool
@@ -38,7 +39,6 @@ func (b *MockBucket) Config() *pbconfig.BucketConfig {
 func (b *MockBucket) Dynamic() bool {
 	return b.dyn
 }
-func (b *MockBucket) Destroy() {}
 
 type MockBucketFactory struct {
 	buckets map[string]*MockBucket
@@ -62,8 +62,14 @@ func (bf *MockBucketFactory) bucket(namespace, name string) *MockBucket {
 }
 
 func (bf *MockBucketFactory) Init(cfg *pbconfig.ServiceConfig) {}
-func (bf *MockBucketFactory) NewBucket(namespace string, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket {
-	b := &MockBucket{sync.RWMutex{}, 0, namespace, bucketName, dyn, cfg}
+func (bf *MockBucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket {
+	b := &MockBucket{
+		WaitTime:   0,
+		namespace:  namespace,
+		bucketName: bucketName,
+		dyn:        dyn,
+		cfg:        cfg}
+
 	if bf.buckets == nil {
 		bf.buckets = make(map[string]*MockBucket)
 	}
@@ -95,5 +101,12 @@ func (d *MockEndpoint) Stop()  {}
 func NewBucketContainerWithMocks(cfg *pbconfig.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
 	bf := &MockBucketFactory{}
 	e := &MockEmitter{}
-	return NewBucketContainer(cfg, bf, e), bf, e
+	return NewBucketContainer(cfg, bf, e, NewReaperConfigForTests()), bf, e
+}
+
+func NewReaperConfigForTests() config.ReaperConfig {
+	r := config.NewReaperConfig()
+	r.MinFrequency = 100 * time.Millisecond
+	r.InitSleep = 100 * time.Millisecond
+	return r
 }

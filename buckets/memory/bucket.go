@@ -3,6 +3,9 @@
 
 // Package memory implements token buckets in memory, inspired by the algorithms used in Guava's
 // RateLimiter library - https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/RateLimiter.java
+// Note that this implementation spins up a goroutine *per bucket* that's created. That can get
+// expensive, and is not recommended for production use, with a large number of static or dynamic
+// buckets.
 package memory
 
 import (
@@ -49,14 +52,15 @@ func NewBucketFactory() quotaservice.BucketFactory {
 // goroutine is shut down when Destroy() is called on this bucket. In-flight requests will be
 // served, but new requests will not.
 type tokenBucket struct {
-	dynamic bool
-	cfg     *pbconfig.BucketConfig
-	nanosBetweenTokens,
-	tokensNextAvailableNanos,
-	accumulatedTokens int64
-	fullName  string
-	waitTimer chan *waitTimeReq
-	closer    chan struct{}
+	dynamic                    bool
+	cfg                        *pbconfig.BucketConfig
+	nanosBetweenTokens         int64
+	tokensNextAvailableNanos   int64
+	accumulatedTokens          int64
+	fullName                   string
+	waitTimer                  chan *waitTimeReq
+	closer                     chan struct{}
+	quotaservice.DefaultBucket // Extension for default methods on interface
 }
 
 // waitTimeReq is a request that you put on the channel for the waitTimer goroutine to pick up and

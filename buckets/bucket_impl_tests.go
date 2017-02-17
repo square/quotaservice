@@ -8,6 +8,7 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/events"
+	"github.com/maniksurtani/quotaservice/logging"
 )
 
 func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
@@ -61,7 +62,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	config.AddNamespace(cfg, nsCfg)
 
 	eventsEmitter := &quotaservice.MockEmitter{Events: make(chan events.Event, 100)}
-	container := quotaservice.NewBucketContainer(cfg, factory, eventsEmitter)
+	container := quotaservice.NewBucketContainer(cfg, factory, eventsEmitter, quotaservice.NewReaperConfigForTests())
 
 	// No GC should happen here as long as we are in use.
 	for i := 0; i < 10; i++ {
@@ -94,7 +95,8 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	}
 }
 
-func waitForGC(eventsChan chan events.Event, namespace string, buckets []string) {
+func waitForGC(eventsChan <-chan events.Event, namespace string, buckets []string) {
+	logging.Println("Waiting for GC")
 	bucketMap := make(map[string]bool)
 	for _, b := range buckets {
 		bucketMap[b] = true

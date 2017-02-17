@@ -116,6 +116,6 @@ func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
 // detected. Changes are coalesced so that a single notification may be emitted for multiple
 // changes.
-func (d *DiskConfigPersister) ConfigChangedWatcher() chan struct{} {
+func (d *DiskConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return d.watcher
 }

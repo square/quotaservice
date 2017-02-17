@@ -13,19 +13,19 @@ import (
 
 func TestWithNoRpcs(t *testing.T) {
 	helpers.ExpectingPanic(t, func() {
-		New(&MockBucketFactory{}, &config.MemoryConfigPersister{})
+		New(&MockBucketFactory{}, &config.MemoryConfigPersister{}, NewReaperConfigForTests())
 	})
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), &MockEndpoint{})
+	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), NewReaperConfigForTests(), &MockEndpoint{})
 	s.Start()
 	defer s.Stop()
 }
 
 func TestUpdateConfig(t *testing.T) {
 	p := config.NewMemoryConfigPersister()
-	s := New(&MockBucketFactory{}, p, &MockEndpoint{}).(*server)
+	s := New(&MockBucketFactory{}, p, NewReaperConfigForTests(), &MockEndpoint{}).(*server)
 
 	originalConfig := config.NewDefaultServiceConfig()
 	originalConfig.Version = 2
@@ -80,7 +80,7 @@ func TestTooManyTokensRequested(t *testing.T) {
 	config.AddBucket(nsc, bc)
 	config.AddNamespace(cfg, nsc)
 
-	s := New(&MockBucketFactory{}, config.NewMemoryConfig(cfg), &MockEndpoint{}).(*server)
+	s := New(&MockBucketFactory{}, config.NewMemoryConfig(cfg), NewReaperConfigForTests(), &MockEndpoint{}).(*server)
 	s.Start()
 	defer s.Stop()
 

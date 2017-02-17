@@ -25,11 +25,12 @@ type Server interface {
 func NewWithDefaultConfig(bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	return New(bucketFactory,
 		config.NewMemoryConfig(config.NewDefaultServiceConfig()),
+		config.NewReaperConfig(),
 		rpcEndpoints...)
 }
 
 // New creates a new quotaservice server.
-func New(bucketFactory BucketFactory, persister config.ConfigPersister, rpcEndpoints ...RpcEndpoint) Server {
+func New(bucketFactory BucketFactory, persister config.ConfigPersister, reaperConfig config.ReaperConfig, rpcEndpoints ...RpcEndpoint) Server {
 	if len(rpcEndpoints) == 0 {
 		panic("Need at least 1 RPC endpoint to run the quota service.")
 	}
@@ -37,6 +38,7 @@ func New(bucketFactory BucketFactory, persister config.ConfigPersister, rpcEndpo
 	s := &server{
 		persister:     persister,
 		bucketFactory: bucketFactory,
-		rpcEndpoints:  rpcEndpoints}
+		rpcEndpoints:  rpcEndpoints,
+		reaperConfig:  reaperConfig}
 	return s
 }
