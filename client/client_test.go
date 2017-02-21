@@ -36,7 +36,10 @@ func setUp() {
 	config.AddBucket(nsc, bc)
 	config.AddNamespace(cfg, nsc)
 
-	server = quotaservice.New(memory.NewBucketFactory(), config.NewMemoryConfig(cfg), qsgrpc.New(target))
+	server = quotaservice.New(memory.NewBucketFactory(),
+		config.NewMemoryConfig(cfg),
+		quotaservice.NewReaperConfigForTests(),
+		qsgrpc.New(target))
 	server.Start()
 }
 

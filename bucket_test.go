@@ -88,8 +88,8 @@ func TestDynamicBucket(t *testing.T) {
 	}
 
 	numGoroutines := runtime.NumGoroutine()
-	if numGoroutines != initGoroutineCount + 1 {
-		t.Fatalf("Expected no more than 1 additional goroutine to be created, but was %v.", numGoroutines - initGoroutineCount)
+	if numGoroutines != initGoroutineCount {
+		t.Fatalf("Expected no more additional goroutines to be created, but was %v.", numGoroutines-initGoroutineCount)
 	}
 }
 

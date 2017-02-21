@@ -33,6 +33,7 @@ type server struct {
 	producer          *events.EventProducer
 	cfgs              *pb.ServiceConfig
 	persister         config.ConfigPersister
+	reaperConfig      config.ReaperConfig
 	sync.RWMutex      // Embedded mutex
 }
 
@@ -80,6 +81,7 @@ func (s *server) Stop() (bool, error) {
 		rpcServer.Stop()
 	}
 
+	s.bucketContainer.Stop()
 	return true, nil
 }
 
@@ -166,7 +168,7 @@ func (s *server) Emit(e events.Event) {
 	}
 }
 
-func (s *server) configListener(ch chan struct{}) {
+func (s *server) configListener(ch <-chan struct{}) {
 	for range ch {
 		s.readUpdatedConfig()
 	}
@@ -192,12 +194,16 @@ func (s *server) readUpdatedConfig() {
 
 func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
 	s.Lock()
+	defer s.Unlock()
+
 	// Initialize buckets
 	s.bucketFactory.Init(newConfig)
 
 	s.cfgs = newConfig
-	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s)
-	s.Unlock()
+	if s.bucketContainer != nil {
+		s.bucketContainer.Stop()
+	}
+	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s, s.reaperConfig)
 }
 
 func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {

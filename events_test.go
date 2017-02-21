@@ -14,7 +14,7 @@ import (
 
 var s Server
 var qs QuotaService
-var eventsChan chan events.Event
+var eventsChan <-chan events.Event
 var mbf *MockBucketFactory
 
 func TestMain(m *testing.M) {
@@ -55,15 +55,16 @@ func setUp() {
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
 	p := config.NewMemoryConfig(cfg)
-	s = New(mbf, p, me)
-	eventsChan = make(chan events.Event, 100)
+	s = New(mbf, p, NewReaperConfigForTests(), me)
+	ecLocal := make(chan events.Event, 100)
 	s.SetListener(func(e events.Event) {
-		eventsChan <- e
+		ecLocal <- e
 	}, 100)
 	s.Start()
 	qs = me.QuotaService
 	// EVENTS_BUCKET_CREATED event
-	_ = <-eventsChan
+	eventsChan = ecLocal
+	<-ecLocal
 }
 
 func TestTokens(t *testing.T) {
@@ -128,7 +129,7 @@ func TestBucketRemoval(t *testing.T) {
 
 func checkEvent(namespace, name string, dyn bool, eventType events.EventType, tokens int64, waitTime time.Duration, actual events.Event, t *testing.T) {
 	if actual == nil {
-		t.Fatalf("Expecting event; was nil.")
+		t.Fatal("Expecting event; was nil.")
 	}
 
 	if actual.Namespace() != namespace {
@@ -158,7 +159,7 @@ func checkEvent(namespace, name string, dyn bool, eventType events.EventType, to
 
 func clearEvents(numEvents int) {
 	eventsLeft := numEvents
-	for _ = range eventsChan {
+	for range eventsChan {
 		eventsLeft--
 		if eventsLeft == 0 {
 			return
@@ -169,7 +170,7 @@ func clearEvents(numEvents int) {
 func clearBuckets(ns string) int {
 	cleared := 0
 	namespace := s.(*server).bucketContainer.namespaces[ns]
-	for bn, _ := range namespace.buckets {
+	for bn := range namespace.buckets {
 		namespace.removeBucket(bn)
 		cleared++
 	}

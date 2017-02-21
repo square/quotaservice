@@ -26,14 +26,14 @@ func NewMemoryConfigPersister() ConfigPersister {
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	bytes, err := ioutil.ReadAll(marshalledConfig)
+	b, err := ioutil.ReadAll(marshalledConfig)
 
 	if err != nil {
 		return err
 	}
 
-	m.config = hashConfig(bytes)
-	m.configs[m.config] = bytes
+	m.config = hashConfig(b)
+	m.configs[m.config] = b
 
 	// ... and notify
 	select {
@@ -65,6 +65,6 @@ func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
 // detected. Changes are coalesced so that a single notification may be emitted for multiple
 // changes.
-func (m *MemoryConfigPersister) ConfigChangedWatcher() chan struct{} {
+func (m *MemoryConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return m.watcher
 }

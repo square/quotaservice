@@ -24,16 +24,17 @@ type bucketContainer struct {
 	bf            BucketFactory
 	n             notifier
 	namespaces    map[string]*namespace
-	defaultBucket *expirableBucket
+	defaultBucket Bucket
+	r             *reaper
 }
 
 type namespace struct {
 	n                  notifier
 	name               string
 	cfg                *pbconfig.NamespaceConfig
-	buckets            map[string]*expirableBucket
+	buckets            map[string]Bucket
 	dynamicBucketCount int32
-	defaultBucket      *expirableBucket
+	defaultBucket      Bucket
 	sync.RWMutex       // Embedded mutex
 }
 
@@ -55,53 +56,19 @@ type Bucket interface {
 	// Destroy indicates that a bucket has been removed from the BucketContainer, is no longer
 	// reachable, and should clean up any resources it may have open.
 	Destroy()
+	// ReportActivity indicates that an ActivityChannel is active. This method shouldn't block.
+	ReportActivity()
 }
 
-type expirableBucket struct {
-	Bucket
-	activityMonitor chan struct{}
+type DefaultBucket struct {
 }
 
-// ReportActivity indicates that an ActivityChannel is active. This method doesn't block.
-func (e *expirableBucket) ReportActivity() {
-	select {
-	case e.activityMonitor <- struct{}{}:
-	// reported activity
-	default:
-		// Already reported
-	}
+func (d DefaultBucket) Destroy() {
+	// no-op
 }
 
-// ActivityDetected tells you if activity has been detected since the last time this method was
-// called.
-func (e *expirableBucket) ActivityDetected() bool {
-	select {
-	case <-e.activityMonitor:
-		return true
-	default:
-		return false
-	}
-}
-
-// watch watches a bucket for activity, deleting the bucket if no activity has been detected after
-// a given duration.
-func (ns *namespace) watch(bucketName string, bucket *expirableBucket, freq time.Duration) {
-	if freq <= 0 {
-		return
-	}
-
-	t := time.NewTicker(freq)
-
-	// Wait for a tick
-	for range t.C {
-		// Check for activity since last run
-		if !bucket.ActivityDetected() || !ns.exists(bucketName) {
-			break
-		}
-	}
-
-	t.Stop()
-	ns.removeBucket(bucketName)
+func (d DefaultBucket) ReportActivity() {
+	// no-op
 }
 
 func (ns *namespace) exists(name string) bool {
@@ -136,8 +103,14 @@ type BucketFactory interface {
 }
 
 // NewBucketContainer creates a new bucket container.
-func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifier) (bc *bucketContainer) {
-	bc = &bucketContainer{cfg: cfg, bf: bf, n: n, namespaces: make(map[string]*namespace)}
+func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifier, r config.ReaperConfig) (bc *bucketContainer) {
+	bc = &bucketContainer{
+		cfg:        cfg,
+		bf:         bf,
+		n:          n,
+		namespaces: make(map[string]*namespace)}
+
+	bc.r = newReaper(bc, r)
 
 	if cfg.GlobalDefaultBucket != nil {
 		bc.createGlobalDefaultBucket(cfg.GlobalDefaultBucket)
@@ -154,27 +127,16 @@ func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifie
 	return
 }
 
-func (bc *bucketContainer) newExpirableBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) *expirableBucket {
-	actualBucket := bc.bf.NewBucket(namespace, bucketName, cfg, dyn)
-	if actualBucket == nil {
-		return nil
-	}
-
-	return &expirableBucket{actualBucket, make(chan struct{}, 1)}
-}
-
 func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) error {
 	if _, exists := bc.namespaces[nsCfg.Name]; exists {
 		return errors.New("Namespace " + nsCfg.Name + " already exists.")
 	}
 
-	nsp := &namespace{n: bc.n, name: nsCfg.Name, cfg: nsCfg, buckets: make(map[string]*expirableBucket)}
+	nsp := &namespace{n: bc.n, name: nsCfg.Name, cfg: nsCfg, buckets: make(map[string]Bucket)}
 	if nsCfg.DefaultBucket != nil {
-		nsp.defaultBucket = bc.newExpirableBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
+		nsp.defaultBucket = bc.bf.NewBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
 	}
 
-	// Lock bucket for duration since the
-	// ns.watch goroutine is created in createNewNamedBucketFromCfg
 	nsp.Lock()
 	defer nsp.Unlock()
 
@@ -191,7 +153,8 @@ func (bc *bucketContainer) createGlobalDefaultBucket(cfg *pbconfig.BucketConfig)
 	if bc.defaultBucket != nil {
 		return errors.New("Global default bucket already exists")
 	}
-	bc.defaultBucket = bc.newExpirableBucket(config.GlobalNamespace, config.DefaultBucketName, cfg, false)
+
+	bc.defaultBucket = bc.bf.NewBucket(config.GlobalNamespace, config.DefaultBucketName, cfg, false)
 	return nil
 }
 
@@ -201,9 +164,9 @@ func (bc *bucketContainer) createGlobalDefaultBucket(cfg *pbconfig.BucketConfig)
 // a dynamic bucket is created if enabled (and space for more dynamic buckets is available). If all
 // fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
 // buckets or re-create statically defined buckets that have been invalidated.
-func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*expirableBucket, error) {
+func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (Bucket, error) {
 	ns := bc.namespaces[namespace]
-	var bucket *expirableBucket
+	var bucket Bucket
 	var err error
 	reportActivity := true
 
@@ -247,7 +210,7 @@ func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (*exp
 
 // createNewNamedBucket creates a new, named bucket. May return nil if the named bucket is dynamic,
 // and the namespace has already reached its maxDynamicBuckets setting.
-func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) *expirableBucket {
+func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns *namespace) Bucket {
 	bCfg := ns.cfg.Buckets[bucketName]
 	dyn := false
 	if bCfg == nil {
@@ -275,9 +238,17 @@ func (bc *bucketContainer) countDynamicBuckets(namespace string) int32 {
 	return c
 }
 
-func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *pbconfig.BucketConfig, dyn bool) *expirableBucket {
+func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName string, ns *namespace, bCfg *pbconfig.BucketConfig, dyn bool) Bucket {
 	bc.n.Emit(events.NewBucketCreatedEvent(namespace, bucketName, dyn))
-	bucket := bc.newExpirableBucket(namespace, bucketName, bCfg, dyn)
+	var bucket Bucket
+	bucket = bc.bf.NewBucket(namespace, bucketName, bCfg, dyn)
+
+	if bucket == nil {
+		// TODO(manik) why would this ever happen? Should we panic?
+		return nil
+	}
+
+	bucket, _ = bc.r.applyWatch(bucket, namespace, bucketName, bCfg)
 	ns.buckets[bucketName] = bucket
 
 	if dyn {
@@ -285,11 +256,6 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 	}
 
 	bucket.ReportActivity()
-
-	if bucketName != config.DefaultBucketName {
-		go ns.watch(bucketName, bucket, time.Duration(bCfg.MaxIdleMillis)*time.Millisecond)
-	}
-
 	return bucket
 }
 
@@ -309,6 +275,15 @@ func (bc *bucketContainer) Exists(namespace, name string) bool {
 	return false
 }
 
+func (bc *bucketContainer) removeBucket(namespace, bucket string) bool {
+	ns := bc.namespaces[namespace]
+	if ns != nil {
+		ns.removeBucket(bucket)
+		return true
+	}
+	return false
+}
+
 func (bc *bucketContainer) String() string {
 	var buffer bytes.Buffer
 	if bc.defaultBucket != nil {
@@ -317,7 +292,7 @@ func (bc *bucketContainer) String() string {
 
 	sortedNamespaces := make([]string, len(bc.namespaces))
 	i := 0
-	for nsName, _ := range bc.namespaces {
+	for nsName := range bc.namespaces {
 		sortedNamespaces[i] = nsName
 		i++
 	}
@@ -334,7 +309,7 @@ func (bc *bucketContainer) String() string {
 		// Sort buckets
 		sortedBuckets := make([]string, len(ns.buckets))
 		j := 0
-		for bName, _ := range ns.buckets {
+		for bName := range ns.buckets {
 			sortedBuckets[j] = bName
 			j++
 		}
@@ -348,4 +323,8 @@ func (bc *bucketContainer) String() string {
 	}
 
 	return buffer.String()
+}
+
+func (bc *bucketContainer) Stop() {
+	bc.r.stop()
 }
