@@ -1,9 +1,8 @@
 language: go
 
 go:
-  - 1.5
-  - 1.6
   - 1.7
+  - 1.8
 
 cache:
   directories:
@@ -21,9 +20,7 @@ env:
 
 matrix:
   exclude:
-    - go: 1.5
-      env: TEST=UI
-    - go: 1.6
+    - go: 1.7
       env: TEST=UI
 
 install:
