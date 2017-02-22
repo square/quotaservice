@@ -62,6 +62,7 @@ func (bf *MockBucketFactory) bucket(namespace, name string) *MockBucket {
 }
 
 func (bf *MockBucketFactory) Init(cfg *pbconfig.ServiceConfig) {}
+func (bf *MockBucketFactory) Client() interface{}              { return nil }
 func (bf *MockBucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket {
 	b := &MockBucket{
 		WaitTime:   0,

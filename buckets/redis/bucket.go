@@ -15,8 +15,9 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 	"sync"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Suffixes for Redis keys
@@ -88,6 +89,10 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	if oldClient == bf.client {
 		bf.connectToRedisLocked()
 	}
+}
+
+func (bf *bucketFactory) Client() interface{} {
+	return bf.client
 }
 
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
