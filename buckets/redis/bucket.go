@@ -92,6 +92,9 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 }
 
 func (bf *bucketFactory) Client() interface{} {
+	bf.mu.Lock()
+	defer bf.mu.Unlock()
+
 	return bf.client
 }
 
@@ -129,7 +132,7 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	keepTrying := true
 	var waitTime time.Duration
 	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
-		client := b.factory.client
+		client := b.factory.Client().(*redis.Client)
 		res := client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
 		switch waitTimeNanos := res.Val().(type) {
 		case int64:
