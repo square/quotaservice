@@ -100,6 +100,9 @@ type BucketFactory interface {
 
 	// NewBucket creates a new bucket.
 	NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket
+
+	// Client is an accessor to the underlying network client, if there is one.
+	Client() interface{}
 }
 
 // NewBucketContainer creates a new bucket container.

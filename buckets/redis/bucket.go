@@ -15,8 +15,9 @@ import (
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 	"sync"
+
+	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
 
 // Suffixes for Redis keys
@@ -90,6 +91,13 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	}
 }
 
+func (bf *bucketFactory) Client() interface{} {
+	bf.mu.Lock()
+	defer bf.mu.Unlock()
+
+	return bf.client
+}
+
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
 	idle := "0"
 	if cfg.MaxIdleMillis > 0 {
@@ -124,7 +132,7 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	keepTrying := true
 	var waitTime time.Duration
 	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
-		client := b.factory.client
+		client := b.factory.Client().(*redis.Client)
 		res := client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
 		switch waitTimeNanos := res.Val().(type) {
 		case int64:
