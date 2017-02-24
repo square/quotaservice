@@ -26,6 +26,10 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	bf.cfg = cfg
 }
 
+func (bf *bucketFactory) Client() interface{} {
+	return nil
+}
+
 func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) quotaservice.Bucket {
 	// fill rate is tokens-per-second.
 	bucket := &tokenBucket{
