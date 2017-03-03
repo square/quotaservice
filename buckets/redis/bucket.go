@@ -67,6 +67,19 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	if bf.client == nil {
 		bf.connectToRedisLocked()
 	}
+
+	if err := bf.cleanStaleBuckets() ; err != nil {
+		logging.Printf("Problems cleaning stale buckets: %v", err)
+	}
+}
+
+func (bf *bucketFactory) cleanStaleBuckets() error {
+	logging.Print("Inspecting all buckets in Redis")
+	existing, err := existingBuckets(bf.client)
+	if err != nil {
+		return err
+	}
+	return deleteUnknown(bf.client, existing, bf.cfg.Namespaces)
 }
 
 func (bf *bucketFactory) connectToRedisLocked() {

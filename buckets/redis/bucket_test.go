@@ -4,13 +4,13 @@
 package redis
 
 import (
-	"os"
 	"testing"
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets"
 	"github.com/maniksurtani/quotaservice/config"
 	"gopkg.in/redis.v3"
+	"os"
 )
 
 var cfg = config.NewDefaultServiceConfig()
