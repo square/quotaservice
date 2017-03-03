@@ -92,8 +92,21 @@ export default class Sidebar extends Component {
     />)
   }
 
+  renderVersion() {
+    const { version, currentVersion } = this.props
+
+    let currentVersionStr = `v${currentVersion}`
+    let versionStr = ''
+
+    if (version != currentVersion) {
+      versionStr += ` (viewing v${version})`
+    }
+
+    return (<h4>{currentVersionStr}<small>{versionStr}</small></h4>)
+  }
+
   render() {
-    const { version, env, selectedNamespace } = this.props
+    const { env, selectedNamespace } = this.props
 
     let classNames = ['flex-box-md', 'sidebar']
 
@@ -104,7 +117,7 @@ export default class Sidebar extends Component {
     return (<div className={classNames.join(' ')}>
       <div>
         <h1 className={env.environment}>QuotaService</h1>
-        <h4>v{version}</h4>
+        {this.renderVersion()}
       </div>
       {this.renderAddNamespace()}
       {selectedNamespace && this.renderAddBucket()}
@@ -118,6 +131,7 @@ export default class Sidebar extends Component {
 Sidebar.propTypes = {
   changes: PropTypes.object.isRequired,
   error: PropTypes.object,
+  currentVersion: PropTypes.number.isRequired,
   version: PropTypes.number.isRequired,
   selectedNamespace: PropTypes.object,
   configs: PropTypes.object.isRequired,

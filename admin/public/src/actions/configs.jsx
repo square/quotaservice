@@ -1,4 +1,7 @@
+import React from 'react'
 import { CALL_API } from 'redux-api-middleware'
+
+import { confirm } from './confirmation.jsx'
 
 export const CONFIGS_FAILURE = 'CONFIGS_FAILURE'
 export const CONFIGS_REQUEST = 'CONFIGS_REQUEST'
@@ -19,35 +22,33 @@ export function loadConfig(config) {
 }
 
 export function fetchConfigs() {
-  return (dispatch, getState) => dispatch({
+  return dispatch => dispatch({
     [CALL_API]: {
       endpoint: '/api/configs',
       method: 'GET',
       credentials: 'same-origin',
       types: [CONFIGS_REQUEST, CONFIGS_FETCH_SUCCESS, CONFIGS_FAILURE]
     }
-  }).then(() => {
-    const configs = getState().configs
-
-    if (configs.items.length > 0) {
-      dispatch(loadConfigState(configs.items[0]))
-    }
   })
 }
 
-export function commitConfig(namespaces) {
-  return dispatch => {
-    const json = JSON.stringify({ namespaces: namespaces })
+export function commitConfig(namespaces, version) {
+  const json = JSON.stringify({ namespaces: namespaces })
 
-    dispatch({
+  return confirm({
       [CALL_API]: {
         endpoint: '/api',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Version': version
+        },
         body: json,
         credentials: 'same-origin',
         types: [CONFIGS_REQUEST, CONFIGS_COMMIT_SUCCESS, CONFIGS_FAILURE]
       }
-    })
-  }
+    },
+    'You are about to submit the following configuration.',
+    <div className="code">{JSON.stringify(namespaces, null, 4)}</div>
+  )
 }

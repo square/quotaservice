@@ -1,26 +1,31 @@
 import React, { Component, PropTypes } from 'react'
 
 export default class Confirmation extends Component {
+  handleConfirm = () => {
+    const { dispatch, action } = this.props
+    dispatch(action)
+  }
+
   render() {
-    const { handleCancel, handleSubmit, json } = this.props
+    const { header, body, cancel } = this.props
 
     return (<div className="overlay fill-height-container flex-container flex-centered">
       <div className="confirmation flex-container flex-column">
-        <div>
-          <div className="pull-right">
-            <button className="btn" onClick={handleCancel}>Cancel</button>
-            <button className="btn btn-danger" onClick={handleSubmit}>Submit</button>
-          </div>
-          <h4>You are about to submit the following configuration.</h4>
+        <h4>{header}</h4>
+        {body}
+        <div className="confirmation-footer">
+          <button className="btn" onClick={cancel}>Cancel</button>
+          <button className="btn btn-danger" onClick={this.handleConfirm}>Confirm</button>
         </div>
-        <div className="code">{json}</div>
       </div>
     </div>)
   }
 }
 
 Confirmation.propTypes = {
-  json: PropTypes.string.isRequired,
-  handleCancel: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired
+  header: PropTypes.string.isRequired,
+  action: PropTypes.object.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  cancel: PropTypes.func.isRequired,
+  body: PropTypes.object,
 }

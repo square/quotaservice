@@ -13,6 +13,7 @@ import * as NamespacesActions from '../actions/namespaces.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
 import * as StatsActions from '../actions/stats.jsx'
 import * as ConfigsActions from '../actions/configs.jsx'
+import * as ConfirmationActions from '../actions/confirmation.jsx'
 
 class QuotaService extends Component {
   componentDidMount() {
@@ -66,44 +67,47 @@ class QuotaService extends Component {
     </div>)
   }
 
-  handleCommitConfig = () => {
-    const { actions, namespaces } = this.props
-    actions.commitConfig(namespaces.items)
-  }
-
   renderConfirmation() {
-    const { namespaces, actions } = this.props
-    const json = JSON.stringify(namespaces.items, null, 4)
-
+    const { actions, dispatch, confirm } = this.props
     return (<Confirmation
-      json={json}
-      handleCancel={actions.cancelCommit}
-      handleSubmit={this.handleCommitConfig}
+      cancel={actions.clearConfirm}
+      dispatch={dispatch}
+      {...confirm}
     />)
   }
 
+  handleConfigCommit = () => {
+    const { actions, namespaces, currentVersion } = this.props
+    actions.commitConfig(namespaces.items, currentVersion)
+  }
+
   render() {
-    const { actions, namespaces, env, selectedNamespace, configs } = this.props
-    const { history, commit, version } = namespaces
+    const {
+      actions, namespaces, env, confirm,
+      selectedNamespace, configs, currentVersion
+    } = this.props
+    const { history, version } = namespaces
     const { lastUpdated, error } = configs
 
     const classNames = ['flex-container', 'fill-height-container']
 
-    if (commit) {
+    if (confirm) {
       classNames.push('blur')
     }
 
     return (<div>
-      {commit && this.renderConfirmation()}
+      {confirm && this.renderConfirmation()}
       <div className={classNames.join(' ')}>
         <Sidebar
           selectedNamespace={selectedNamespace}
           env={env}
+          currentVersion={currentVersion}
           version={version || 0}
           lastUpdated={lastUpdated}
           changes={history}
           configs={configs}
           error={error}
+          commit={this.handleConfigCommit}
           {...actions}
         />
         {this.renderNamespaces()}
@@ -114,12 +118,15 @@ class QuotaService extends Component {
 }
 
 QuotaService.propTypes = {
+  dispatch: PropTypes.func.isRequired,
   actions: PropTypes.object.isRequired,
   namespaces: PropTypes.object.isRequired,
   stats: PropTypes.object.isRequired,
   configs: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
-  env: PropTypes.object.isRequired
+  currentVersion: PropTypes.number.isRequired,
+  env: PropTypes.object.isRequired,
+  confirm: PropTypes.object
 }
 
 export default connect(
@@ -138,12 +145,14 @@ export default connect(
   },
   dispatch => {
     return {
+      dispatch: dispatch, // only used for Confirmation
       actions: Object.assign({},
         bindActionCreators(NamespacesActions, dispatch),
         bindActionCreators(HistoryActions, dispatch),
         bindActionCreators(MutableActions, dispatch),
         bindActionCreators(StatsActions, dispatch),
-        bindActionCreators(ConfigsActions, dispatch)
+        bindActionCreators(ConfigsActions, dispatch),
+        bindActionCreators(ConfirmationActions, dispatch)
       )
     }
   }
