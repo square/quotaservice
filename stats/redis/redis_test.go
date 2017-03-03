@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/redis.v3"
+	"gopkg.in/redis.v5"
 
 	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/stats"

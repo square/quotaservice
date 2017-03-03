@@ -7,10 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"gopkg.in/redis.v5"
+
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets"
 	"github.com/maniksurtani/quotaservice/config"
-	"gopkg.in/redis.v3"
 )
 
 var cfg = config.NewDefaultServiceConfig()

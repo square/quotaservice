@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/redis.v3/internal"
-	"gopkg.in/redis.v3/internal/pool"
+	"gopkg.in/redis.v5/internal"
+	"gopkg.in/redis.v5/internal/pool"
 )
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ type FailoverOptions struct {
 	// Following options are copied from Options struct.
 
 	Password string
-	DB       int64
+	DB       int
 
 	MaxRetries int
 
@@ -64,49 +64,52 @@ func (opt *FailoverOptions) options() *Options {
 // goroutines.
 func NewFailoverClient(failoverOpt *FailoverOptions) *Client {
 	opt := failoverOpt.options()
+	opt.init()
+
 	failover := &sentinelFailover{
 		masterName:    failoverOpt.MasterName,
 		sentinelAddrs: failoverOpt.SentinelAddrs,
 
 		opt: opt,
 	}
-	base := baseClient{
-		opt:      opt,
-		connPool: failover.Pool(),
 
-		onClose: func() error {
-			return failover.Close()
+	client := Client{
+		baseClient: baseClient{
+			opt:      opt,
+			connPool: failover.Pool(),
+
+			onClose: func() error {
+				return failover.Close()
+			},
 		},
 	}
-	return &Client{
-		baseClient: base,
-		commandable: commandable{
-			process: base.process,
-		},
-	}
+	client.cmdable.process = client.Process
+
+	return &client
 }
 
 //------------------------------------------------------------------------------
 
 type sentinelClient struct {
+	cmdable
 	baseClient
-	commandable
 }
 
 func newSentinel(opt *Options) *sentinelClient {
-	base := baseClient{
-		opt:      opt,
-		connPool: newConnPool(opt),
+	opt.init()
+	client := sentinelClient{
+		baseClient: baseClient{
+			opt:      opt,
+			connPool: newConnPool(opt),
+		},
 	}
-	return &sentinelClient{
-		baseClient:  base,
-		commandable: commandable{process: base.process},
-	}
+	client.cmdable = cmdable{client.Process}
+	return &client
 }
 
 func (c *sentinelClient) PubSub() *PubSub {
 	return &PubSub{
-		base: &baseClient{
+		base: baseClient{
 			opt:      c.opt,
 			connPool: pool.NewStickyConnPool(c.connPool.(*pool.ConnPool), false),
 		},
@@ -159,8 +162,8 @@ func (d *sentinelFailover) Pool() *pool.ConnPool {
 }
 
 func (d *sentinelFailover) MasterAddr() (string, error) {
-	defer d.mu.Unlock()
 	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	// Try last working sentinel.
 	if d.sentinel != nil {
@@ -255,7 +258,7 @@ func (d *sentinelFailover) discoverSentinels(sentinel *sentinelClient) {
 // closeOldConns closes connections to the old master after failover switch.
 func (d *sentinelFailover) closeOldConns(newMaster string) {
 	// Good connections that should be put back to the pool. They
-	// can't be put immediately, because pool.First will return them
+	// can't be put immediately, because pool.PopFree will return them
 	// again on next iteration.
 	cnsToPut := make([]*pool.Conn, 0)
 
@@ -286,8 +289,10 @@ func (d *sentinelFailover) listen(sentinel *sentinelClient) {
 	for {
 		if pubsub == nil {
 			pubsub = sentinel.PubSub()
+
 			if err := pubsub.Subscribe("+switch-master"); err != nil {
 				internal.Logf("sentinel: Subscribe failed: %s", err)
+				pubsub.Close()
 				d.resetSentinel()
 				return
 			}
