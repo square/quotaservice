@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"gopkg.in/redis.v3"
+	"gopkg.in/redis.v5"
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/logging"
@@ -72,13 +72,14 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 func (bf *bucketFactory) connectToRedisLocked() {
 	// Set up connection to Redis
 	bf.client = redis.NewClient(bf.redisOpts)
-	redisResults := bf.client.Time().Val()
-	if len(redisResults) == 0 {
-		logging.Printf("Cannot connect to Redis. TIME returned %v", redisResults)
+
+	time, err := bf.client.Time().Result()
+	if err != nil {
+		logging.Printf("Cannot connect to Redis. TIME returned %v", err)
 	} else {
-		t := time.Unix(toInt64(redisResults[0], 0), 0)
-		logging.Printf("Connection established. Time on Redis server: %v", t)
+		logging.Printf("Connection established. Time on Redis server: %v", time)
 	}
+
 	bf.scriptSHA = loadScript(bf.client)
 }
 
@@ -125,7 +126,7 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 
 func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
-	args := []string{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
+	args := []interface{}{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		b.maxIdleTimeMillis, b.maxDebtNanos}
 
@@ -133,7 +134,7 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	var waitTime time.Duration
 	for attempt := 0; keepTrying && attempt < b.factory.connectionRetries; attempt++ {
 		client := b.factory.Client().(*redis.Client)
-		res := client.EvalSha(b.factory.scriptSHA, b.redisKeys, args)
+		res := client.EvalSha(b.factory.scriptSHA, b.redisKeys, args...)
 		switch waitTimeNanos := res.Val().(type) {
 		case int64:
 			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)

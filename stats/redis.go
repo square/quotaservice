@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/redis.v5"
+
 	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/logging"
-
-	"gopkg.in/redis.v3"
 )
 
 type redisListener struct {
