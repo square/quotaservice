@@ -23,6 +23,6 @@ type ConfigPersister interface {
 	ReadHistoricalConfigs() ([]io.Reader, error)
 }
 
-func hashConfig(config []byte) string {
+func HashConfig(config []byte) string {
 	return fmt.Sprintf("%x", md5.Sum(config))
 }

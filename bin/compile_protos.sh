@@ -5,6 +5,8 @@
 
 set -e
 
+go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+
 protoc --go_out=plugins=grpc:. ./protos/*.proto --proto_path ./
 protoc --go_out=plugins=grpc:. ./protos/config/*.proto --proto_path ./
 
