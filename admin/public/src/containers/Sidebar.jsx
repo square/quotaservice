@@ -22,23 +22,23 @@ export default class Sidebar extends Component {
     const { namespace } = this.state
 
     if (namespace !== '') {
-      this.props.addNamespace(namespace)
+      this.props.actions.addNamespace(namespace)
       this.setState({ namespace: '' })
     }
   }
 
   handleAddBucket = () => {
     const { bucket } = this.state
-    const { selectedNamespace, addBucket } = this.props
+    const { selectedNamespace, actions } = this.props
 
     if (bucket !== '') {
-      addBucket(selectedNamespace.name, bucket)
+      actions.addBucket(selectedNamespace.name, bucket)
       this.setState({ bucket: '' })
     }
   }
 
   renderError() {
-    const { error } = this.props
+    const { error } = this.props.configs
 
     if (!error)
       return
@@ -66,34 +66,35 @@ export default class Sidebar extends Component {
     />)
   }
 
+  handleCommit = () => {
+    const { actions, namespaces, currentVersion } = this.props
+    actions.commitConfig(namespaces.items, currentVersion)
+  }
+
   renderChanges() {
-    const {
-      changes, undo, redo,
-      fetchConfigs, commit,
-      lastUpdated
-    } = this.props
+    const { namespaces, actions } = this.props
 
     return (<Changes
-      lastUpdated={lastUpdated}
-      handleUndo={undo}
-      handleRedo={redo}
-      handleCommit={commit}
-      handleRefresh={fetchConfigs}
-      changes={changes}
+      handleUndo={actions.undo}
+      handleRedo={actions.redo}
+      handleRefresh={actions.fetchConfigs}
+      handleCommit={this.handleCommit}
+      changes={namespaces.history}
     />)
   }
 
   renderConfigs() {
-    const { configs, loadConfig } = this.props
+    const { configs, actions } = this.props
 
     return (<Configs
       configs={configs}
-      loadConfig={loadConfig}
+      loadConfig={actions.loadConfig}
     />)
   }
 
   renderVersion() {
-    const { version, currentVersion } = this.props
+    const { namespaces, currentVersion } = this.props
+    const version = namespaces.version || 0
 
     let currentVersionStr = `v${currentVersion}`
     let versionStr = ''
@@ -129,19 +130,10 @@ export default class Sidebar extends Component {
 }
 
 Sidebar.propTypes = {
-  changes: PropTypes.object.isRequired,
-  error: PropTypes.object,
-  currentVersion: PropTypes.number.isRequired,
-  version: PropTypes.number.isRequired,
-  selectedNamespace: PropTypes.object,
+  actions: PropTypes.object.isRequired,
+  namespaces: PropTypes.object.isRequired,
   configs: PropTypes.object.isRequired,
-  undo: PropTypes.func.isRequired,
-  redo: PropTypes.func.isRequired,
-  commit: PropTypes.func.isRequired,
-  fetchConfigs: PropTypes.func.isRequired,
-  addNamespace: PropTypes.func.isRequired,
-  addBucket: PropTypes.func.isRequired,
-  loadConfig: PropTypes.func.isRequired,
-  lastUpdated: PropTypes.number,
+  selectedNamespace: PropTypes.object,
+  currentVersion: PropTypes.number.isRequired,
   env: PropTypes.object.isRequired
 }

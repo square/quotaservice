@@ -127,7 +127,7 @@ function loadConfig(config) {
   })
 }
 
-  export function namespaces(state, action) {
+export function namespaces(state, action) {
   switch (action.type) {
     case ADD_NAMESPACE:
       return addNamespace(state, action)

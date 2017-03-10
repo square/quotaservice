@@ -5,7 +5,7 @@ import { render } from 'react-dom'
 import { Provider } from 'react-redux'
 
 import configureStore from './store.js'
-import QuotaService from './containers/QuotaService.jsx'
+import Root from './containers/Root.jsx'
 
 const store = configureStore()
 
@@ -15,7 +15,7 @@ const env = {
 
 render(
   <Provider store={store}>
-    <QuotaService env={env} />
+    <Root env={env} />
   </Provider>,
   document.getElementById('root')
 )

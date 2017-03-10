@@ -1,6 +1,6 @@
 import Immutable from 'seamless-immutable'
 
-import { UNDO, REDO, CLEAR } from '../actions/history.jsx'
+import { UNDO, REDO } from '../actions/history.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
 
 export const INITIAL_HISTORY = {
@@ -99,8 +99,6 @@ export function history(reducer) {
         return undo(state)
       case REDO:
         return redo(state)
-      case CLEAR:
-        return INITIAL_HISTORY
       default:
         return reduce(reducer, state, action)
     }

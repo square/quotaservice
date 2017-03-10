@@ -25,12 +25,7 @@ export default class Changes extends Component {
     const {
       handleUndo, handleRedo,
       handleRefresh, handleCommit,
-      lastUpdated
     } = this.props
-
-    let lastUpdatedFormat = ''
-    if (lastUpdated)
-      lastUpdatedFormat = `updated at ${(new Date(lastUpdated)).toLocaleTimeString()}`
 
     let { past, future } = this.props.changes
     const canUndo = past.length > 0
@@ -50,7 +45,6 @@ export default class Changes extends Component {
         </div>
       </div>
       {this.renderChanges()}
-      <small className='pull-right'>{lastUpdatedFormat}</small>
     </div>)
   }
 }
@@ -60,6 +54,5 @@ Changes.propTypes = {
   handleUndo: PropTypes.func.isRequired,
   handleRedo: PropTypes.func.isRequired,
   handleCommit: PropTypes.func.isRequired,
-  handleRefresh: PropTypes.func.isRequired,
-  lastUpdated: PropTypes.number
+  handleRefresh: PropTypes.func.isRequired
 }

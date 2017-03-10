@@ -10,15 +10,11 @@ export const CONFIGS_COMMIT_SUCCESS = 'CONFIGS_COMMIT_SUCCESS'
 
 export const LOAD_CONFIG = 'LOAD_CONFIG'
 
-function loadConfigState(config) {
-  return {
+export function loadConfig(config) {
+  return dispatch => dispatch({
     type: LOAD_CONFIG,
     config: config
-  }
-}
-
-export function loadConfig(config) {
-  return dispatch => dispatch(loadConfigState(config))
+  })
 }
 
 export function fetchConfigs() {
