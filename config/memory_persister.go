@@ -12,16 +12,16 @@ import (
 type MemoryConfigPersister struct {
 	config  string
 	configs map[string][]byte
-	watcher chan struct{}
+	*Notifier
 }
 
 func NewMemoryConfigPersister() ConfigPersister {
-	watcher := make(chan struct{}, 1)
-	watcher <- struct{}{}
-
-	return &MemoryConfigPersister{
+	p := &MemoryConfigPersister{
 		configs: make(map[string][]byte),
-		watcher: watcher}
+		Notifier: NewNotifier()}
+
+	p.Notify()
+	return p
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
@@ -32,16 +32,11 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 		return err
 	}
 
-	m.config = hashConfig(b)
+	m.config = HashConfig(b)
 	m.configs[m.config] = b
 
 	// ... and notify
-	select {
-	case m.watcher <- struct{}{}:
-		// Notified
-	default:
-		// Doesn't matter; another notification is pending.
-	}
+	m.Notify()
 
 	return nil
 }
@@ -66,5 +61,5 @@ func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 // detected. Changes are coalesced so that a single notification may be emitted for multiple
 // changes.
 func (m *MemoryConfigPersister) ConfigChangedWatcher() <-chan struct{} {
-	return m.watcher
+	return m.Notifier.Watcher
 }

@@ -172,7 +172,7 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 		return e
 	}
 
-	key := hashConfig(b)
+	key := HashConfig(b)
 
 	if key == z.config {
 		return nil

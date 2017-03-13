@@ -202,7 +202,7 @@ func createExistingNode(path string) {
 	bytes, err := ioutil.ReadAll(reader)
 	helpers.PanicError(err)
 
-	key := hashConfig(bytes)
+	key := HashConfig(bytes)
 
 	_, err = conn.Create(path, []byte(key), 0, zk.WorldACL(zk.PermAll))
 	helpers.PanicError(err)

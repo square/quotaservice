@@ -92,6 +92,7 @@ type ParseContext struct {
 	peek            []*Token
 	argi            int // Index of current command-line arg we're processing.
 	args            []string
+	rawArgs         []string
 	flags           *flagGroup
 	arguments       *argGroup
 	argumenti       int // Cursor into arguments
@@ -125,6 +126,7 @@ func tokenize(args []string, ignoreDefault bool) *ParseContext {
 	return &ParseContext{
 		ignoreDefault: ignoreDefault,
 		args:          args,
+		rawArgs:       args,
 		flags:         newFlagGroup(),
 		arguments:     newArgGroup(),
 	}
@@ -295,6 +297,7 @@ loop:
 			if flag, err := context.flags.parse(context); err != nil {
 				if !ignoreDefault {
 					if cmd := cmds.defaultSubcommand(); cmd != nil {
+						cmd.completionAlts = cmds.cmdNames()
 						context.matchedCmd(cmd)
 						cmds = cmd.cmdGroup
 						break
@@ -312,6 +315,7 @@ loop:
 				if !ok {
 					if !ignoreDefault {
 						if cmd = cmds.defaultSubcommand(); cmd != nil {
+							cmd.completionAlts = cmds.cmdNames()
 							selectedDefault = true
 						}
 					}
@@ -322,6 +326,7 @@ loop:
 				if cmd == HelpCommand {
 					ignoreDefault = true
 				}
+				cmd.completionAlts = nil
 				context.matchedCmd(cmd)
 				cmds = cmd.cmdGroup
 				if !selectedDefault {
@@ -350,6 +355,7 @@ loop:
 	// Move to innermost default command.
 	for !ignoreDefault {
 		if cmd := cmds.defaultSubcommand(); cmd != nil {
+			cmd.completionAlts = cmds.cmdNames()
 			context.matchedCmd(cmd)
 			cmds = cmd.cmdGroup
 		} else {

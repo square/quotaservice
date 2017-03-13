@@ -14,7 +14,7 @@ import (
 // DiskConfigPersister is a ConfigPersister that saves configs to the local filesystem.
 type DiskConfigPersister struct {
 	location string
-	watcher  chan struct{}
+	*Notifier
 }
 
 // NewDiskConfigPersister creates a new DiskConfigPersister
@@ -26,10 +26,10 @@ func NewDiskConfigPersister(location string) (ConfigPersister, error) {
 		return nil, e
 	}
 
-	d := &DiskConfigPersister{location, make(chan struct{}, 1)}
+	d := &DiskConfigPersister{location, NewNotifier()}
 
 	// Notify that we're available for reading
-	d.watcher <- struct{}{}
+	d.Notify()
 
 	return d, nil
 }
@@ -53,7 +53,7 @@ func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error
 		return e
 	}
 
-	path := fmt.Sprintf("%s-%s", d.location, hashConfig(b))
+	path := fmt.Sprintf("%s-%s", d.location, HashConfig(b))
 	e = writeFile(path, b)
 
 	if e != nil {
@@ -75,12 +75,7 @@ func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error
 	}
 
 	// ... and notify
-	select {
-	case d.watcher <- struct{}{}:
-		// Notified
-	default:
-		// Doesn't matter; another notification is pending.
-	}
+	d.Notify()
 
 	return nil
 }
@@ -117,5 +112,5 @@ func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 // detected. Changes are coalesced so that a single notification may be emitted for multiple
 // changes.
 func (d *DiskConfigPersister) ConfigChangedWatcher() <-chan struct{} {
-	return d.watcher
+	return d.Notifier.Watcher
 }
