@@ -8,7 +8,7 @@ import {
 } from '../actions/mutable.jsx'
 
 import { INITIAL_HISTORY } from './history.jsx'
-import { CONFIGS_REQUEST, LOAD_CONFIG } from '../actions/configs.jsx'
+import { CONFIGS_FETCH_SUCCESS, LOAD_CONFIG } from '../actions/configs.jsx'
 
 // These are special buckets that exist on the top-level
 // namespace object and need to be special-cased
@@ -120,6 +120,13 @@ function removeBucket(state, action) {
   })
 }
 
+function loadConfig(config) {
+  return Object.assign({}, INITIAL_HISTORY, {
+    version: config.version || 0,
+    items: Immutable.from(config.namespaces || {})
+  })
+}
+
 export function namespaces(state, action) {
   switch (action.type) {
     case ADD_NAMESPACE:
@@ -134,13 +141,16 @@ export function namespaces(state, action) {
       return updateBucket(state, action)
     case REMOVE_BUCKET:
       return removeBucket(state, action)
+    case CONFIGS_FETCH_SUCCESS: {
+      const configs = action.payload.configs
+      if (configs.length > 0) {
+        return loadConfig(configs[0])
+      } else {
+        return state
+      }
+    }
     case LOAD_CONFIG:
-      return Object.assign({}, INITIAL_HISTORY, {
-        version: action.config.version,
-        items: Immutable.from(action.config.namespaces || {})
-      })
-    case CONFIGS_REQUEST:
-      return INITIAL_HISTORY
+      return loadConfig(action.config)
     default:
       return state
   }
@@ -148,9 +158,10 @@ export function namespaces(state, action) {
 
 export function selectedNamespace(state = null, action) {
   switch (action.type) {
+    case ADD_NAMESPACE:
     case SELECT_NAMESPACE:
       return action.namespace
-    case CONFIGS_REQUEST:
+    case REMOVE_NAMESPACE:
       return null
     default:
       return state

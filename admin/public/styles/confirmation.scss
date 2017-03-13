@@ -11,18 +11,22 @@
 .confirmation {
   h4 {
     line-height: 25px;
+    margin: 0 0 5px 0;
+  }
+
+  .confirmation-footer {
+    text-align: right;
+    margin: 5px 0 0 0;
   }
 
   .code {
-    margin: 5px 0 0 0;
+    padding: 0.5em 1em;
+    overflow: auto;
+
     font-family: monospace;
     font-size: 0.9em;
     line-height: 140%;
     white-space: pre-wrap;
-
-    padding: 0.5em 1em;
-
-    overflow: auto;
 
     border: $border-grey;
     color: #5e676d;

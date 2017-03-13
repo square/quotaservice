@@ -31,11 +31,6 @@ module.exports = {
       }
     })
   ],
-  resolve: {
-    alias: {
-      "seamless-immutable$": path.resolve(__dirname, "node_modules/seamless-immutable/seamless-immutable.production.min.js")
-    }
-  },
   module: {
     loaders: [
       {

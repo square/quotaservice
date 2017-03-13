@@ -1,4 +1,4 @@
-import { SELECT_NAMESPACE } from './namespaces.jsx'
+import { confirm } from './confirmation.jsx'
 
 export const ADD_NAMESPACE = 'ADD_NAMESPACE'
 export const UPDATE_NAMESPACE = 'UPDATE_NAMESPACE'
@@ -12,10 +12,6 @@ export function addNamespace(name) {
   return dispatch => {
     dispatch({
       type: ADD_NAMESPACE,
-      namespace: name
-    })
-    dispatch({
-      type: SELECT_NAMESPACE,
       namespace: name
     })
   }
@@ -33,17 +29,12 @@ export function updateNamespace(namespace, key, value) {
 }
 
 export function removeNamespace(namespace) {
-  return dispatch => {
-    dispatch({
-      type: SELECT_NAMESPACE,
-      namespace: null
-    })
-
-    dispatch({
+  return confirm({
       type: REMOVE_NAMESPACE,
       namespace: namespace
-    })
-  }
+    },
+    `You are about to remove the ${namespace} namespace.`
+  )
 }
 
 export function addBucket(namespace, name) {
@@ -69,11 +60,11 @@ export function updateBucket(namespace, bucket, key, value) {
 }
 
 export function removeBucket(namespace, bucket) {
-  return dispatch => {
-    dispatch({
+  return confirm({
       type: REMOVE_BUCKET,
       namespace: namespace,
       bucket: bucket
-    })
-  }
+    },
+    `You are about to remove the ${namespace}.${bucket} bucket.`
+  )
 }
