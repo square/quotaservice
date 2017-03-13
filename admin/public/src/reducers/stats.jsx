@@ -1,3 +1,5 @@
+import Immutable from 'seamless-immutable'
+
 import { SELECT_NAMESPACE } from '../actions/namespaces.jsx'
 import { CONFIGS_REQUEST } from '../actions/configs.jsx'
 
@@ -8,8 +10,6 @@ import {
 } from '../actions/stats.jsx'
 
 const INITIAL_STATS = { show: false }
-
-import Immutable from 'seamless-immutable'
 
 export function stats(state = INITIAL_STATS, action) {
   switch (action.type) {

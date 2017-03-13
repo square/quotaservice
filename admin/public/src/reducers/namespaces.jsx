@@ -65,7 +65,7 @@ function addBucket(state, action) {
   return Object.assign({}, state, {
     change: {
       type: ADD_BUCKET,
-      key: `${action.namespace}.${action.bucket}`
+      key: `${action.namespace}.${bucketKey || action.bucket}`
     },
     items: state.items.setIn(
       [action.namespace, ...bucketPath],
