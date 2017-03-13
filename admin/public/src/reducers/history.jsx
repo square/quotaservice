@@ -1,6 +1,6 @@
 import Immutable from 'seamless-immutable'
 
-import { UNDO, REDO, CANCEL_COMMIT, COMMIT, CLEAR } from '../actions/history.jsx'
+import { UNDO, REDO } from '../actions/history.jsx'
 import * as MutableActions from '../actions/mutable.jsx'
 
 export const INITIAL_HISTORY = {
@@ -47,16 +47,6 @@ function redo(state) {
       future: future.slice(0, future.length - 1)
     }
   })
-}
-
-function commit(state) {
-  return Object.assign({}, state, { commit: true })
-}
-
-function cancelCommit(state) {
-  const newState = Object.assign({}, state)
-  delete newState.commit
-  return newState
 }
 
 function changesMergeable(previous, current) {
@@ -109,12 +99,6 @@ export function history(reducer) {
         return undo(state)
       case REDO:
         return redo(state)
-      case COMMIT:
-        return commit(state)
-      case CANCEL_COMMIT:
-        return cancelCommit(state)
-      case CLEAR:
-        return INITIAL_HISTORY
       default:
         return reduce(reducer, state, action)
     }

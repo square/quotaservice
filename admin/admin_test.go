@@ -6,11 +6,49 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/maniksurtani/quotaservice/config"
 )
+
+func TestNamespacesPostBadVersion(t *testing.T) {
+	a := NewMockAdministrable()
+	a.Configs().Version = 10
+
+	apiHandler := apiVersionHandler(a, http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			writeJSONOk(w)
+		}),
+	)
+
+	ts := httptest.NewServer(apiHandler)
+	defer ts.Close()
+
+	client := &http.Client{}
+	request, err := http.NewRequest("POST", ts.URL, strings.NewReader(""))
+	request.Header.Set("Version", "3")
+	res, err := client.Do(request)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jsonResponse := make(map[string]string)
+	err = unmarshalJSON(res.Body, &jsonResponse)
+	res.Body.Close()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if jsonResponse["error"] != "Conflict" {
+		t.Errorf("Expected 409 Conflict, but received \"%+v\"", jsonResponse)
+	}
+}
 
 func TestUnmarshalBucketConfig(t *testing.T) {
 	c := config.NewDefaultBucketConfig("Blah 123")

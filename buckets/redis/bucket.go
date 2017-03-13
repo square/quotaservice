@@ -67,6 +67,9 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	if bf.client == nil {
 		bf.connectToRedisLocked()
 	}
+
+	// Clean out all buckets, start afresh.
+	bf.client.FlushDb()
 }
 
 func (bf *bucketFactory) connectToRedisLocked() {
@@ -166,18 +169,6 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 	}
 
 	return waitTime, true
-}
-
-func toInt64(s interface{}, defaultValue int64) int64 {
-	if s != nil {
-		v, err := strconv.ParseInt(s.(string), 10, 64)
-		if err != nil {
-			logging.Printf("Cannot convert '%v' to int64", s)
-			return defaultValue
-		}
-		return v
-	}
-	return defaultValue
 }
 
 func (b *redisBucket) Config() *pbconfig.BucketConfig {

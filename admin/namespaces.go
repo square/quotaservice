@@ -32,6 +32,11 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			writeJSONError(w, err)
 		}
 	case "DELETE":
+		if ns == "" {
+			writeJSONError(w, &HttpError{"", http.StatusNotFound})
+			return
+		}
+
 		err := a.a.DeleteNamespace(ns, user)
 
 		if err != nil {
@@ -40,14 +45,19 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			writeJSONOk(w)
 		}
 	case "PUT":
-		changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
+		if ns == "" {
+			writeJSONError(w, &HttpError{"", http.StatusNotFound})
+			return
+		}
+
+		changeNamespace(w, r, ns, func(c *pb.NamespaceConfig) error {
 			return a.a.UpdateNamespace(c, user)
 		})
 	case "POST":
 		if ns == "" {
 			updateConfig(a, w, r)
 		} else {
-			changeNamespace(w, r, func(c *pb.NamespaceConfig) error {
+			changeNamespace(w, r, ns, func(c *pb.NamespaceConfig) error {
 				return a.a.AddNamespace(c, user)
 			})
 		}
@@ -88,20 +98,20 @@ func updateConfig(a *namespacesAPIHandler, w http.ResponseWriter, r *http.Reques
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
 	} else {
-		err := writeNamespace(a, w, "")
-
-		if err != nil {
-			writeJSONError(w, err)
-		}
+		writeJSONOk(w)
 	}
 }
 
-func changeNamespace(w http.ResponseWriter, r *http.Request, updater func(*pb.NamespaceConfig) error) {
+func changeNamespace(w http.ResponseWriter, r *http.Request, namespace string, updater func(*pb.NamespaceConfig) error) {
 	c, e := getNamespaceConfig(r.Body)
 
 	if e != nil {
 		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
 		return
+	}
+
+	if c.Name == "" {
+		c.Name = namespace
 	}
 
 	e = updater(c)

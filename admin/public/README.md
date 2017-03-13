@@ -5,12 +5,11 @@
 
 #### How?
 
-
 For development, as long as your QuotaService is running the admin API at port 8080, you can use the following.
 
 ```
 $ nvm use
-Now using node v6.3.1 (npm v3.10.3)
+Now using node v6.9.5 (npm v3.10.10)
 $ npm install
 ...
 $ npm run start
@@ -30,6 +29,8 @@ For code linting:
 $ npm run lint
 ```
 
-#### TODO
+For testing:
 
-* proper testing
+```
+$ npm run test
+```

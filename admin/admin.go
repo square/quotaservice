@@ -7,6 +7,7 @@ package admin
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -60,8 +61,14 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 	bucketsHandler := NewBucketsAPIHandler(a)
 	namespacesHandler := NewNamespacesAPIHandler(a)
 
-	apiHandler := loggingHandler(jsonResponseHandler(apiRequestHandler(
-		namespacesHandler, bucketsHandler)))
+	apiHandler := loggingHandler(
+		jsonResponseHandler(
+			apiVersionHandler(
+				a,
+				apiRequestHandler(namespacesHandler, bucketsHandler),
+			),
+		),
+	)
 
 	mux.Handle("/api", apiHandler)
 	mux.Handle("/api/", apiHandler)
@@ -102,6 +109,33 @@ func jsonResponseHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
+	})
+}
+
+func apiVersionHandler(a Administrable, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		versionHeader := r.Header.Get("Version")
+
+		if versionHeader == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		version, err := strconv.Atoi(versionHeader)
+		if err != nil {
+			writeJSONError(w, &HttpError{err.Error(), http.StatusInternalServerError})
+			return
+		}
+
+		expectedVersion := int(a.Configs().Version)
+		if version != expectedVersion {
+			writeJSONError(w, &HttpError{
+				fmt.Sprintf("The config version sent (%d) is different than the latest server version (%d). Please refresh and redo your changes.", version, expectedVersion),
+				http.StatusConflict,
+			})
+		} else {
+			next.ServeHTTP(w, r)
+		}
 	})
 }
 

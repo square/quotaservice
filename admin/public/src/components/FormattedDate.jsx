@@ -4,8 +4,8 @@ export function formatDate(date) {
 
   let parsedDate = new Date(date * 1000)
   return `
-    ${padZero(parsedDate.getUTCHours())}:${padZero(parsedDate.getUTCMinutes())} \
-    ${padZero(parsedDate.getUTCMonth() + 1)}/${padZero(parsedDate.getUTCDate())}/${padZero(parsedDate.getUTCFullYear())} \
+    ${padZero(parsedDate.getUTCHours())}:${padZero(parsedDate.getUTCMinutes())}
+    ${padZero(parsedDate.getUTCMonth() + 1)}/${padZero(parsedDate.getUTCDate())}/${padZero(parsedDate.getUTCFullYear())}
     UTC
   `
 }

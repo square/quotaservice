@@ -7,6 +7,7 @@ case "$TEST" in
     cd admin/public/
     npm install
     npm run lint
+    npm run test
     npm run dist
     ;;
   *)
