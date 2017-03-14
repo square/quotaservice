@@ -2,7 +2,8 @@
   border: 1px solid lightgrey;
   background-color: white;
 
-  max-height: 25%;
+  /* 27px per config (* 5) - 1px for the last border */
+  max-height: 134px;
   overflow-x: hidden;
   overflow-y: auto;
 }
