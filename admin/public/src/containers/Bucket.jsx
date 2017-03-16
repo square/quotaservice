@@ -28,31 +28,37 @@ export default class Bucket extends Component {
         parent={bucket.name}
         value={bucket.size}
         handleChange={this.handleChange}
+        title="Maximum number of tokens in a bucket."
         placeholder="100" />
       <Field keyName="fill_rate"
         parent={bucket.name}
         value={bucket.fill_rate}
         handleChange={this.handleChange}
+        title="Token fill rate per second."
         placeholder="50" />
       <Field keyName="wait_timeout_millis"
         parent={bucket.name}
         value={bucket.wait_timeout_millis}
         handleChange={this.handleChange}
+        title="Maximum time a request can wait for future tokens (milliseconds)."
         placeholder="1000" />
       <Field keyName="max_idle_millis"
         parent={bucket.name}
         value={bucket.max_idle_millis}
         handleChange={this.handleChange}
+        title="When a bucket is idle (not serving requests), amount of time before a bucket resets to the initial size (milliseconds)."
         placeholder="-1" />
       <Field keyName="max_debt_millis"
         parent={bucket.name}
         value={bucket.max_debt_millis}
         handleChange={this.handleChange}
+        title="Maximum amount of time in the future a request can pre-reserve tokens (milliseconds)."
         placeholder="10000" />
       <Field keyName="max_tokens_per_request"
         parent={bucket.name}
         value={bucket.max_tokens_per_request}
         handleChange={this.handleChange}
+        title="Maximum number of tokens allowed per request."
         placeholder="50" />
       {showDynamicStats && this.renderShowDynamicStats()}
     </div>)

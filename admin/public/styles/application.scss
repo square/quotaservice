@@ -32,6 +32,10 @@ html, body {
     justify-content: flex-end;
   }
 
+  &.flex-wrap > * {
+    margin-right: 0;
+  }
+
   &.flex-centered {
     justify-content: center;
     align-items: center;

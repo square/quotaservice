@@ -33,11 +33,11 @@ export default class Changes extends Component {
 
     return (<div>
       <div className='actions'>
-        <div className='flex-box'>
+        <div className='undo-redo'>
           <button className='btn' title='Undo last change' onClick={handleUndo} disabled={!canUndo}>Undo</button>
           <button className='btn' title='Redo last change' onClick={handleRedo} disabled={!canRedo}>Redo</button>
         </div>
-        <div className='flex-box'>
+        <div className='save-refresh'>
           <button className='btn btn-danger' title='Refresh configuration' onClick={handleRefresh}>
             Refresh
           </button>

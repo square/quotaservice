@@ -1,13 +1,21 @@
 import React, { Component, PropTypes } from 'react'
 
 export default class AddField extends Component {
+  handleSubmit = (e) => {
+    e.preventDefault()
+    this.props.handleSubmit()
+  }
+
   render() {
     const {
-      placeholder, value, handleChange,
-      submitText, handleSubmit
+      placeholder, value,
+      handleChange, submitText
     } = this.props
 
-    return (<div className="flex-container input-box flex-wrap flex-end">
+    return (<form
+      className="flex-container input-box flex-wrap flex-end"
+      onSubmit={this.handleSubmit}
+    >
       <input
         type="text"
         placeholder={placeholder}
@@ -15,8 +23,8 @@ export default class AddField extends Component {
         value={value}
         onChange={handleChange}
       />
-      <button className="btn btn-primary btn-attached" onClick={handleSubmit}>{submitText}</button>
-    </div>)
+      <button type="submit" className="btn btn-primary btn-attached">{submitText}</button>
+    </form>)
   }
 }
 

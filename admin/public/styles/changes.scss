@@ -30,27 +30,15 @@
 
 .actions {
   display: flex;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 
-  .flex-box {
-    margin-bottom: 5px;
+  > div {
+    margin-bottom: 10px;
   }
 
-  .flex-box:last-child {
-    text-align: right;
-  }
-}
-
-@media screen and (max-width: 1000px) {
-  .actions {
-    flex-direction: column;
+  .save-refresh {
+    margin-left: auto;
   }
 }
 
-@media screen and (max-width: 1300px) {
-  .flexed {
-    .actions {
-      flex-direction: column;
-    }
-  }
-}
