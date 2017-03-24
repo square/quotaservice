@@ -29,6 +29,11 @@
 
   .namespace {
     cursor: pointer;
+
+    .bucket {
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+    }
   }
 }
 

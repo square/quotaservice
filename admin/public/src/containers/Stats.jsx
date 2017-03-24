@@ -80,7 +80,7 @@ export default class Stats extends Component {
       <div className={classNames.join(' ')}>
         <input
           type="text"
-          placeholder="search dynamic bucket name"
+          placeholder="Search dynamic bucket name"
           className="flex-box"
           value={searchValue}
           onChange={this.handleSearchChange}

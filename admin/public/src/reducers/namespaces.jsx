@@ -12,7 +12,7 @@ import { CONFIGS_FETCH_SUCCESS, LOAD_CONFIG } from '../actions/configs.jsx'
 
 // These are special buckets that exist on the top-level
 // namespace object and need to be special-cased
-const BUCKET_KEY_MAP = {
+export const BUCKET_KEY_MAP = {
   '___DEFAULT_BUCKET___': 'default_bucket',
   '___DYNAMIC_BUCKET_TPL___': 'dynamic_bucket_template'
 }

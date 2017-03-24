@@ -52,6 +52,7 @@ export default class Namespace extends Component {
             keyName="max_dynamic_buckets"
             handleChange={this.handleNamespaceChange}
             value={namespace.max_dynamic_buckets}
+            title="Maximum amount of dynamic buckets allowed before requests are rejected."
           />
         </div>
         {this.renderBucket(namespace.dynamic_bucket_template, true)}

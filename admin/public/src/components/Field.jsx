@@ -41,11 +41,18 @@ export default class Field extends Component {
   }
 
   render() {
-    const { placeholder, keyName }= this.props
+    const { placeholder, title, keyName }= this.props
     const { id, value } = this.state
 
+    let keyTitle = keyName
+    if (title) {
+      keyTitle = <abbr title={title}>{keyName}</abbr>
+    }
+
     return (<div className='flex-container input-box'>
-      <label htmlFor={id} className='input-label'>{keyName}</label>
+      <label htmlFor={id} className='input-label'>
+        {keyTitle}
+      </label>
       <div className='input-field'>
         <input
           type='text'
@@ -64,5 +71,6 @@ Field.propTypes = {
   handleChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   keyName: PropTypes.string.isRequired,
-  parent: PropTypes.string.isRequired
+  parent: PropTypes.string.isRequired,
+  title: PropTypes.string
 }
