@@ -49,17 +49,17 @@ type ZkConfigPersister struct {
 	sync.RWMutex
 }
 
-type zkLogger struct{}
+// Mirrors go-zookeeper's connOption
+type connOption func(c *zk.Conn)
 
-var _ zk.Logger = &zkLogger{}
-
-func (_ *zkLogger) Printf(format string, args ...interface{}) {
-	logging.Printf(format, args...)
-}
-
-func NewZkConfigPersister(path string, servers []string) (ConfigPersister, error) {
+func NewZkConfigPersister(path string, servers []string, options ...connOption) (ConfigPersister, error) {
 	conn, _, err := zk.Connect(servers, sessionTimeout, func(c *zk.Conn) {
-		c.SetLogger(&zkLogger{})
+		c.SetLogger(logging.CurrentLogger())
+
+		// Allows overriding logger/etc. go-zookeeper options
+		for _, option := range options {
+			option(c)
+		}
 	})
 
 	if err != nil {
