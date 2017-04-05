@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 func TestNamespacesPostBadVersion(t *testing.T) {
@@ -39,8 +40,6 @@ func TestNamespacesPostBadVersion(t *testing.T) {
 
 	jsonResponse := make(map[string]string)
 	err = unmarshalJSON(res.Body, &jsonResponse)
-	res.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +62,7 @@ func TestUnmarshalBucketConfig(t *testing.T) {
 		t.Fatal("Unable to JSONify proto", e)
 	}
 
-	reRead, err := getBucketConfig(bytes.NewReader(b))
+	reRead, err := getBucketConfig(ioutil.NopCloser(bytes.NewReader(b)))
 	if err != nil {
 		t.Fatal("Unable to unmarshal JSON", err)
 	}
@@ -98,9 +97,9 @@ func TestUnmarshalNamespaceConfig(t *testing.T) {
 	c3.MaxTokensPerRequest = 987600
 	c3.Size = 500
 
-	config.AddBucket(n, c1)
-	config.AddBucket(n, c2)
-	config.AddBucket(n, c3)
+	helpers.CheckError(t, config.AddBucket(n, c1))
+	helpers.CheckError(t, config.AddBucket(n, c2))
+	helpers.CheckError(t, config.AddBucket(n, c3))
 
 	b, e := json.Marshal(n)
 	if e != nil {

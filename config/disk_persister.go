@@ -36,13 +36,14 @@ func NewDiskConfigPersister(location string) (ConfigPersister, error) {
 
 func writeFile(path string, bytes []byte) error {
 	f, e := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
-
 	if e != nil {
 		return e
 	}
 
-	f.Write(bytes)
-	return f.Close()
+	defer func() { _ = f.Close() }()
+
+	_, e = f.Write(bytes)
+	return e
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.

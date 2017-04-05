@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	t, err := zk.StartTestCluster(1, nil, nil)
 	helpers.PanicError(err)
 
-	defer t.Stop()
+	defer func() { _ = t.Stop() }()
 	servers = make([]string, 1)
 	servers[0] = fmt.Sprintf("localhost:%d", t.Servers[0].Port)
 
@@ -122,7 +122,7 @@ func TestSetAndNotify(t *testing.T) {
 	r, err := Marshal(cfg)
 	helpers.CheckError(t, err)
 
-	p.PersistAndNotify(r)
+	helpers.CheckError(t, p.PersistAndNotify(r))
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -145,7 +145,7 @@ func TestSetAndNotify(t *testing.T) {
 	r, err = Marshal(cfg)
 	helpers.CheckError(t, err)
 
-	p.PersistAndNotify(r)
+	helpers.CheckError(t, p.PersistAndNotify(r))
 
 	select {
 	case <-p.ConfigChangedWatcher():

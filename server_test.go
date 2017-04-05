@@ -18,9 +18,10 @@ func TestWithNoRpcs(t *testing.T) {
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), NewReaperConfigForTests(), &MockEndpoint{})
-	s.Start()
-	defer s.Stop()
+	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), NewReaperConfigForTests(), &MockEndpoint{}).(*server)
+	_, err := s.Start()
+	helpers.CheckError(t, err)
+	stopServer(t, s)
 }
 
 func TestUpdateConfig(t *testing.T) {
@@ -36,10 +37,11 @@ func TestUpdateConfig(t *testing.T) {
 		t.Fatal("Error when updating config", err)
 	}
 
-	p.PersistAndNotify(marshalledConfig)
+	helpers.CheckError(t, p.PersistAndNotify(marshalledConfig))
 
-	s.Start()
-	defer s.Stop()
+	_, err = s.Start()
+	helpers.CheckError(t, err)
+	defer stopServer(t, s)
 
 	newConfig := config.NewDefaultServiceConfig()
 
@@ -77,12 +79,13 @@ func TestTooManyTokensRequested(t *testing.T) {
 	nsc := config.NewDefaultNamespaceConfig("dummy")
 	bc := config.NewDefaultBucketConfig("dummy")
 	bc.MaxTokensPerRequest = 5
-	config.AddBucket(nsc, bc)
-	config.AddNamespace(cfg, nsc)
+	helpers.CheckError(t, config.AddBucket(nsc, bc))
+	helpers.CheckError(t, config.AddNamespace(cfg, nsc))
 
 	s := New(&MockBucketFactory{}, config.NewMemoryConfig(cfg), NewReaperConfigForTests(), &MockEndpoint{}).(*server)
-	s.Start()
-	defer s.Stop()
+	_, err := s.Start()
+	helpers.CheckError(t, err)
+	defer stopServer(t, s)
 
 	w, _, e := s.Allow("dummy", "dummy", 1, 0, false)
 	if e != nil {
@@ -101,4 +104,9 @@ func TestTooManyTokensRequested(t *testing.T) {
 	if e.(QuotaServiceError).Reason != ER_TOO_MANY_TOKENS_REQUESTED {
 		t.Fatalf("Expected Reason to be %v but was %v", ER_TOO_MANY_TOKENS_REQUESTED, e.(QuotaServiceError).Reason)
 	}
+}
+
+func stopServer(t *testing.T, s *server) {
+	_, err := s.Stop()
+	helpers.CheckError(t, err)
 }

@@ -132,7 +132,9 @@ func ReadConfig(yamlStream io.Reader) *pb.ServiceConfig {
 func readConfigFromBytes(bytes []byte) *pb.ServiceConfig {
 	cfg := NewDefaultServiceConfig()
 	cfg.GlobalDefaultBucket = nil
-	yaml.Unmarshal(bytes, cfg)
+	if err := yaml.Unmarshal(bytes, cfg); err != nil {
+		panic(fmt.Sprintf("Unable to read YAML. Error: %v", err))
+	}
 
 	ApplyDefaults(cfg)
 	return cfg
@@ -189,13 +191,15 @@ func FullyQualifiedName(namespace, bucketName string) string {
 
 func NewMemoryConfig(p *pb.ServiceConfig) ConfigPersister {
 	marshalled, e := Marshal(p)
-
 	if e != nil {
 		panic(e)
 	}
 
 	persister := NewMemoryConfigPersister()
-	persister.PersistAndNotify(marshalled)
+	if err := persister.PersistAndNotify(marshalled); err != nil {
+		panic(err)
+	}
+
 	return persister
 }
 

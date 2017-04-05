@@ -15,19 +15,19 @@ func TestGetDevelopment(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	err := ioutil.WriteFile("public/tempfile.html", []byte("hello"), 777)
+	err := ioutil.WriteFile("public/tempfile.html", []byte("hello"), 0777)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer os.Remove("public/tempfile.html")
-
 	body := getUrl(ts.URL+"/admin/tempfile.html", t)
 
 	if body != "hello" {
-		t.Fatalf("development did not reload and catch /admin/tempfile:\n%s", body)
+		t.Errorf("development did not reload and catch /admin/tempfile:\n%s", body)
 	}
+
+	_ = os.Remove("public/tempfile.html")
 }
 
 func TestGet(t *testing.T) {
@@ -62,8 +62,7 @@ func getUrl(url string, t *testing.T) string {
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-
+	_ = res.Body.Close()
 	if err != nil {
 		t.Fatal(err)
 	}

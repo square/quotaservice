@@ -10,6 +10,7 @@ import (
 
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 )
@@ -22,8 +23,9 @@ var benchmarkCfg = func() *pbconfig.ServiceConfig {
 	ns := config.NewDefaultNamespaceConfig("y")
 	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DefaultBucketName)
 	ns.MaxDynamicBuckets = 0
-	config.AddBucket(ns, config.NewDefaultBucketConfig("y"))
-	config.AddNamespace(c, ns)
+
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("y")))
+	helpers.PanicError(config.AddNamespace(c, ns))
 
 	return c
 }()

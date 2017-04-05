@@ -59,8 +59,6 @@ func doConfigsRequest(t *testing.T, a Administrable, object interface{}, method,
 	}
 
 	err = unmarshalJSON(res.Body, &object)
-	res.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}

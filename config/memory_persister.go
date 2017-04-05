@@ -17,7 +17,7 @@ type MemoryConfigPersister struct {
 
 func NewMemoryConfigPersister() ConfigPersister {
 	p := &MemoryConfigPersister{
-		configs: make(map[string][]byte),
+		configs:  make(map[string][]byte),
 		Notifier: NewNotifier()}
 
 	p.Notify()
@@ -27,7 +27,6 @@ func NewMemoryConfigPersister() ConfigPersister {
 // PersistAndNotify persists a marshalled configuration passed in.
 func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 	b, err := ioutil.ReadAll(marshalledConfig)
-
 	if err != nil {
 		return err
 	}

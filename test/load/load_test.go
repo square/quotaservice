@@ -22,7 +22,7 @@ func BenchmarkQuotaRequests(b *testing.B) {
 	if err != nil {
 		grpclog.Fatalf("fail to dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := pb.NewQuotaServiceClient(conn)
 
@@ -35,7 +35,9 @@ func BenchmarkQuotaRequests(b *testing.B) {
 	b.RunParallel(
 		func(pb *testing.PB) {
 			for pb.Next() {
-				client.Allow(context.TODO(), req)
+				if _, e := client.Allow(context.TODO(), req); e != nil {
+					panic(e)
+				}
 			}
 		})
 }

@@ -1,6 +1,11 @@
 package client
 
 import (
+	"math"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/maniksurtani/quotaservice"
 	"github.com/maniksurtani/quotaservice/buckets/memory"
 	"github.com/maniksurtani/quotaservice/config"
@@ -8,10 +13,6 @@ import (
 	qsgrpc "github.com/maniksurtani/quotaservice/rpc/grpc"
 	"github.com/maniksurtani/quotaservice/test/helpers"
 	"google.golang.org/grpc"
-	"math"
-	"os"
-	"testing"
-	"time"
 )
 
 const target = "localhost:10990"
@@ -21,7 +22,7 @@ var server quotaservice.Server
 func TestMain(m *testing.M) {
 	setUp()
 	r := m.Run()
-	server.Stop()
+	_, _ = server.Stop()
 	os.Exit(r)
 }
 
@@ -33,14 +34,18 @@ func setUp() {
 	bc := config.NewDefaultBucketConfig("delaying")
 	bc.Size = 1 // Very small.
 	bc.FillRate = 100
-	config.AddBucket(nsc, bc)
-	config.AddNamespace(cfg, nsc)
+
+	helpers.PanicError(config.AddBucket(nsc, bc))
+	helpers.PanicError(config.AddNamespace(cfg, nsc))
 
 	server = quotaservice.New(memory.NewBucketFactory(),
 		config.NewMemoryConfig(cfg),
 		quotaservice.NewReaperConfigForTests(),
 		qsgrpc.New(target))
-	server.Start()
+
+	if _, err := server.Start(); err != nil {
+		helpers.PanicError(err)
+	}
 }
 
 func TestClient(t *testing.T) {

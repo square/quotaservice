@@ -112,8 +112,6 @@ func doNamespacesRequest(t *testing.T, a Administrable, object interface{}, meth
 	}
 
 	err = unmarshalJSON(res.Body, &object)
-	res.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}
