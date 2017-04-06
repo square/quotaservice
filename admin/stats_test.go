@@ -96,7 +96,7 @@ func TestStatsGetBucket(t *testing.T) {
 }
 
 func doStatsRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
-	apiHandler := NewStatsAPIHandler(a)
+	apiHandler := newStatsAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()
 

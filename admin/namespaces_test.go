@@ -99,7 +99,7 @@ func TestNamespacesDelete(t *testing.T) {
 }
 
 func doNamespacesRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
-	apiHandler := NewNamespacesAPIHandler(a)
+	apiHandler := newNamespacesAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()
 

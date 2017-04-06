@@ -17,7 +17,8 @@ type memoryListener struct {
 	namespaces map[string]*namespaceStats
 }
 
-func NewMemoryStatsListener() *memoryListener {
+// NewMemoryStatsListener creates an in-memory stats listener.
+func NewMemoryStatsListener() Listener {
 	return &memoryListener{make(map[string]*namespaceStats)}
 }
 

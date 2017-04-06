@@ -314,7 +314,7 @@ func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
 		return nil, err
 	}
 
-	unmarshalledConfigs := make(SortedConfigs, len(configs))
+	unmarshalledConfigs := make(sortedConfigs, len(configs))
 
 	for i, newConfig := range configs {
 		unmarshalledConfig, err := config.Unmarshal(newConfig)

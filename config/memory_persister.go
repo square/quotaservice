@@ -47,7 +47,7 @@ func (m *MemoryConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
 func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
-	readers := make([]io.Reader, 0)
+	var readers []io.Reader
 
 	for _, v := range m.configs {
 		readers = append(readers, bytes.NewReader(v))

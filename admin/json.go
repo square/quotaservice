@@ -12,7 +12,7 @@ import (
 	"github.com/maniksurtani/quotaservice/logging"
 )
 
-var emptyJsonResponse []byte
+var emptyJSONResponse []byte
 
 func init() {
 	b, e := json.Marshal(make(map[string]string))
@@ -21,10 +21,10 @@ func init() {
 		logging.Fatalf("Error setting up empty JSON response! %+v", e)
 	}
 
-	emptyJsonResponse = b
+	emptyJSONResponse = b
 }
 
-func writeJSONError(w http.ResponseWriter, err *HttpError) {
+func writeJSONError(w http.ResponseWriter, err *httpError) {
 	response := make(map[string]string)
 	response["error"] = http.StatusText(err.status)
 	response["description"] = err.message
@@ -36,7 +36,7 @@ func writeJSONError(w http.ResponseWriter, err *HttpError) {
 }
 
 func writeJSONOk(w http.ResponseWriter) {
-	if _, e := w.Write(emptyJsonResponse); e != nil {
+	if _, e := w.Write(emptyJSONResponse); e != nil {
 		logging.Printf("Error writing JSON! %+v", e)
 	}
 }
@@ -45,7 +45,7 @@ func writeJSON(w http.ResponseWriter, object interface{}) {
 	b, e := json.Marshal(object)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusBadRequest})
+		writeJSONError(w, &httpError{e.Error(), http.StatusBadRequest})
 		return
 	}
 

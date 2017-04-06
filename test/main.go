@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	ADMIN_SERVER = "localhost:8080"
-	GRPC_SERVER  = "localhost:10990"
+	adminServer = "localhost:8080"
+	gRPCServer  = "localhost:10990"
 )
 
 func main() {
@@ -43,17 +43,17 @@ func main() {
 	server := quotaservice.New(memory.NewBucketFactory(),
 		config.NewMemoryConfig(cfg),
 		config.NewReaperConfig(),
-		grpc.New(GRPC_SERVER))
+		grpc.New(gRPCServer))
 	server.SetStatsListener(stats.NewMemoryStatsListener())
 	if _, e := server.Start(); e != nil {
 		panic(e)
 	}
 
 	// Serve Admin Console
-	logging.Printf("Starting admin server on %v\n", ADMIN_SERVER)
+	logging.Printf("Starting admin server on %v\n", adminServer)
 	sm := http.NewServeMux()
 	server.ServeAdminConsole(sm, "admin/public", true)
-	go func() { _ = http.ListenAndServe(ADMIN_SERVER, sm) }()
+	go func() { _ = http.ListenAndServe(adminServer, sm) }()
 
 	// Block until SIGTERM or SIGINT
 	sigs := make(chan os.Signal, 1)

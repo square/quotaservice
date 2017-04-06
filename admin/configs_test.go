@@ -46,7 +46,7 @@ func TestConfigsPut(t *testing.T) {
 }
 
 func doConfigsRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
-	apiHandler := NewConfigsAPIHandler(a)
+	apiHandler := newConfigsAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()
 

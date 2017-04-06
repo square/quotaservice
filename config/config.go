@@ -1,7 +1,7 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-// Package implements configs for the quotaservice
+// Package config implements configs for the quotaservice
 package config
 
 import (
@@ -23,7 +23,7 @@ const (
 	GlobalNamespace           = "___GLOBAL___"
 	DefaultBucketName         = "___DEFAULT_BUCKET___"
 	DynamicBucketTemplateName = "___DYNAMIC_BUCKET_TPL___"
-	initial_version           = 0
+	initialVersion            = 0
 )
 
 func ApplyDefaults(sc *pb.ServiceConfig) {
@@ -146,7 +146,7 @@ func NewDefaultServiceConfig() *pb.ServiceConfig {
 		Namespaces:          make(map[string]*pb.NamespaceConfig),
 		User:                "quotaservice",
 		Date:                time.Now().Unix(),
-		Version:             initial_version}
+		Version:             initialVersion}
 }
 
 func NewDefaultNamespaceConfig(name string) *pb.NamespaceConfig {

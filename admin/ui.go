@@ -22,7 +22,7 @@ type uiHandler struct {
 	development     bool
 }
 
-func NewUIHandler(admin Administrable, assetsDirectory string, development bool) (u *uiHandler) {
+func newUIHandler(admin Administrable, assetsDirectory string, development bool) (u *uiHandler) {
 	h := &uiHandler{
 		a:               admin,
 		assetsDirectory: assetsDirectory,

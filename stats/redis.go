@@ -17,7 +17,9 @@ type redisListener struct {
 	client *redis.Client
 }
 
-func NewRedisStatsListener(redisOpts *redis.Options) *redisListener {
+// NewRedisStatsListener creates a redis-backed stats
+// listener with the passed in redis.Options.
+func NewRedisStatsListener(redisOpts *redis.Options) Listener {
 	client := redis.NewClient(redisOpts)
 	_, err := client.Ping().Result()
 

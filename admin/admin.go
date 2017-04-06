@@ -1,7 +1,7 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-// Package implements admin UIs and a REST API
+// Package admin implements admin UIs and a REST API
 package admin
 
 import (
@@ -15,15 +15,15 @@ import (
 )
 
 const (
-	LogPattern = "%s - - [%s] \"%s\" %d %d %f\n"
+	logPattern = "%s - - [%s] \"%s\" %d %d %f\n"
 )
 
-type HttpError struct {
+type httpError struct {
 	message string
 	status  int
 }
 
-type ResponseWrapper struct {
+type responseWrapper struct {
 	http.ResponseWriter
 
 	ip            string
@@ -50,7 +50,7 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 		logging.Printf(msg, assetsDirectory)
 
 		mux.Handle("/", loggingHandler(http.RedirectHandler("/admin/", 301)))
-		mux.Handle("/admin/", loggingHandler(NewUIHandler(a, assetsDirectory, development)))
+		mux.Handle("/admin/", loggingHandler(newUIHandler(a, assetsDirectory, development)))
 		mux.Handle("/js/", loggingHandler(http.FileServer(http.Dir(assetsDirectory))))
 		mux.Handle("/favicon.ico", http.NotFoundHandler())
 	} else {
@@ -58,8 +58,8 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 		mux.Handle("/", loggingHandler(http.NotFoundHandler()))
 	}
 
-	bucketsHandler := NewBucketsAPIHandler(a)
-	namespacesHandler := NewNamespacesAPIHandler(a)
+	bucketsHandler := newBucketsAPIHandler(a)
+	namespacesHandler := newNamespacesAPIHandler(a)
 
 	apiHandler := loggingHandler(
 		jsonResponseHandler(
@@ -73,34 +73,34 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 	mux.Handle("/api", apiHandler)
 	mux.Handle("/api/", apiHandler)
 
-	statsHandler := loggingHandler(jsonResponseHandler(NewStatsAPIHandler(a)))
+	statsHandler := loggingHandler(jsonResponseHandler(newStatsAPIHandler(a)))
 	mux.Handle("/api/stats", statsHandler)
 	mux.Handle("/api/stats/", statsHandler)
 
-	configsHandler := loggingHandler(jsonResponseHandler(NewConfigsAPIHandler(a)))
+	configsHandler := loggingHandler(jsonResponseHandler(newConfigsAPIHandler(a)))
 	mux.Handle("/api/configs", configsHandler)
 	mux.Handle("/api/configs/", configsHandler)
 }
 
-func (r *ResponseWrapper) Write(p []byte) (int, error) {
+func (r *responseWrapper) Write(p []byte) (int, error) {
 	bytes, err := r.ResponseWriter.Write(p)
 	r.responseBytes += int64(bytes)
 	return bytes, err
 }
 
-func (r *ResponseWrapper) Header() http.Header {
+func (r *responseWrapper) Header() http.Header {
 	return r.ResponseWriter.Header()
 }
 
-func (r *ResponseWrapper) WriteHeader(status int) {
+func (r *responseWrapper) WriteHeader(status int) {
 	r.status = status
 	r.ResponseWriter.WriteHeader(status)
 }
 
-func (r *ResponseWrapper) log() {
+func (r *responseWrapper) log() {
 	timeFormatted := r.time.Format("02/Jan/2006 03:04:05")
 	requestLine := fmt.Sprintf("%s %s %s", r.method, r.uri, r.protocol)
-	logging.Printf(LogPattern,
+	logging.Printf(logPattern,
 		r.ip, timeFormatted, requestLine, r.status, r.responseBytes,
 		r.elapsedTime.Seconds())
 }
@@ -123,13 +123,13 @@ func apiVersionHandler(a Administrable, next http.Handler) http.Handler {
 
 		version, err := strconv.Atoi(versionHeader)
 		if err != nil {
-			writeJSONError(w, &HttpError{err.Error(), http.StatusInternalServerError})
+			writeJSONError(w, &httpError{err.Error(), http.StatusInternalServerError})
 			return
 		}
 
 		expectedVersion := int(a.Configs().Version)
 		if version != expectedVersion {
-			writeJSONError(w, &HttpError{
+			writeJSONError(w, &httpError{
 				fmt.Sprintf("The config version sent (%d) is different than the latest server version (%d). Please refresh and redo your changes.", version, expectedVersion),
 				http.StatusConflict,
 			})
@@ -159,7 +159,7 @@ func loggingHandler(next http.Handler) http.Handler {
 			clientIP = clientIP[:colon]
 		}
 
-		response := &ResponseWrapper{
+		response := &responseWrapper{
 			ResponseWriter: w,
 			ip:             clientIP,
 			time:           time.Time{},
