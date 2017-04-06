@@ -7,10 +7,11 @@ case "$TEST" in
     cd admin/public/
     npm install
     npm run lint
+    npm run clean-dist
     npm run test
-    npm run dist
     ;;
   *)
+    go vet $(go list ./... | grep -v /vendor/)
     go test -race -v ./...
     ;;
 esac

@@ -62,7 +62,7 @@ func TestUnmarshalBucketConfig(t *testing.T) {
 		t.Fatal("Unable to JSONify proto", e)
 	}
 
-	reRead, err := getBucketConfig(ioutil.NopCloser(bytes.NewReader(b)))
+	reRead, err := getBucketConfig(bytes.NewReader(b))
 	if err != nil {
 		t.Fatal("Unable to unmarshal JSON", err)
 	}

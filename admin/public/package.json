@@ -6,7 +6,8 @@
     "lint": "eslint 'src/**'",
     "start": "node server.js",
     "test": "jest",
-    "dist": "webpack --config webpack.config.production.js --progress --profile --colors"
+    "dist": "webpack --config webpack.config.production.js --progress --profile --colors",
+    "clean-dist": "webpack --config webpack.config.production.js"
   },
   "repository": {
     "type": "git",
