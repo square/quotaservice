@@ -90,6 +90,11 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	bf.mu.Lock()
 	defer bf.mu.Unlock()
 
+	// Always close connections on errors to prevent results leaking.
+	if err := bf.client.Close(); unknownCloseError(err) {
+		logging.Printf("Received error on redis client close: %+v", err)
+	}
+
 	if oldClient == bf.client {
 		bf.connectToRedisLocked()
 	}
@@ -127,6 +132,10 @@ func toRedisKey(namespace, bucketName, suffix string) string {
 	return namespace + ":" + bucketName + ":" + suffix
 }
 
+func unknownCloseError(err error) bool {
+	return err != nil && err.Error() != "redis: client is closed"
+}
+
 func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 	args := []interface{}{currentTimeNanos, b.nanosBetweenTokens, b.maxTokensToAccumulate,
@@ -143,18 +152,12 @@ func (b *redisBucket) Take(requested int64, maxWaitTime time.Duration) (time.Dur
 			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
 			keepTrying = false
 		default:
-			// Always close connections on errors to prevent results leaking.
-			if err := b.factory.client.Close(); err != nil {
-				logging.Printf("Received error on redis client close: %+v", err)
-			}
-
-			if res.Err() != nil && res.Err().Error() == "redis: client is closed" {
-				b.factory.reconnectToRedis(client)
-			} else {
+			if unknownCloseError(res.Err()) {
 				logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 					waitTimeNanos, waitTimeNanos, res)
-				b.factory.reconnectToRedis(client)
 			}
+
+			b.factory.reconnectToRedis(client)
 		}
 	}
 
