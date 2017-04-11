@@ -1,7 +1,7 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-// Package implements configs for the quotaservice
+// Package config implements configs for the quotaservice
 package config
 
 import (
@@ -23,7 +23,7 @@ const (
 	GlobalNamespace           = "___GLOBAL___"
 	DefaultBucketName         = "___DEFAULT_BUCKET___"
 	DynamicBucketTemplateName = "___DYNAMIC_BUCKET_TPL___"
-	initial_version           = 0
+	initialVersion            = 0
 )
 
 func ApplyDefaults(sc *pb.ServiceConfig) {
@@ -132,7 +132,9 @@ func ReadConfig(yamlStream io.Reader) *pb.ServiceConfig {
 func readConfigFromBytes(bytes []byte) *pb.ServiceConfig {
 	cfg := NewDefaultServiceConfig()
 	cfg.GlobalDefaultBucket = nil
-	yaml.Unmarshal(bytes, cfg)
+	if err := yaml.Unmarshal(bytes, cfg); err != nil {
+		panic(fmt.Sprintf("Unable to read YAML. Error: %v", err))
+	}
 
 	ApplyDefaults(cfg)
 	return cfg
@@ -144,7 +146,7 @@ func NewDefaultServiceConfig() *pb.ServiceConfig {
 		Namespaces:          make(map[string]*pb.NamespaceConfig),
 		User:                "quotaservice",
 		Date:                time.Now().Unix(),
-		Version:             initial_version}
+		Version:             initialVersion}
 }
 
 func NewDefaultNamespaceConfig(name string) *pb.NamespaceConfig {
@@ -189,13 +191,15 @@ func FullyQualifiedName(namespace, bucketName string) string {
 
 func NewMemoryConfig(p *pb.ServiceConfig) ConfigPersister {
 	marshalled, e := Marshal(p)
-
 	if e != nil {
 		panic(e)
 	}
 
 	persister := NewMemoryConfigPersister()
-	persister.PersistAndNotify(marshalled)
+	if err := persister.PersistAndNotify(marshalled); err != nil {
+		panic(err)
+	}
+
 	return persister
 }
 

@@ -32,7 +32,7 @@ func TestDiskPersistence(t *testing.T) {
 		MaxDynamicBuckets: 123}
 
 	SetDynamicBucketTemplate(nc, &pbconfig.BucketConfig{})
-	AddNamespace(s, nc)
+	helpers.CheckError(t, AddNamespace(s, nc))
 
 	// Store s.
 	r, e := Marshal(s)

@@ -16,7 +16,7 @@ type bucketsAPIHandler struct {
 	a Administrable
 }
 
-func NewBucketsAPIHandler(admin Administrable) (a *bucketsAPIHandler) {
+func newBucketsAPIHandler(admin Administrable) (a *bucketsAPIHandler) {
 	return &bucketsAPIHandler{a: admin}
 }
 
@@ -36,7 +36,7 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err := a.a.DeleteBucket(namespace, bucket, user)
 
 		if err != nil {
-			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
+			writeJSONError(w, &httpError{err.Error(), http.StatusBadRequest})
 		} else {
 			writeJSONOk(w)
 		}
@@ -49,7 +49,7 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return a.a.AddBucket(namespace, c, user)
 		})
 	default:
-		writeJSONError(w, &HttpError{"Unknown method " + r.Method, http.StatusBadRequest})
+		writeJSONError(w, &httpError{"Unknown method " + r.Method, http.StatusBadRequest})
 	}
 }
 
@@ -57,7 +57,7 @@ func changeBucket(w http.ResponseWriter, r *http.Request, bucket string, updater
 	c, e := getBucketConfig(r.Body)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 		return
 	}
 
@@ -68,7 +68,7 @@ func changeBucket(w http.ResponseWriter, r *http.Request, bucket string, updater
 	e = updater(c)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 	} else {
 		writeJSONOk(w)
 	}
@@ -81,22 +81,22 @@ func getBucketConfig(r io.Reader) (*pb.BucketConfig, error) {
 	return c, err
 }
 
-func writeBucket(a *bucketsAPIHandler, w http.ResponseWriter, namespace, bucket string) *HttpError {
+func writeBucket(a *bucketsAPIHandler, w http.ResponseWriter, namespace, bucket string) *httpError {
 	namespaceConfig, exists := a.a.Configs().Namespaces[namespace]
 
 	if !exists {
-		return &HttpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
+		return &httpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
 	}
 
 	if bucket == "" {
 		// this shouldn't really be possible
-		return &HttpError{"No bucket given", http.StatusNotFound}
+		return &httpError{"No bucket given", http.StatusNotFound}
 	}
 
 	bucketConfig, exists := namespaceConfig.Buckets[bucket]
 
 	if !exists {
-		return &HttpError{"Unable to locate bucket " + bucket + " in namespace " + namespace, http.StatusNotFound}
+		return &httpError{"Unable to locate bucket " + bucket + " in namespace " + namespace, http.StatusNotFound}
 	}
 
 	writeJSON(w, bucketConfig)

@@ -108,7 +108,7 @@ func TestBucketsDelete(t *testing.T) {
 }
 
 func doBucketsRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
-	apiHandler := NewBucketsAPIHandler(a)
+	apiHandler := newBucketsAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()
 
@@ -121,8 +121,6 @@ func doBucketsRequest(t *testing.T, a Administrable, object interface{}, method,
 	}
 
 	err = unmarshalJSON(res.Body, &object)
-	res.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}

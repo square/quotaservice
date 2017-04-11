@@ -44,14 +44,17 @@ func (g *GrpcEndpoint) Start() {
 	lis, err := net.Listen("tcp", g.hostport)
 	if err != nil {
 		logging.Fatalf("Cannot start server on port %v. Error %v", g.hostport, err)
-		panic(fmt.Sprintf("Cannot start server on port %v. Error %v", g.hostport, err))
 	}
 
 	grpclog.SetLogger(logging.CurrentLogger())
 	g.grpcServer = grpc.NewServer()
 	// Each service should be registered
 	pb.RegisterQuotaServiceServer(g.grpcServer, g)
-	go g.grpcServer.Serve(lis)
+	go func() {
+		if e := g.grpcServer.Serve(lis); e != nil {
+			logging.Fatalf("Cannot start gRPC server. Error %v", e)
+		}
+	}()
 	g.currentStatus = lifecycle.Started
 	logging.Printf("Starting server on %v", g.hostport)
 	logging.Printf("Server status: %v", g.currentStatus)

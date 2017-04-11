@@ -10,6 +10,7 @@ import (
 
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/events"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 var s Server
@@ -34,7 +35,7 @@ func setUp() {
 	tpl.MaxIdleMillis = -1
 	config.SetDynamicBucketTemplate(ns, tpl)
 	ns.MaxDynamicBuckets = 2
-	config.AddNamespace(cfg, ns)
+	helpers.PanicError(config.AddNamespace(cfg, ns))
 
 	// Namespace "dyn_gc"
 	ns = config.NewDefaultNamespaceConfig("dyn_gc")
@@ -43,14 +44,14 @@ func setUp() {
 	tpl.MaxIdleMillis = 100
 	config.SetDynamicBucketTemplate(ns, tpl)
 	ns.MaxDynamicBuckets = 3
-	config.AddNamespace(cfg, ns)
+	helpers.PanicError(config.AddNamespace(cfg, ns))
 
 	// Namespace "nodyn"
 	ns = config.NewDefaultNamespaceConfig("nodyn")
 	b := config.NewDefaultBucketConfig("b")
 	b.MaxTokensPerRequest = 10
-	config.AddBucket(ns, b)
-	config.AddNamespace(cfg, ns)
+	helpers.PanicError(config.AddBucket(ns, b))
+	helpers.PanicError(config.AddNamespace(cfg, ns))
 
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
@@ -60,7 +61,9 @@ func setUp() {
 	s.SetListener(func(e events.Event) {
 		ecLocal <- e
 	}, 100)
-	s.Start()
+	if _, e := s.Start(); e != nil {
+		helpers.PanicError(e)
+	}
 	qs = me.QuotaService
 	// EVENTS_BUCKET_CREATED event
 	eventsChan = ecLocal
@@ -68,54 +71,78 @@ func setUp() {
 }
 
 func TestTokens(t *testing.T) {
-	qs.Allow("nodyn", "b", 1, 0, false)
+	if _, _, e := qs.Allow("nodyn", "b", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyTokens(t *testing.T) {
-	qs.Allow("nodyn", "b", 100, 0, false)
+	if _, _, e := qs.Allow("nodyn", "b", 100, 0, false); e == nil {
+		t.Fatal("Expecting error \"Too many tokens requested.\"")
+	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOO_MANY_TOKENS_REQUESTED, 100, 0, <-eventsChan, t)
 }
 
 func TestTimeout(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
-	qs.Allow("nodyn", "b", 1, 1, false)
+	if _, _, e := qs.Allow("nodyn", "b", 1, 1, false); e == nil {
+		t.Fatal("Expecting error \"Timed out waiting\"")
+	}
 	checkEvent("nodyn", "b", false, events.EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestWithWait(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
-	qs.Allow("nodyn", "b", 1, 10, false)
+	if _, _, e := qs.Allow("nodyn", "b", 1, 10, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-eventsChan, t)
 	mbf.SetWaitTime("nodyn", "b", 0)
 }
 
 func TestNoSuchBucket(t *testing.T) {
-	qs.Allow("nodyn", "x", 1, 0, false)
+	if _, _, e := qs.Allow("nodyn", "x", 1, 0, false); e == nil {
+		t.Fatal("Expecting error \"No such bucket\"")
+	}
 	checkEvent("nodyn", "x", false, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestNewDynBucket(t *testing.T) {
-	qs.Allow("dyn", "b", 1, 0, false)
+	if _, _, e := qs.Allow("dyn", "b", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
 	checkEvent("dyn", "b", true, events.EVENT_BUCKET_CREATED, 0, 0, <-eventsChan, t)
 	checkEvent("dyn", "b", true, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyDynBuckets(t *testing.T) {
 	n := clearBuckets("dyn")
-	qs.Allow("dyn", "c", 1, 0, false)
-	qs.Allow("dyn", "d", 1, 0, false)
+	if _, _, e := qs.Allow("dyn", "c", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
+	if _, _, e := qs.Allow("dyn", "d", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
 	clearEvents(4 + n)
 
-	qs.Allow("dyn", "e", 1, 0, false)
+	if _, _, e := qs.Allow("dyn", "e", 1, 0, false); e == nil {
+		t.Fatal("Expecting error \"Cannot create dynamic bucket\"")
+	}
 	checkEvent("dyn", "e", true, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestBucketRemoval(t *testing.T) {
-	qs.Allow("dyn_gc", "b", 1, 0, false)
-	qs.Allow("dyn_gc", "c", 1, 0, false)
-	qs.Allow("dyn_gc", "d", 1, 0, false)
+	if _, _, e := qs.Allow("dyn_gc", "b", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
+	if _, _, e := qs.Allow("dyn_gc", "c", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
+	if _, _, e := qs.Allow("dyn_gc", "d", 1, 0, false); e != nil {
+		t.Fatalf("Not expecting error %+v", e)
+	}
 	clearEvents(6)
 
 	// GC thread should run every 100ms for this namespace. Make sure it runs at least once.

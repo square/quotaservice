@@ -76,7 +76,7 @@ func doShow(gdb bool, namespace, bucket string) {
 	logf("Called show(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
 	resp := connectToServer("GET", url)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, e := ioutil.ReadAll(resp.Body)
 	kingpin.FatalIfError(e, "Error reading HTTP response")
 
@@ -86,8 +86,10 @@ func doShow(gdb bool, namespace, bucket string) {
 		logf("Writing to %v\n", *output)
 		f, err := os.Create(*output)
 		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
-		f.WriteString(string(body))
-		f.Close()
+		_, err = f.WriteString(string(body))
+		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
+		err = f.Close()
+		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
 	}
 }
 
@@ -97,7 +99,7 @@ func doAdd(gdb bool, namespace, bucket string) {
 	cfgBytes := readCfg(*addFile, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
 	resp := connectToServer("POST", url, cfgBytes)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func doRemove(gdb bool, namespace, bucket string) {
@@ -105,7 +107,7 @@ func doRemove(gdb bool, namespace, bucket string) {
 	logf("Called remove(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
 	resp := connectToServer("DELETE", url)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func doUpdate(gdb bool, namespace, bucket string) {
@@ -114,7 +116,7 @@ func doUpdate(gdb bool, namespace, bucket string) {
 	cfgBytes := readCfg(*updateFile, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
 	resp := connectToServer("PUT", url, cfgBytes)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func readCfg(f, namespace, bucket string) []byte {
@@ -207,7 +209,7 @@ func connectToServer(method, url string, data ...[]byte) *http.Response {
 	logf("Response Status: %v\n", resp.Status)
 	logf("Response Headers: %v\n", resp.Header)
 	if resp.StatusCode != 200 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		body, _ := ioutil.ReadAll(resp.Body)
 		kingpin.Fatalf("HTTP request failed with status %v and reason %v\n", resp.StatusCode, string(body))
 	}

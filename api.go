@@ -22,6 +22,7 @@ type Server interface {
 	SetStatsListener(listener stats.Listener)
 }
 
+// NewWithDefaultConfig creates a new quotaservice server with an empty in-memory config and default reaper.
 func NewWithDefaultConfig(bucketFactory BucketFactory, rpcEndpoints ...RpcEndpoint) Server {
 	return New(bucketFactory,
 		config.NewMemoryConfig(config.NewDefaultServiceConfig()),

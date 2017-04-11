@@ -23,6 +23,7 @@ type ConfigPersister interface {
 	ReadHistoricalConfigs() ([]io.Reader, error)
 }
 
+// HashConfig returns the MD5 of a config byte array.
 func HashConfig(config []byte) string {
 	return fmt.Sprintf("%x", md5.Sum(config))
 }

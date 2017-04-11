@@ -21,7 +21,7 @@ func main() {
 	if err != nil {
 		grpclog.Fatalf("fail to dial: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client := pb.NewQuotaServiceClient(conn)
 

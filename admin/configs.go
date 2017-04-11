@@ -13,7 +13,7 @@ type configsAPIHandler struct {
 	a Administrable
 }
 
-func NewConfigsAPIHandler(admin Administrable) (a *configsAPIHandler) {
+func newConfigsAPIHandler(admin Administrable) (a *configsAPIHandler) {
 	return &configsAPIHandler{a: admin}
 }
 
@@ -23,14 +23,14 @@ type configsResponse struct {
 
 func (a *configsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		writeJSONError(w, &HttpError{"Unknown method " + r.Method, http.StatusBadRequest})
+		writeJSONError(w, &httpError{"Unknown method " + r.Method, http.StatusBadRequest})
 		return
 	}
 
 	configs, err := a.a.HistoricalConfigs()
 
 	if err != nil {
-		writeJSONError(w, &HttpError{"Error reading configs " + err.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{"Error reading configs " + err.Error(), http.StatusInternalServerError})
 	} else {
 		writeJSON(w, &configsResponse{configs})
 	}

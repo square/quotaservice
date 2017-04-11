@@ -93,7 +93,7 @@ func (b *tokenBucket) calcWaitTime(requested, maxWaitTimeNanos int64) (waitTimeN
 	tna := b.tokensNextAvailableNanos
 	ac := b.accumulatedTokens
 
-	var freshTokens int64 = 0
+	var freshTokens int64
 
 	if currentTimeNanos > tna {
 		freshTokens = (currentTimeNanos - tna) / b.nanosBetweenTokens

@@ -71,13 +71,6 @@ func (d DefaultBucket) ReportActivity() {
 	// no-op
 }
 
-func (ns *namespace) exists(name string) bool {
-	ns.RLock()
-	defer ns.RUnlock()
-
-	return ns.buckets[name] != nil
-}
-
 func (ns *namespace) removeBucket(bucketName string) {
 	// Remove this bucket.
 	ns.Lock()
@@ -116,7 +109,7 @@ func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifie
 	bc.r = newReaper(bc, r)
 
 	if cfg.GlobalDefaultBucket != nil {
-		bc.createGlobalDefaultBucket(cfg.GlobalDefaultBucket)
+		_ = bc.createGlobalDefaultBucket(cfg.GlobalDefaultBucket)
 	}
 
 	for name, nsCfg := range cfg.Namespaces {
@@ -124,7 +117,7 @@ func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifie
 			nsCfg.Name = name
 		}
 
-		bc.createNamespace(nsCfg)
+		_ = bc.createNamespace(nsCfg)
 	}
 
 	return
@@ -290,7 +283,7 @@ func (bc *bucketContainer) removeBucket(namespace, bucket string) bool {
 func (bc *bucketContainer) String() string {
 	var buffer bytes.Buffer
 	if bc.defaultBucket != nil {
-		buffer.WriteString("Global default present\n\n")
+		_, _ = buffer.WriteString("Global default present\n\n")
 	}
 
 	sortedNamespaces := make([]string, len(bc.namespaces))
@@ -304,9 +297,9 @@ func (bc *bucketContainer) String() string {
 
 	for _, nsName := range sortedNamespaces {
 		ns := bc.namespaces[nsName]
-		buffer.WriteString(fmt.Sprintf(" * Namespace: %v\n", nsName))
+		_, _ = buffer.WriteString(fmt.Sprintf(" * Namespace: %v\n", nsName))
 		if ns.defaultBucket != nil {
-			buffer.WriteString("   + Default present\n")
+			_, _ = buffer.WriteString("   + Default present\n")
 		}
 
 		// Sort buckets
@@ -320,9 +313,9 @@ func (bc *bucketContainer) String() string {
 		sort.Strings(sortedBuckets)
 
 		for _, bName := range sortedBuckets {
-			buffer.WriteString(fmt.Sprintf("   + %v\n", bName))
+			_, _ = buffer.WriteString(fmt.Sprintf("   + %v\n", bName))
 		}
-		buffer.WriteString("\n")
+		_, _ = buffer.WriteString("\n")
 	}
 
 	return buffer.String()

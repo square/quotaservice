@@ -11,10 +11,6 @@ cache:
 services:
   - redis-server
 
-env:
-  global:
-    - GO15VENDOREXPERIMENT=1
-
 matrix:
   include:
     - go: 1.x
@@ -24,9 +20,6 @@ install:
   - wget http://apache.claz.org/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz
   - tar -zxf zookeeper*tar.gz
   - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
-
-before_script:
-  - go vet $(go list ./... | grep -v /vendor/)
 
 script: test/script.sh
 

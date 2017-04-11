@@ -46,7 +46,7 @@ func TestConfigsPut(t *testing.T) {
 }
 
 func doConfigsRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
-	apiHandler := NewConfigsAPIHandler(a)
+	apiHandler := newConfigsAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()
 
@@ -59,8 +59,6 @@ func doConfigsRequest(t *testing.T, a Administrable, object interface{}, method,
 	}
 
 	err = unmarshalJSON(res.Body, &object)
-	res.Body.Close()
-
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,9 +9,8 @@ import (
 	"github.com/maniksurtani/quotaservice/events"
 )
 
-// stats.Listener is an interface for
-// consuming and retrieving dynamic bucket
-// hits and misses
+// Listener is an interface for consuming
+// and retrieving dynamic bucket hits and misses
 type Listener interface {
 	TopHits(string) []*BucketScore
 	TopMisses(string) []*BucketScore
@@ -45,7 +44,7 @@ func (b *BucketScore) String() string {
 	return fmt.Sprintf("{%s, %d}", b.Bucket, b.Score)
 }
 
-// Implements a sortable BucketScore array
+// BucketScoreArray mplements a sortable BucketScore array
 type BucketScoreArray []*BucketScore
 
 func (b BucketScoreArray) Len() int {

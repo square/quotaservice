@@ -16,7 +16,7 @@ type namespacesAPIHandler struct {
 	a Administrable
 }
 
-func NewNamespacesAPIHandler(admin Administrable) (a *namespacesAPIHandler) {
+func newNamespacesAPIHandler(admin Administrable) (a *namespacesAPIHandler) {
 	return &namespacesAPIHandler{a: admin}
 }
 
@@ -33,20 +33,20 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	case "DELETE":
 		if ns == "" {
-			writeJSONError(w, &HttpError{"", http.StatusNotFound})
+			writeJSONError(w, &httpError{"", http.StatusNotFound})
 			return
 		}
 
 		err := a.a.DeleteNamespace(ns, user)
 
 		if err != nil {
-			writeJSONError(w, &HttpError{err.Error(), http.StatusBadRequest})
+			writeJSONError(w, &httpError{err.Error(), http.StatusBadRequest})
 		} else {
 			writeJSONOk(w)
 		}
 	case "PUT":
 		if ns == "" {
-			writeJSONError(w, &HttpError{"", http.StatusNotFound})
+			writeJSONError(w, &httpError{"", http.StatusNotFound})
 			return
 		}
 
@@ -62,11 +62,11 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			})
 		}
 	default:
-		writeJSONError(w, &HttpError{"Unknown method " + r.Method, http.StatusBadRequest})
+		writeJSONError(w, &httpError{"Unknown method " + r.Method, http.StatusBadRequest})
 	}
 }
 
-func writeNamespace(a *namespacesAPIHandler, w http.ResponseWriter, namespace string) *HttpError {
+func writeNamespace(a *namespacesAPIHandler, w http.ResponseWriter, namespace string) *httpError {
 	var object interface{}
 	cfgs := a.a.Configs()
 
@@ -74,7 +74,7 @@ func writeNamespace(a *namespacesAPIHandler, w http.ResponseWriter, namespace st
 		object = cfgs
 	} else {
 		if _, exists := cfgs.Namespaces[namespace]; !exists {
-			return &HttpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
+			return &httpError{"Unable to locate namespace " + namespace, http.StatusNotFound}
 		}
 
 		object = cfgs.Namespaces[namespace]
@@ -89,14 +89,14 @@ func updateConfig(a *namespacesAPIHandler, w http.ResponseWriter, r *http.Reques
 	e := unmarshalJSON(r.Body, c)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 		return
 	}
 
 	e = a.a.UpdateConfig(c, getUsername(r))
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 	} else {
 		writeJSONOk(w)
 	}
@@ -106,7 +106,7 @@ func changeNamespace(w http.ResponseWriter, r *http.Request, namespace string, u
 	c, e := getNamespaceConfig(r.Body)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 		return
 	}
 
@@ -117,7 +117,7 @@ func changeNamespace(w http.ResponseWriter, r *http.Request, namespace string, u
 	e = updater(c)
 
 	if e != nil {
-		writeJSONError(w, &HttpError{e.Error(), http.StatusInternalServerError})
+		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})
 	} else {
 		writeJSONOk(w)
 	}

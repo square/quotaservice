@@ -1,8 +1,8 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
 
-// Package spi contains interfaces for extension authors. E.g., when providing different RPC
-// endpoints to the quota service.
+// Package quotaservice contains interfaces for extension authors.
+// E.g., when providing different RPC endpoints to the quota service.
 package quotaservice
 
 import (
@@ -13,7 +13,7 @@ import (
 type ErrorReason int
 
 const (
-	// Tokens not  available within max wait time
+	// Tokens not available within max wait time
 	ER_TIMEOUT ErrorReason = iota
 
 	// No valid bucket

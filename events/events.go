@@ -63,8 +63,8 @@ func (e *EventProducer) Emit(event Event) {
 	}
 }
 
-func (ep *EventProducer) notifyListeners(l Listener) {
-	for event := range ep.c {
+func (e *EventProducer) notifyListeners(l Listener) {
+	for event := range e.c {
 		l(event)
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/maniksurtani/quotaservice/config"
 	"github.com/maniksurtani/quotaservice/events"
 	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/maniksurtani/quotaservice/test/helpers"
 )
 
 func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
@@ -59,7 +60,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	// Times out every 250 millis.
 	tpl.MaxIdleMillis = 250
 	config.SetDynamicBucketTemplate(nsCfg, tpl)
-	config.AddNamespace(cfg, nsCfg)
+	helpers.CheckError(t, config.AddNamespace(cfg, nsCfg))
 
 	eventsEmitter := &quotaservice.MockEmitter{Events: make(chan events.Event, 100)}
 	container := quotaservice.NewBucketContainer(cfg, factory, eventsEmitter, quotaservice.NewReaperConfigForTests())

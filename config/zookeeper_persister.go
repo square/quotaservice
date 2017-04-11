@@ -23,7 +23,7 @@ const (
 
 type eventListener func() (<-chan zk.Event, error)
 
-type ZkWatch struct {
+type zkWatch struct {
 	listener eventListener
 	channel  <-chan zk.Event
 	stopper  chan struct{}
@@ -43,7 +43,7 @@ type ZkConfigPersister struct {
 	watcher chan struct{}
 
 	conn  *zk.Conn
-	watch *ZkWatch
+	watch *zkWatch
 
 	wg sync.WaitGroup
 	sync.RWMutex
@@ -91,8 +91,8 @@ func NewZkConfigPersister(path string, servers []string, options ...connOption) 
 	return persister, nil
 }
 
-func (z *ZkConfigPersister) createWatch(listener eventListener) (*ZkWatch, error) {
-	watch := &ZkWatch{
+func (z *ZkConfigPersister) createWatch(listener eventListener) (*zkWatch, error) {
+	watch := &zkWatch{
 		listener: listener,
 		stopper:  make(chan struct{}, 1)}
 
@@ -110,7 +110,7 @@ func (z *ZkConfigPersister) createWatch(listener eventListener) (*ZkWatch, error
 	return watch, nil
 }
 
-func (z *ZkConfigPersister) waitForEvents(watch *ZkWatch) {
+func (z *ZkConfigPersister) waitForEvents(watch *zkWatch) {
 	defer z.wg.Done()
 
 	for {
@@ -163,17 +163,16 @@ func createPath(conn *zk.Conn, path string) (err error) {
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	z.Lock()
-	defer z.Unlock()
-
 	b, e := ioutil.ReadAll(marshalledConfig)
 
 	if e != nil {
 		return e
 	}
 
-	key := HashConfig(b)
+	z.RLock()
+	defer z.RUnlock()
 
+	key := HashConfig(b)
 	if key == z.config {
 		return nil
 	}
@@ -198,9 +197,6 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 }
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
-	z.Lock()
-	defer z.Unlock()
-
 	children, _, err := z.conn.Children(z.path)
 
 	if err != nil {
@@ -208,7 +204,7 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		return nil, err
 	}
 
-	z.configs = make(map[string][]byte)
+	configs := make(map[string][]byte)
 
 	for _, child := range children {
 		path := fmt.Sprintf("%s/%s", z.path, child)
@@ -216,9 +212,10 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 
 		if err != nil {
 			logging.Printf("Received error from zookeeper when fetching %s: %+v", path, err)
-		} else {
-			z.configs[child] = data
+			return nil, err
 		}
+
+		configs[child] = data
 	}
 
 	config, _, ch, err := z.conn.GetW(z.path)
@@ -228,6 +225,10 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		return nil, err
 	}
 
+	z.Lock()
+	defer z.Unlock()
+
+	z.configs = configs
 	z.config = string(config)
 
 	select {
@@ -258,7 +259,7 @@ func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 	z.RLock()
 	defer z.RUnlock()
 
-	readers := make([]io.Reader, 0)
+	var readers []io.Reader
 
 	for _, config := range z.configs {
 		readers = append(readers, bytes.NewReader(config))
@@ -267,7 +268,7 @@ func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
 	return readers, nil
 }
 
-// Closes makes sure all event listeners are done
+// Close makes sure all event listeners are done
 // and then closes the connection
 func (z *ZkConfigPersister) Close() {
 	z.watch.stopper <- struct{}{}

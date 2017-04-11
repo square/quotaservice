@@ -9,9 +9,11 @@ import (
 	"testing"
 
 	"github.com/maniksurtani/quotaservice/config"
+	"github.com/maniksurtani/quotaservice/test/helpers"
+
+	"runtime"
 
 	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
-	"runtime"
 )
 
 var cfg = func() *pbconfig.ServiceConfig {
@@ -21,23 +23,23 @@ var cfg = func() *pbconfig.ServiceConfig {
 	// Namespace "x"
 	ns := config.NewDefaultNamespaceConfig("x")
 	ns.DefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
-	config.AddBucket(ns, config.NewDefaultBucketConfig("a"))
-	config.AddNamespace(c, ns)
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("a")))
+	helpers.PanicError(config.AddNamespace(c, ns))
 
 	// Namespace "y"
 	ns = config.NewDefaultNamespaceConfig("y")
 	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DefaultBucketName)
-	config.AddBucket(ns, config.NewDefaultBucketConfig("y"))
-	config.AddNamespace(c, ns)
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("y")))
+	helpers.PanicError(config.AddNamespace(c, ns))
 
 	// Namespace "z"
 	ns = config.NewDefaultNamespaceConfig("z")
 	ns.DynamicBucketTemplate = config.NewDefaultBucketConfig(config.DefaultBucketName)
 	ns.MaxDynamicBuckets = 5
-	config.AddBucket(ns, config.NewDefaultBucketConfig("a"))
-	config.AddBucket(ns, config.NewDefaultBucketConfig("b"))
-	config.AddBucket(ns, config.NewDefaultBucketConfig("c"))
-	config.AddNamespace(c, ns)
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("a")))
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("b")))
+	helpers.PanicError(config.AddBucket(ns, config.NewDefaultBucketConfig("c")))
+	helpers.PanicError(config.AddNamespace(c, ns))
 
 	return c
 }()
