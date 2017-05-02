@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/maniksurtani/quotaservice/config"
 	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"math/rand"
 )
 
 // Implements the quotaservice.Server interface
@@ -30,6 +31,7 @@ type server struct {
 	listener          events.Listener
 	statsListener     stats.Listener
 	eventQueueBufSize int
+	maxJitterMillis   int
 	producer          *events.EventProducer
 	cfgs              *pb.ServiceConfig
 	persister         config.ConfigPersister
@@ -60,7 +62,7 @@ func (s *server) Start() (bool, error) {
 	}, bufSize)
 
 	<-s.persister.ConfigChangedWatcher()
-	s.readUpdatedConfig()
+	s.readUpdatedConfig(0)
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
@@ -170,11 +172,16 @@ func (s *server) Emit(e events.Event) {
 
 func (s *server) configListener(ch <-chan struct{}) {
 	for range ch {
-		s.readUpdatedConfig()
+		jitter := 0
+		if s.maxJitterMillis != 0 {
+			// Pick a random number between 0 and maxJitterMillis
+			jitter = rand.Intn(s.maxJitterMillis)
+		}
+		s.readUpdatedConfig(time.Duration(jitter) * time.Millisecond)
 	}
 }
 
-func (s *server) readUpdatedConfig() {
+func (s *server) readUpdatedConfig(jitter time.Duration) {
 	configReader, err := s.persister.ReadPersistedConfig()
 
 	if err != nil {
@@ -187,6 +194,10 @@ func (s *server) readUpdatedConfig() {
 	if err != nil {
 		logging.Println("error reading marshalled config", err)
 		return
+	}
+
+	if jitter != 0 {
+		time.Sleep(jitter)
 	}
 
 	s.createBucketContainer(newConfig)
