@@ -43,6 +43,7 @@ func main() {
 	server := quotaservice.New(memory.NewBucketFactory(),
 		config.NewMemoryConfig(cfg),
 		config.NewReaperConfig(),
+		0,
 		grpc.New(gRPCServer))
 	server.SetStatsListener(stats.NewMemoryStatsListener())
 	if _, e := server.Start(); e != nil {

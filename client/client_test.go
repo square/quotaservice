@@ -41,6 +41,7 @@ func setUp() {
 	server = quotaservice.New(memory.NewBucketFactory(),
 		config.NewMemoryConfig(cfg),
 		quotaservice.NewReaperConfigForTests(),
+		0,
 		qsgrpc.New(target))
 
 	if _, err := server.Start(); err != nil {

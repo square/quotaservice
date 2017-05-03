@@ -56,7 +56,7 @@ func setUp() {
 	mbf = &MockBucketFactory{}
 	me := &MockEndpoint{}
 	p := config.NewMemoryConfig(cfg)
-	s = New(mbf, p, NewReaperConfigForTests(), me)
+	s = New(mbf, p, NewReaperConfigForTests(), 0, me)
 	ecLocal := make(chan events.Event, 100)
 	s.SetListener(func(e events.Event) {
 		ecLocal <- e
