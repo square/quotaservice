@@ -24,6 +24,7 @@ import (
 const (
 	tokensNextAvblNanosSuffix = "TNA"
 	accumulatedTokensSuffix   = "AT"
+	flushedAtVersionKey       = "FlushedAtVersion"
 )
 
 // redisBucket is threadsafe since it delegates concurrency to the Redis instance.
@@ -59,28 +60,69 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 }
 
 func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
+	logging.Printf("Initializing redis.bucketFactory for config version %v", cfg.Version)
 	bf.mu.Lock()
 	defer bf.mu.Unlock()
 
 	bf.cfg = cfg
 
 	if bf.client == nil {
+		start := time.Now()
 		bf.connectToRedisLocked()
+		logging.Printf("Re-established Redis connections in %v", time.Since(start))
 	}
 
-	// Clean out all buckets, start afresh.
+	// Validate contents in Redis
+	start := time.Now()
+	// Check if Redis has been flushed when loading the current version of the configuration by a different node in
+	// the cluster. If so, this node doesn't have to.
+	val := bf.client.Get(flushedAtVersionKey)
+	version, err := val.Int64()
+	if err != nil {
+		if err.Error() != "redis: nil" {
+			// An actual problem; not just a missing flushedAtVersion.
+			logging.Fatalf("Error response from Redis: %v", err)
+		}
+
+		// No flushedAtVersion has been established.
+		logging.Print("flushedAtVersion not set")
+		bf.flush(cfg.Version)
+
+	} else {
+		logging.Printf("flushedAtVersion is %v", version)
+		if int32(version) < cfg.Version {
+			bf.flush(cfg.Version)
+		} else {
+			logging.Printf("No need to flush since Redis has alreadt been flushedAtVersion %v", version)
+		}
+	}
+	logging.Printf("Verified Redis (including any flushes, if necessary) in %v", time.Since(start))
+}
+
+func (bf *bucketFactory) flush(version int32) {
+	start := time.Now()
+	// Store flushedAtVersion to prevent multiple nodes flushing Redis unnecessarily, while the flush is in
+	// progress. This may be racy, but it's a minor optimization. At worst case, we have > 1 flushes (from > 1
+	// nodes in the cluster), which, while wasteful, isn't dangerous.
+	bf.client.Set(flushedAtVersionKey, version, 0)
+
+	// TODO(manik): consider a batched SCAN + DELETE if the FLUSHDB operation is slow.
 	bf.client.FlushDb()
+
+	// Re-set flushedAtVersion, since previous entry would have been removed with the flush.
+	bf.client.Set(flushedAtVersionKey, version, 0)
+	logging.Printf("Flushed Redis in %v", time.Since(start))
 }
 
 func (bf *bucketFactory) connectToRedisLocked() {
 	// Set up connection to Redis
 	bf.client = redis.NewClient(bf.redisOpts)
 
-	time, err := bf.client.Time().Result()
+	t, err := bf.client.Time().Result()
 	if err != nil {
 		logging.Printf("Cannot connect to Redis. TIME returned %v", err)
 	} else {
-		logging.Printf("Connection established. Time on Redis server: %v", time)
+		logging.Printf("Connection established. Time on Redis server: %v", t)
 	}
 
 	bf.scriptSHA = loadScript(bf.client)
@@ -92,7 +134,7 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 
 	// Always close connections on errors to prevent results leaking.
 	if err := bf.client.Close(); unknownCloseError(err) {
-		logging.Printf("Received error on redis client close: %+v", err)
+		logging.Printf("Received error on Redis client close: %+v", err)
 	}
 
 	if oldClient == bf.client {
@@ -240,6 +282,11 @@ func loadScript(c *redis.Client) (sha string) {
 	return waitTime
 	`
 	s := c.ScriptLoad(lua)
+	if s.Err() != nil {
+		logging.Fatalf("Unable to load LUA script into Redis; error=%v", s.Err())
+		return
+	}
+
 	sha = s.Val()
 	logging.Printf("Loaded LUA script into Redis; script SHA %v", sha)
 	return
