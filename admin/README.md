@@ -262,14 +262,14 @@ Response:
 
 ```json
 {
-	"namespace": "test.namespace",
-	"topHits": [
+  "namespace": "test.namespace",
+  "topHits": [
     {
       "bucket": "x.y.z",
       "value": 1000
     },
     ...
   ],
-	"topMisses": [ ]
+  "topMisses": [ ]
 }
 ```
