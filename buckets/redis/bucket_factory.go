@@ -100,7 +100,7 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 		if int32(version) < cfg.Version {
 			bf.flush(cfg.Version)
 		} else {
-			logging.Printf("No need to flush since Redis has alreadt been flushedAtVersion %v", version)
+			logging.Printf("No need to flush since Redis has already been flushedAtVersion %v", version)
 		}
 	}
 	logging.Printf("Verified Redis (including any flushes, if necessary) in %v", time.Since(start))
@@ -114,7 +114,8 @@ func (bf *bucketFactory) flush(version int32) {
 	// nodes in the cluster), which, while wasteful, isn't dangerous.
 	bf.client.Set(flushedAtVersionKey, version, 0)
 
-	// TODO(manik): consider a batched SCAN + DELETE if the FLUSHDB operation is slow.
+	// We could consider a batched SCAN + DELETE if the FLUSHDB operation is slow. But for the most part, this is
+	// "fast enough" - to the order of a few 100s of µs.
 	bf.client.FlushDb()
 
 	// Re-set flushedAtVersion, since previous entry would have been removed with the flush.
