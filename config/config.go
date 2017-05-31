@@ -249,3 +249,47 @@ func AddNamespace(s *pb.ServiceConfig, n *pb.NamespaceConfig) error {
 	s.Namespaces[n.Name] = n
 	return nil
 }
+
+func DifferentBucketConfigs(c1, c2 *pb.BucketConfig) bool {
+	if c1 == nil && c2 == nil {
+		// Both are nil - so not different
+		return false
+	}
+
+	if c1 == nil || c2 == nil {
+		// One of them is NOT nil!
+		return true
+	}
+
+	return c1.Name != c2.Name ||
+		c1.Namespace != c2.Namespace ||
+		c1.Size != c2.Size ||
+		c1.FillRate != c2.FillRate ||
+		c1.WaitTimeoutMillis != c2.WaitTimeoutMillis ||
+		c1.MaxIdleMillis != c2.MaxIdleMillis ||
+		c1.MaxDebtMillis != c2.MaxDebtMillis ||
+		c1.MaxTokensPerRequest != c2.MaxTokensPerRequest
+}
+
+func DifferentNamespaceConfigs(c1, c2 *pb.NamespaceConfig) bool {
+	different := c1.Name != c2.Name ||
+		c1.MaxDynamicBuckets != c2.MaxDynamicBuckets ||
+		DifferentBucketConfigs(c1.DefaultBucket, c2.DefaultBucket) ||
+		DifferentBucketConfigs(c1.DynamicBucketTemplate, c2.DynamicBucketTemplate) ||
+		len(c1.Buckets) != len(c2.Buckets)
+
+	if different {
+		return true
+	}
+
+	// Now check named buckets
+	for name, b1 := range c1.Buckets {
+		b2, exists := c2.Buckets[name]
+		if !exists || DifferentBucketConfigs(b1, b2) {
+			// Short-circuit
+			return true
+		}
+	}
+
+	return false
+}

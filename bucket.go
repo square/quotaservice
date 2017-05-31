@@ -26,6 +26,7 @@ type bucketContainer struct {
 	namespaces    map[string]*namespace
 	defaultBucket Bucket
 	r             *reaper
+	sync.RWMutex  // Embedded mutex
 }
 
 type namespace struct {
@@ -99,35 +100,46 @@ type BucketFactory interface {
 }
 
 // NewBucketContainer creates a new bucket container.
-func NewBucketContainer(cfg *pbconfig.ServiceConfig, bf BucketFactory, n notifier, r config.ReaperConfig) (bc *bucketContainer) {
+func NewBucketContainer(bf BucketFactory, n notifier, r config.ReaperConfig) (bc *bucketContainer) {
 	bc = &bucketContainer{
-		cfg:        cfg,
 		bf:         bf,
 		n:          n,
 		namespaces: make(map[string]*namespace)}
 
 	bc.r = newReaper(bc, r)
 
+	return
+}
+
+func (bc *bucketContainer) Init(cfg *pbconfig.ServiceConfig) {
+	bc.Lock()
+	defer bc.Unlock()
+
+	bc.initLocked(cfg)
+}
+
+func (bc *bucketContainer) initLocked(cfg *pbconfig.ServiceConfig) {
+	if bc.cfg != nil {
+		logging.Fatal("BucketContainer already has a config; cannot be re-initialized")
+	}
+	bc.cfg = cfg
 	if cfg.GlobalDefaultBucket != nil {
-		_ = bc.createGlobalDefaultBucket(cfg.GlobalDefaultBucket)
+		if bc.defaultBucket != nil {
+			logging.Fatal("Global default bucket already exists when initializing")
+		}
+		bc.createGlobalDefaultBucketLocked(cfg.GlobalDefaultBucket)
 	}
 
-	for name, nsCfg := range cfg.Namespaces {
+	for name, nsCfg := range bc.cfg.Namespaces {
 		if nsCfg.Name == "" {
 			nsCfg.Name = name
 		}
 
-		_ = bc.createNamespace(nsCfg)
+		bc.createNamespaceLocked(nsCfg)
 	}
-
-	return
 }
 
-func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) error {
-	if _, exists := bc.namespaces[nsCfg.Name]; exists {
-		return errors.New("Namespace " + nsCfg.Name + " already exists.")
-	}
-
+func (bc *bucketContainer) createNamespaceLocked(nsCfg *pbconfig.NamespaceConfig) {
 	nsp := &namespace{n: bc.n, name: nsCfg.Name, cfg: nsCfg, buckets: make(map[string]Bucket)}
 	if nsCfg.DefaultBucket != nil {
 		nsp.defaultBucket = bc.bf.NewBucket(nsCfg.Name, config.DefaultBucketName, nsCfg.DefaultBucket, false)
@@ -141,17 +153,10 @@ func (bc *bucketContainer) createNamespace(nsCfg *pbconfig.NamespaceConfig) erro
 	}
 
 	bc.namespaces[nsCfg.Name] = nsp
-
-	return nil
 }
 
-func (bc *bucketContainer) createGlobalDefaultBucket(cfg *pbconfig.BucketConfig) error {
-	if bc.defaultBucket != nil {
-		return errors.New("Global default bucket already exists")
-	}
-
+func (bc *bucketContainer) createGlobalDefaultBucketLocked(cfg *pbconfig.BucketConfig) {
 	bc.defaultBucket = bc.bf.NewBucket(config.GlobalNamespace, config.DefaultBucketName, cfg, false)
-	return nil
 }
 
 // FindBucket locates a bucket for a given name and namespace. If the namespace doesn't exist, and
@@ -161,7 +166,10 @@ func (bc *bucketContainer) createGlobalDefaultBucket(cfg *pbconfig.BucketConfig)
 // fails, this function returns nil. This function is thread-safe, and may lazily create dynamic
 // buckets or re-create statically defined buckets that have been invalidated.
 func (bc *bucketContainer) FindBucket(namespace string, bucketName string) (Bucket, error) {
+	bc.RLock()
 	ns := bc.namespaces[namespace]
+	bc.RUnlock()
+
 	var bucket Bucket
 	var err error
 	reportActivity := true
@@ -225,6 +233,9 @@ func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns
 }
 
 func (bc *bucketContainer) countDynamicBuckets(namespace string) int32 {
+	bc.RLock()
+	defer bc.RUnlock()
+
 	var c int32
 	for _, b := range bc.namespaces[namespace].buckets {
 		if b.Dynamic() {
@@ -256,11 +267,17 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 }
 
 func (bc *bucketContainer) NamespaceExists(namespace string) bool {
+	bc.RLock()
+	defer bc.RUnlock()
+
 	_, exists := bc.namespaces[namespace]
 	return exists
 }
 
 func (bc *bucketContainer) Exists(namespace, name string) bool {
+	bc.RLock()
+	defer bc.RUnlock()
+
 	if ns, exists := bc.namespaces[namespace]; exists {
 		ns.RLock()
 		defer ns.RUnlock()
@@ -272,7 +289,10 @@ func (bc *bucketContainer) Exists(namespace, name string) bool {
 }
 
 func (bc *bucketContainer) removeBucket(namespace, bucket string) bool {
+	bc.RLock()
 	ns := bc.namespaces[namespace]
+	bc.RUnlock()
+
 	if ns != nil {
 		ns.removeBucket(bucket)
 		return true
@@ -281,6 +301,9 @@ func (bc *bucketContainer) removeBucket(namespace, bucket string) bool {
 }
 
 func (bc *bucketContainer) String() string {
+	bc.RLock()
+	defer bc.RUnlock()
+
 	var buffer bytes.Buffer
 	if bc.defaultBucket != nil {
 		_, _ = buffer.WriteString("Global default present\n\n")

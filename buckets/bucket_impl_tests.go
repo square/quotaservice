@@ -63,7 +63,8 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 	helpers.CheckError(t, config.AddNamespace(cfg, nsCfg))
 
 	eventsEmitter := &quotaservice.MockEmitter{Events: make(chan events.Event, 100)}
-	container := quotaservice.NewBucketContainer(cfg, factory, eventsEmitter, quotaservice.NewReaperConfigForTests())
+	container := quotaservice.NewBucketContainer(factory, eventsEmitter, quotaservice.NewReaperConfigForTests())
+	container.Init(cfg)
 
 	// No GC should happen here as long as we are in use.
 	for i := 0; i < 10; i++ {
