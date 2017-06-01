@@ -61,6 +61,7 @@ func (s *server) Start() (bool, error) {
 		}
 	}, bufSize)
 
+	s.createBucketContainer()
 	<-s.persister.ConfigChangedWatcher()
 	s.readUpdatedConfig(0)
 	go s.configListener(s.persister.ConfigChangedWatcher())
@@ -83,6 +84,9 @@ func (s *server) Stop() (bool, error) {
 		rpcServer.Stop()
 	}
 
+	// Referencing s.bucketContainer should be guarded
+	s.RLock()
+	defer s.RUnlock()
 	s.bucketContainer.Stop()
 	return true, nil
 }
@@ -200,21 +204,82 @@ func (s *server) readUpdatedConfig(jitter time.Duration) {
 		time.Sleep(jitter)
 	}
 
-	s.createBucketContainer(newConfig)
+	s.updateBucketContainer(newConfig)
 }
 
-func (s *server) createBucketContainer(newConfig *pb.ServiceConfig) {
+func (s *server) createBucketContainer() {
 	s.Lock()
 	defer s.Unlock()
+
+	if s.bucketContainer != nil {
+		logging.Fatalf("A bucketcontainer already exists; this shouldn't happen. BucketContainer=%v", s.bucketContainer)
+	}
+	s.bucketContainer = NewBucketContainer(s.bucketFactory, s, s.reaperConfig)
+}
+
+func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
+	s.Lock()
+	defer s.Unlock()
+	s.bucketContainer.Lock()
+	defer s.bucketContainer.Unlock()
 
 	// Initialize buckets
 	s.bucketFactory.Init(newConfig)
 
+	// If there is no existing config, then this bucket container is brand-new and hasn't been used before.
+	firstTime := s.bucketContainer.cfg == nil
+
+	// Set the new config on the the server
 	s.cfgs = newConfig
-	if s.bucketContainer != nil {
-		s.bucketContainer.Stop()
+
+	if firstTime {
+		s.bucketContainer.initLocked(newConfig)
+	} else {
+		s.bucketContainer.cfg = newConfig
+		// Diff existing configs, buckets and namespaces against the new config and see what needs to be evicted
+
+		// Start with the globalDefaultBucket
+		var currentDefaultBucketCfg *pb.BucketConfig
+		if s.bucketContainer.defaultBucket != nil {
+			currentDefaultBucketCfg = s.bucketContainer.defaultBucket.Config()
+		}
+
+		if config.DifferentBucketConfigs(currentDefaultBucketCfg, newConfig.GlobalDefaultBucket) {
+			if newConfig.GlobalDefaultBucket == nil {
+				s.bucketContainer.defaultBucket = nil
+			} else {
+				s.bucketContainer.createGlobalDefaultBucketLocked(s.cfgs.GlobalDefaultBucket)
+			}
+		}
+
+		// Scan through all namespaces in s.bucketContainer.namespaces and update the config to point to
+		// the new instance, *regardless* of whether the config has changed or not. Also, if the config *has*
+		// changed, throw away the old namespace and recreate it. We *could* scan all the buckets in a namespace
+		// and only recreate the ones that have changed, but this may have little benefit, since the real cost
+		// here is with dynamic buckets, and if the namespace config has changed, it's very likely that the
+		// change involves the dynamic bucket template.
+		for name, ns := range s.bucketContainer.namespaces {
+			newNsCfg, exists := newConfig.Namespaces[name]
+			if !exists {
+				delete(s.bucketContainer.namespaces, name)
+			} else {
+				if config.DifferentNamespaceConfigs(ns.cfg, newNsCfg) {
+					// This will overwrite the existing namespace
+					s.bucketContainer.createNamespaceLocked(newNsCfg)
+				} else {
+					// Just correct the config pointer on the old namespace
+					ns.cfg = newNsCfg
+				}
+			}
+		}
+
+		// Now look for any new namespaces in the new config and add them
+		for name, nsCfg := range newConfig.Namespaces {
+			if _, exists := s.bucketContainer.namespaces[name]; !exists {
+				s.bucketContainer.createNamespaceLocked(nsCfg)
+			}
+		}
 	}
-	s.bucketContainer = NewBucketContainer(s.cfgs, s.bucketFactory, s, s.reaperConfig)
 }
 
 func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {

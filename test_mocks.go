@@ -102,7 +102,10 @@ func (d *MockEndpoint) Stop()  {}
 func NewBucketContainerWithMocks(cfg *pbconfig.ServiceConfig) (*bucketContainer, *MockBucketFactory, *MockEmitter) {
 	bf := &MockBucketFactory{}
 	e := &MockEmitter{}
-	return NewBucketContainer(cfg, bf, e, NewReaperConfigForTests()), bf, e
+	bc := NewBucketContainer(bf, e, NewReaperConfigForTests())
+	bc.Init(cfg)
+
+	return bc, bf, e
 }
 
 func NewReaperConfigForTests() config.ReaperConfig {
