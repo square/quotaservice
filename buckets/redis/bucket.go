@@ -52,6 +52,7 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 
 	keepTrying := true
 	var waitTime time.Duration
+	var err error
 	for attempt := 0; keepTrying && attempt < a.factory.connectionRetries; attempt++ {
 		client := a.factory.Client().(*redis.Client)
 		res := client.EvalSha(a.factory.scriptSHA, a.keys, args...)
@@ -60,7 +61,8 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
 			keepTrying = false
 		default:
-			if unknownCloseError(res.Err()) {
+			err = res.Err()
+			if unknownCloseError(err) {
 				logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 					waitTimeNanos, waitTimeNanos, res)
 			}
@@ -70,7 +72,9 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 	}
 
 	if keepTrying {
-		logging.Fatalf("Couldn't reconnect to Redis, even after %v attempts", a.factory.connectionRetries)
+		// TODO(kaneda): Gracefully handle Redis access errors?
+		logging.Fatalf("Couldn't reconnect to Redis, even after %v attempts with error %+v",
+			a.factory.connectionRetries, err)
 	}
 
 	if waitTime < 0 {
