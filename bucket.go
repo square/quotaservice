@@ -87,6 +87,17 @@ func (ns *namespace) removeBucket(bucketName string) {
 	}
 }
 
+// destroy calls Destroy() on all buckets in this namespace
+func (ns *namespace) destroy() {
+	if ns.defaultBucket != nil {
+		ns.defaultBucket.Destroy()
+	}
+
+	for _, bucket := range ns.buckets {
+		bucket.Destroy()
+	}
+}
+
 // BucketFactory creates buckets.
 type BucketFactory interface {
 	// Init initializes the bucket factory.

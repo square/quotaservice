@@ -245,6 +245,11 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 		}
 
 		if config.DifferentBucketConfigs(currentDefaultBucketCfg, newConfig.GlobalDefaultBucket) {
+			if s.bucketContainer.defaultBucket != nil {
+				// We need to destroy existing buckets even if we are replacing them.
+				s.bucketContainer.defaultBucket.Destroy()
+			}
+
 			if newConfig.GlobalDefaultBucket == nil {
 				s.bucketContainer.defaultBucket = nil
 			} else {
@@ -261,9 +266,12 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 		for name, ns := range s.bucketContainer.namespaces {
 			newNsCfg, exists := newConfig.Namespaces[name]
 			if !exists {
+				ns.destroy()
 				delete(s.bucketContainer.namespaces, name)
 			} else {
 				if config.DifferentNamespaceConfigs(ns.cfg, newNsCfg) {
+					// We need to destroy the old namespace before overwriting.
+					ns.destroy()
 					// This will overwrite the existing namespace
 					s.bucketContainer.createNamespaceLocked(newNsCfg)
 				} else {
