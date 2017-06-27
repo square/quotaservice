@@ -235,58 +235,59 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 
 	if firstTime {
 		s.bucketContainer.initLocked(newConfig)
-	} else {
-		s.bucketContainer.cfg = newConfig
-		// Diff existing configs, buckets and namespaces against the new config and see what needs to be evicted
+		return
+	}
 
-		// Start with the globalDefaultBucket
-		var currentDefaultBucketCfg *pb.BucketConfig
+	s.bucketContainer.cfg = newConfig
+	// Diff existing configs, buckets and namespaces against the new config and see what needs to be evicted
+
+	// Start with the globalDefaultBucket
+	var currentDefaultBucketCfg *pb.BucketConfig
+	if s.bucketContainer.defaultBucket != nil {
+		currentDefaultBucketCfg = s.bucketContainer.defaultBucket.Config()
+	}
+
+	if config.DifferentBucketConfigs(currentDefaultBucketCfg, newConfig.GlobalDefaultBucket) {
 		if s.bucketContainer.defaultBucket != nil {
-			currentDefaultBucketCfg = s.bucketContainer.defaultBucket.Config()
+			// We need to destroy existing buckets even if we are replacing them.
+			s.bucketContainer.defaultBucket.Destroy()
 		}
 
-		if config.DifferentBucketConfigs(currentDefaultBucketCfg, newConfig.GlobalDefaultBucket) {
-			if s.bucketContainer.defaultBucket != nil {
-				// We need to destroy existing buckets even if we are replacing them.
-				s.bucketContainer.defaultBucket.Destroy()
-			}
-
-			if newConfig.GlobalDefaultBucket == nil {
-				s.bucketContainer.defaultBucket = nil
-			} else {
-				s.bucketContainer.createGlobalDefaultBucketLocked(s.cfgs.GlobalDefaultBucket)
-			}
+		if newConfig.GlobalDefaultBucket == nil {
+			s.bucketContainer.defaultBucket = nil
+		} else {
+			s.bucketContainer.createGlobalDefaultBucketLocked(s.cfgs.GlobalDefaultBucket)
 		}
+	}
 
-		// Scan through all namespaces in s.bucketContainer.namespaces and update the config to point to
-		// the new instance, *regardless* of whether the config has changed or not. Also, if the config *has*
-		// changed, throw away the old namespace and recreate it. We *could* scan all the buckets in a namespace
-		// and only recreate the ones that have changed, but this may have little benefit, since the real cost
-		// here is with dynamic buckets, and if the namespace config has changed, it's very likely that the
-		// change involves the dynamic bucket template.
-		for name, ns := range s.bucketContainer.namespaces {
-			newNsCfg, exists := newConfig.Namespaces[name]
-			if !exists {
+	// Scan through all namespaces in s.bucketContainer.namespaces and update the config to point to
+	// the new instance, *regardless* of whether the config has changed or not. Also, if the config *has*
+	// changed, throw away the old namespace and recreate it. We *could* scan all the buckets in a namespace
+	// and only recreate the ones that have changed, but this may have little benefit, since the real cost
+	// here is with dynamic buckets, and if the namespace config has changed, it's very likely that the
+	// change involves the dynamic bucket template.
+	for name, ns := range s.bucketContainer.namespaces {
+		newNsCfg, exists := newConfig.Namespaces[name]
+		if exists {
+			if config.DifferentNamespaceConfigs(ns.cfg, newNsCfg) {
+				// We need to destroy the old namespace before overwriting.
 				ns.destroy()
-				delete(s.bucketContainer.namespaces, name)
+				// This will overwrite the existing namespace
+				s.bucketContainer.createNamespaceLocked(newNsCfg)
 			} else {
-				if config.DifferentNamespaceConfigs(ns.cfg, newNsCfg) {
-					// We need to destroy the old namespace before overwriting.
-					ns.destroy()
-					// This will overwrite the existing namespace
-					s.bucketContainer.createNamespaceLocked(newNsCfg)
-				} else {
-					// Just correct the config pointer on the old namespace
-					ns.cfg = newNsCfg
-				}
+				// Just correct the config pointer on the old namespace
+				ns.cfg = newNsCfg
 			}
+		} else {
+			ns.destroy()
+			delete(s.bucketContainer.namespaces, name)
 		}
+	}
 
-		// Now look for any new namespaces in the new config and add them
-		for name, nsCfg := range newConfig.Namespaces {
-			if _, exists := s.bucketContainer.namespaces[name]; !exists {
-				s.bucketContainer.createNamespaceLocked(nsCfg)
-			}
+	// Now look for any new namespaces in the new config and add them
+	for name, nsCfg := range newConfig.Namespaces {
+		if _, exists := s.bucketContainer.namespaces[name]; !exists {
+			s.bucketContainer.createNamespaceLocked(nsCfg)
 		}
 	}
 }
