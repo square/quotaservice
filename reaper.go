@@ -111,11 +111,11 @@ func (r *reaper) addNewWatcher(w *watcher) {
 func (r *reaper) checkExpirations(bc *bucketContainer) time.Duration {
 	now := time.Now()
 	newSleep := r.cfg.MinFrequency
+	var reaped uint64
 	for id, w := range r.watchers {
 		if w.tooIdle(now) {
 			// Reap bucket
-			logging.Printf("Reaping %v due to inactivity", id)
-
+			reaped++
 			if bc.removeBucket(w.ns, w.bucketName) {
 				delete(r.watchers, id)
 			}
@@ -124,7 +124,7 @@ func (r *reaper) checkExpirations(bc *bucketContainer) time.Duration {
 			newSleep = w.maxIdle
 		}
 	}
-
+	logging.Printf("Reaped %d buckets due to inactivity", reaped)
 	return newSleep
 }
 
