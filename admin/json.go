@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package admin
 
@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/square/quotaservice/logging"
 )
 
 var emptyJSONResponse []byte

@@ -1,13 +1,14 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
 import (
-	"github.com/maniksurtani/quotaservice/config"
-	pbc "github.com/maniksurtani/quotaservice/protos/config"
 	"testing"
 	"time"
+
+	"github.com/square/quotaservice/config"
+	pbc "github.com/square/quotaservice/protos/config"
 )
 
 func TestNotReapable(t *testing.T) {

@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 // Package memory implements token buckets in memory, inspired by the algorithms used in Guava's
 // RateLimiter library - https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/RateLimiter.java
@@ -11,11 +11,11 @@ package memory
 import (
 	"time"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/logging"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 type bucketFactory struct {

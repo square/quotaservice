@@ -1,15 +1,15 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
 import (
 	"net/http"
 
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/events"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/stats"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/events"
+	"github.com/square/quotaservice/logging"
+	"github.com/square/quotaservice/stats"
 )
 
 // The Server interface is what you get when you create a new quotaservice.

@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package main
 
@@ -10,13 +10,13 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/rpc/grpc"
-	"github.com/maniksurtani/quotaservice/stats"
-	"github.com/maniksurtani/quotaservice/test/helpers"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/buckets/memory"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/logging"
+	"github.com/square/quotaservice/rpc/grpc"
+	"github.com/square/quotaservice/stats"
+	"github.com/square/quotaservice/test/helpers"
 )
 
 const (

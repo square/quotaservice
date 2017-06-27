@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/events"
-	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/events"
+	"github.com/square/quotaservice/logging"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 // bucketContainer is a holder for configurations and bucket factories.

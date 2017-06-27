@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package admin
 
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maniksurtani/quotaservice/config"
-	pb "github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/square/quotaservice/config"
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 func TestNamespacesGetEmpty(t *testing.T) {

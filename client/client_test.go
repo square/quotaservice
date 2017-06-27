@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/buckets/memory"
-	"github.com/maniksurtani/quotaservice/config"
-	pb "github.com/maniksurtani/quotaservice/protos"
-	qsgrpc "github.com/maniksurtani/quotaservice/rpc/grpc"
-	"github.com/maniksurtani/quotaservice/test/helpers"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/buckets/memory"
+	"github.com/square/quotaservice/config"
+	pb "github.com/square/quotaservice/protos"
+	qsgrpc "github.com/square/quotaservice/rpc/grpc"
+	"github.com/square/quotaservice/test/helpers"
 	"google.golang.org/grpc"
 )
 

@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 // Package redis implements token buckets backed by Redis, inspired by the algorithms used in Guava's
 // RateLimiter library - https://github.com/google/guava/blob/master/guava/src/com/google/common/util/concurrent/RateLimiter.java
@@ -11,12 +11,12 @@ import (
 
 	"gopkg.in/redis.v5"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/logging"
 
 	"sync"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 // Suffixes for Redis keys

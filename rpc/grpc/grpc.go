@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package grpc
 
@@ -10,10 +10,10 @@ import (
 
 	"time"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/lifecycle"
-	"github.com/maniksurtani/quotaservice/logging"
-	pb "github.com/maniksurtani/quotaservice/protos"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/lifecycle"
+	"github.com/square/quotaservice/logging"
+	pb "github.com/square/quotaservice/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"

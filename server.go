@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
@@ -10,16 +10,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/maniksurtani/quotaservice/admin"
-	"github.com/maniksurtani/quotaservice/events"
-	"github.com/maniksurtani/quotaservice/lifecycle"
-	"github.com/maniksurtani/quotaservice/logging"
-	"github.com/maniksurtani/quotaservice/stats"
+	"github.com/square/quotaservice/admin"
+	"github.com/square/quotaservice/events"
+	"github.com/square/quotaservice/lifecycle"
+	"github.com/square/quotaservice/logging"
+	"github.com/square/quotaservice/stats"
+
+	"math/rand"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/maniksurtani/quotaservice/config"
-	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"math/rand"
+	"github.com/square/quotaservice/config"
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 // Implements the quotaservice.Server interface

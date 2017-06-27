@@ -2,10 +2,11 @@ package client
 
 import (
 	"errors"
-	"github.com/maniksurtani/quotaservice/protos"
+	"time"
+
+	"github.com/square/quotaservice/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"time"
 )
 
 // Client is a QuotaService client class, adding syntactic sugar over the raw gRPC calls.

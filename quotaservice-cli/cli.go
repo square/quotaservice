@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 // Package implements a CLI for administering the quotaservice.
 package main
@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/maniksurtani/quotaservice/quotaservice-cli/client"
+	"github.com/square/quotaservice/quotaservice-cli/client"
 )
 
 func main() {

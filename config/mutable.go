@@ -1,12 +1,12 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package config
 
 import (
 	"errors"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 func CreateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconfig.BucketConfig) error {

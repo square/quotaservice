@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 // Package implements a CLI for administering the quotaservice.
 package client
@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/maniksurtani/quotaservice/config"
+	"github.com/square/quotaservice/config"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 

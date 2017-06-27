@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package loadtest
 
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	pb "github.com/maniksurtani/quotaservice/protos"
+	pb "github.com/square/quotaservice/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
