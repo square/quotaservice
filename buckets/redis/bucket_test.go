@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package redis
 
@@ -11,9 +11,9 @@ import (
 
 	"fmt"
 
-	"github.com/maniksurtani/quotaservice/buckets"
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/protos/config"
+	"github.com/square/quotaservice/buckets"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/protos/config"
 )
 
 const (

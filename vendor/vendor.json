@@ -4,140 +4,140 @@
 	"package": [
 		{
 			"checksumSHA1": "ZLRh6zW4/DnVsGpgtt+ZiIaEFKc=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/compute/metadata",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/compute/metadata",
 			"path": "cloud.google.com/go/compute/metadata",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "9HqRTHYS66dnLXRUMgNA/md+CD8=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/datastore",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/datastore",
 			"path": "cloud.google.com/go/datastore",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "4iounbuF7SMZdx/MlKSUuhnV848=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/internal",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/internal",
 			"path": "cloud.google.com/go/internal",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "CgYouHISABypWPadYPFgAzuv8MU=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/internal/atomiccache",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/internal/atomiccache",
 			"path": "cloud.google.com/go/internal/atomiccache",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "mgQ6GWBJvtgIGMD/JD4Qxz30KOc=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/internal/fields",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/internal/fields",
 			"path": "cloud.google.com/go/internal/fields",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "1TvufkYTMOYnB/ehKjekN5XTb+E=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/cloud.google.com/go/internal/version",
+			"origin": "github.com/square/quotaservice/vendor/cloud.google.com/go/internal/version",
 			"path": "cloud.google.com/go/internal/version",
 			"revision": "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173",
 			"revisionTime": "2017-03-09T00:06:28Z"
 		},
 		{
 			"checksumSHA1": "fhh/M9XiiWfYk7+iKvBNaDXdo/U=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/alecthomas/template",
+			"origin": "github.com/square/quotaservice/vendor/github.com/alecthomas/template",
 			"path": "github.com/alecthomas/template",
 			"revision": "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0",
 			"revisionTime": "2015-05-30T00:01:04Z"
 		},
 		{
 			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/alecthomas/template/parse",
+			"origin": "github.com/square/quotaservice/vendor/github.com/alecthomas/template/parse",
 			"path": "github.com/alecthomas/template/parse",
 			"revision": "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0",
 			"revisionTime": "2015-05-30T00:01:04Z"
 		},
 		{
 			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/alecthomas/units",
+			"origin": "github.com/square/quotaservice/vendor/github.com/alecthomas/units",
 			"path": "github.com/alecthomas/units",
 			"revision": "6b4e7dc5e3143b85ea77909c72caf89416fc2915",
 			"revisionTime": "2015-01-09T00:21:28Z"
 		},
 		{
 			"checksumSHA1": "kBeNcaKk56FguvPSUCEaH6AxpRc=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/golang/protobuf/proto",
+			"origin": "github.com/square/quotaservice/vendor/github.com/golang/protobuf/proto",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
 			"revisionTime": "2017-03-07T00:15:33Z"
 		},
 		{
 			"checksumSHA1": "AjyXQ5eohrCPS/jSWZFPn5E8wnQ=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/golang/protobuf/protoc-gen-go/descriptor",
+			"origin": "github.com/square/quotaservice/vendor/github.com/golang/protobuf/protoc-gen-go/descriptor",
 			"path": "github.com/golang/protobuf/protoc-gen-go/descriptor",
 			"revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
 			"revisionTime": "2017-03-07T00:15:33Z"
 		},
 		{
 			"checksumSHA1": "wtUJRtb2jtPzrEacdsA+JRxMz2k=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/golang/protobuf/ptypes/struct",
+			"origin": "github.com/square/quotaservice/vendor/github.com/golang/protobuf/ptypes/struct",
 			"path": "github.com/golang/protobuf/ptypes/struct",
 			"revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
 			"revisionTime": "2017-03-07T00:15:33Z"
 		},
 		{
 			"checksumSHA1": "sfoot+dHmmOgWZS6GJ5X79ClZM0=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/golang/protobuf/ptypes/timestamp",
+			"origin": "github.com/square/quotaservice/vendor/github.com/golang/protobuf/ptypes/timestamp",
 			"path": "github.com/golang/protobuf/ptypes/timestamp",
 			"revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
 			"revisionTime": "2017-03-07T00:15:33Z"
 		},
 		{
 			"checksumSHA1": "Ja4i09zIVGM3NjAcTM9uOUDKNWc=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/golang/protobuf/ptypes/wrappers",
+			"origin": "github.com/square/quotaservice/vendor/github.com/golang/protobuf/ptypes/wrappers",
 			"path": "github.com/golang/protobuf/ptypes/wrappers",
 			"revision": "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317",
 			"revisionTime": "2017-03-07T00:15:33Z"
 		},
 		{
 			"checksumSHA1": "WQ0nd5KXenaxGjgMpARaWa15PP4=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/googleapis/gax-go",
+			"origin": "github.com/square/quotaservice/vendor/github.com/googleapis/gax-go",
 			"path": "github.com/googleapis/gax-go",
 			"revision": "8c5154c0fe5bf18cf649634d4c6df50897a32751",
 			"revisionTime": "2017-03-05T23:04:05Z"
 		},
 		{
 			"checksumSHA1": "5SYLEhADhdBVZAGPVHWggQl7H8k=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/github.com/samuel/go-zookeeper/zk",
+			"origin": "github.com/square/quotaservice/vendor/github.com/samuel/go-zookeeper/zk",
 			"path": "github.com/samuel/go-zookeeper/zk",
 			"revision": "1d7be4effb13d2d908342d349d71a284a7542693",
 			"revisionTime": "2016-10-28T23:23:40Z"
 		},
 		{
 			"checksumSHA1": "Y+HGqEkYM15ir+J93MEaHdyFy0c=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/context",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/context",
 			"path": "golang.org/x/net/context",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "WHc3uByvGaMcnSoI21fhzYgbOgg=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/context/ctxhttp",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/context/ctxhttp",
 			"path": "golang.org/x/net/context/ctxhttp",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "cdT+oqPhYKGf3r+HkPo51IauZnA=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/http2",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/http2",
 			"path": "golang.org/x/net/http2",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "kyClpesDqa6LA7CFPGgKrX9NKkA=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/http2/hpack",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/http2/hpack",
 			"path": "golang.org/x/net/http2/hpack",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
@@ -150,154 +150,154 @@
 		},
 		{
 			"checksumSHA1": "UxahDzW2v4mf/+aFxruuupaoIwo=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/internal/timeseries",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/internal/timeseries",
 			"path": "golang.org/x/net/internal/timeseries",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "3xyuaSNmClqG4YWC7g0isQIbUTc=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/lex/httplex",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/lex/httplex",
 			"path": "golang.org/x/net/lex/httplex",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "GQHKESPeCcAsnerZPtHadvKUIzs=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/net/trace",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/net/trace",
 			"path": "golang.org/x/net/trace",
 			"revision": "a6577fac2d73be281a500b310739095313165611",
 			"revisionTime": "2017-03-08T20:54:49Z"
 		},
 		{
 			"checksumSHA1": "Zt7DIRCaUg5qfhfxyR1wCA+EjCE=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/oauth2",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/oauth2",
 			"path": "golang.org/x/oauth2",
 			"revision": "efb10a30610e617dbb17fc243f4cc61a8cfa2903",
 			"revisionTime": "2017-03-02T20:04:53Z"
 		},
 		{
 			"checksumSHA1": "ma8yoPKIsJlRiVBDUEdX78kyAdU=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/oauth2/google",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/oauth2/google",
 			"path": "golang.org/x/oauth2/google",
 			"revision": "efb10a30610e617dbb17fc243f4cc61a8cfa2903",
 			"revisionTime": "2017-03-02T20:04:53Z"
 		},
 		{
 			"checksumSHA1": "gChvVZYdb6Bw/vjIpfYJfNvXPoU=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/oauth2/internal",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/oauth2/internal",
 			"path": "golang.org/x/oauth2/internal",
 			"revision": "efb10a30610e617dbb17fc243f4cc61a8cfa2903",
 			"revisionTime": "2017-03-02T20:04:53Z"
 		},
 		{
 			"checksumSHA1": "huVltYnXdRFDJLgp/ZP9IALzG7g=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/oauth2/jws",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/oauth2/jws",
 			"path": "golang.org/x/oauth2/jws",
 			"revision": "efb10a30610e617dbb17fc243f4cc61a8cfa2903",
 			"revisionTime": "2017-03-02T20:04:53Z"
 		},
 		{
 			"checksumSHA1": "/eV4E08BY+f1ZikiR7OOMJAj3m0=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/golang.org/x/oauth2/jwt",
+			"origin": "github.com/square/quotaservice/vendor/golang.org/x/oauth2/jwt",
 			"path": "golang.org/x/oauth2/jwt",
 			"revision": "efb10a30610e617dbb17fc243f4cc61a8cfa2903",
 			"revisionTime": "2017-03-02T20:04:53Z"
 		},
 		{
 			"checksumSHA1": "Mr2fXhMRzlQCgANFm91s536pG7E=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/api/googleapi/transport",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/api/googleapi/transport",
 			"path": "google.golang.org/api/googleapi/transport",
 			"revision": "f093df3d954a6024843c4a47c4410a2cb7af85aa",
 			"revisionTime": "2017-02-19T13:58:39Z"
 		},
 		{
 			"checksumSHA1": "GAKy8Id2Qx7BI0kZPRjGn1RjVQo=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/api/internal",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/api/internal",
 			"path": "google.golang.org/api/internal",
 			"revision": "f093df3d954a6024843c4a47c4410a2cb7af85aa",
 			"revisionTime": "2017-02-19T13:58:39Z"
 		},
 		{
 			"checksumSHA1": "slcGOTGSdukEPPSN81Q5WZGmhog=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/api/iterator",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/api/iterator",
 			"path": "google.golang.org/api/iterator",
 			"revision": "f093df3d954a6024843c4a47c4410a2cb7af85aa",
 			"revisionTime": "2017-02-19T13:58:39Z"
 		},
 		{
 			"checksumSHA1": "hZ9zds+/FPwSGEiti5lGaZL3e6w=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/api/option",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/api/option",
 			"path": "google.golang.org/api/option",
 			"revision": "f093df3d954a6024843c4a47c4410a2cb7af85aa",
 			"revisionTime": "2017-02-19T13:58:39Z"
 		},
 		{
 			"checksumSHA1": "0RKN6+swqO9e59gDtaIx1kkt8no=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/api/transport",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/api/transport",
 			"path": "google.golang.org/api/transport",
 			"revision": "f093df3d954a6024843c4a47c4410a2cb7af85aa",
 			"revisionTime": "2017-02-19T13:58:39Z"
 		},
 		{
 			"checksumSHA1": "kGGAT2jr6A8fgFrrpP3c3BYmnpY=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/genproto/googleapis/api/annotations",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/genproto/googleapis/api/annotations",
 			"path": "google.golang.org/genproto/googleapis/api/annotations",
 			"revision": "1e95789587db7d93ebbaa5eb65da17d3dbf8ab64",
 			"revisionTime": "2017-03-03T20:47:30Z"
 		},
 		{
 			"checksumSHA1": "4295X7udsLh4VGmpHk5lwo5su1Y=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/genproto/googleapis/datastore/v1",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/genproto/googleapis/datastore/v1",
 			"path": "google.golang.org/genproto/googleapis/datastore/v1",
 			"revision": "1e95789587db7d93ebbaa5eb65da17d3dbf8ab64",
 			"revisionTime": "2017-03-03T20:47:30Z"
 		},
 		{
 			"checksumSHA1": "fVdbHWr7D8bM1GeorjV8Yfab1Cs=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/genproto/googleapis/type/latlng",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/genproto/googleapis/type/latlng",
 			"path": "google.golang.org/genproto/googleapis/type/latlng",
 			"revision": "1e95789587db7d93ebbaa5eb65da17d3dbf8ab64",
 			"revisionTime": "2017-03-03T20:47:30Z"
 		},
 		{
 			"checksumSHA1": "9Co2G9il/NLm0GyXbYtSf+KNBEk=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc",
 			"path": "google.golang.org/grpc",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "08icuA15HRkdYCt6H+Cs90RPQsY=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/codes",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/codes",
 			"path": "google.golang.org/grpc/codes",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "GHCDufYjDX7weDH2udXY1pkyvEo=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/credentials",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/credentials",
 			"path": "google.golang.org/grpc/credentials",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "bg3wIPzajKt3QZfTG70EPaxDtpk=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/credentials/oauth",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/credentials/oauth",
 			"path": "google.golang.org/grpc/credentials/oauth",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "3Lt5hNAG8qJAYSsNghR5uA1zQns=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/grpclog",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/grpclog",
 			"path": "google.golang.org/grpc/grpclog",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "T3Q0p8kzvXFnRkMaK/G8mCv6mc0=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/internal",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/internal",
 			"path": "google.golang.org/grpc/internal",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
@@ -310,21 +310,21 @@
 		},
 		{
 			"checksumSHA1": "T05Mzg3hEv2Vxao9hZn0Kv+nwUQ=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/metadata",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/metadata",
 			"path": "google.golang.org/grpc/metadata",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "4GSUFhOQ0kdFlBH4D5OTeKy78z0=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/naming",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/naming",
 			"path": "google.golang.org/grpc/naming",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "3RRoLeH6X2//7tVClOVzxW2bY+E=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/peer",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/peer",
 			"path": "google.golang.org/grpc/peer",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
@@ -343,14 +343,14 @@
 		},
 		{
 			"checksumSHA1": "eBYn1S8sClTkW1wke4kykeRVE/Q=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/google.golang.org/grpc/transport",
+			"origin": "github.com/square/quotaservice/vendor/google.golang.org/grpc/transport",
 			"path": "google.golang.org/grpc/transport",
 			"revision": "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4",
 			"revisionTime": "2017-03-07T00:54:00Z"
 		},
 		{
 			"checksumSHA1": "SeYI7DRWrd0Ku+CLavuwIz3EEmQ=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/gopkg.in/alecthomas/kingpin.v2",
+			"origin": "github.com/square/quotaservice/vendor/gopkg.in/alecthomas/kingpin.v2",
 			"path": "gopkg.in/alecthomas/kingpin.v2",
 			"revision": "e9044be3ab2a8e11d4e1f418d12f0790d57e8d70",
 			"revisionTime": "2016-08-29T10:30:05Z"
@@ -393,11 +393,11 @@
 		},
 		{
 			"checksumSHA1": "12GqsW8PiRPnezDDy0v4brZrndM=",
-			"origin": "github.com/maniksurtani/quotaservice/vendor/gopkg.in/yaml.v2",
+			"origin": "github.com/square/quotaservice/vendor/gopkg.in/yaml.v2",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
 			"revisionTime": "2016-09-28T15:37:09Z"
 		}
 	],
-	"rootPath": "github.com/maniksurtani/quotaservice"
+	"rootPath": "github.com/square/quotaservice"
 }

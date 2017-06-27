@@ -1,26 +1,27 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package main
 
 import (
 	"fmt"
-	"github.com/maniksurtani/quotaservice/config"
-	"time"
-	"github.com/maniksurtani/quotaservice/config/cloudpersisters/google"
-	"github.com/maniksurtani/quotaservice/protos/config"
-	"math/rand"
 	"io"
+	"math/rand"
+	"time"
+
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/config/cloudpersisters/google"
+	"github.com/square/quotaservice/protos/config"
 )
 
 // Change these constants to match your settings on Google Cloud. Visit https://console.cloud.google.com/datastore
 // for more details.
 const (
-	projectId = "my-project-id-on-google-cloud"
+	projectId       = "my-project-id-on-google-cloud"
 	credentialsFile = "/path/to/my/credentials/file.json"
-	namespace = "MyGoogleDatastoreNamespace"
-	entity = "MyGoogleDatastoreEntityKind"
-	initVersion = 0
+	namespace       = "MyGoogleDatastoreNamespace"
+	entity          = "MyGoogleDatastoreEntityKind"
+	initVersion     = 0
 )
 
 var counter = 0
@@ -40,7 +41,7 @@ func main() {
 	// Persist the configuration.
 	e := dp.PersistAndNotify(r)
 	checkNoErrors(e)
-	consume(configChangedWatcher, 10 * time.Second)
+	consume(configChangedWatcher, 10*time.Second)
 
 	// Modify configuration.
 	r = updateConfig(cfg)
@@ -48,7 +49,7 @@ func main() {
 	// Persist again.
 	e = dp.PersistAndNotify(r)
 	checkNoErrors(e)
-	consume(configChangedWatcher, 10 * time.Second)
+	consume(configChangedWatcher, 10*time.Second)
 
 	time.Sleep(time.Second * 10)
 
@@ -58,7 +59,7 @@ func main() {
 	// Persist again.
 	e = dp.PersistAndNotify(r)
 	checkNoErrors(e)
-	consume(configChangedWatcher, 10 * time.Second)
+	consume(configChangedWatcher, 10*time.Second)
 
 	time.Sleep(time.Second * 10)
 
@@ -80,7 +81,7 @@ func main() {
 }
 
 func createGoogleDatastorePersister() config.ConfigPersister {
-	dp, e := google.New(projectId, credentialsFile,namespace, entity, time.Second)
+	dp, e := google.New(projectId, credentialsFile, namespace, entity, time.Second)
 	checkNoErrors(e)
 	return dp
 }
@@ -91,12 +92,11 @@ func checkNoErrors(e error) {
 	}
 }
 
-
 // consumeAll consumes all messages on a channel until there is nothing left.
-func consumeAll(c <- chan struct{}) {
+func consumeAll(c <-chan struct{}) {
 	for {
 		select {
-		case <- c:
+		case <-c:
 			// keep looping
 		default:
 			return
@@ -105,17 +105,17 @@ func consumeAll(c <- chan struct{}) {
 }
 
 // consume consumes a single element from a channel, blocking until it does so.
-func consume(c <- chan struct{}, maxWait time.Duration) {
+func consume(c <-chan struct{}, maxWait time.Duration) {
 	t := time.NewTimer(maxWait)
 	select {
-	case <- c:
+	case <-c:
 		return
-	case <- t.C:
+	case <-t.C:
 		panic(fmt.Sprintf("Timed out waiting for an event for %v", maxWait))
 	}
 }
 
-func updateConfig(cfg *quotaservice_configs.ServiceConfig) io.Reader{
+func updateConfig(cfg *quotaservice_configs.ServiceConfig) io.Reader {
 	cfg.GlobalDefaultBucket = config.NewDefaultBucketConfig(config.DefaultBucketName)
 	cfg.GlobalDefaultBucket.FillRate = rand.Int63()
 	counter++

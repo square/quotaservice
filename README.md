@@ -1,9 +1,9 @@
 # Quota Service
-[![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE)
-[![Travis status](https://travis-ci.org/maniksurtani/quotaservice.svg?branch=master "Travis status")](https://travis-ci.org/maniksurtani/quotaservice)
-[![GoDoc](https://godoc.org/github.com/maniksurtani/quotaservice?status.png)](https://godoc.org/github.com/maniksurtani/quotaservice)
+[![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/square/quotaservice/master/LICENSE)
+[![Travis status](https://travis-ci.org/square/quotaservice.svg?branch=master "Travis status")](https://travis-ci.org/square/quotaservice)
+[![GoDoc](https://godoc.org/github.com/square/quotaservice?status.png)](https://godoc.org/github.com/square/quotaservice)
 ![Project Status](https://img.shields.io/badge/status-beta-orange.svg)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/maniksurtani/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/square/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Overview
 
@@ -37,7 +37,7 @@ A [gRPC client interceptor](https://github.com/grpc/grpc-java/blob/master/core/s
 
 ## Open Source
 
-The quota service and clients are all completely open source, under the Apache Software Foundation License v2.0 (ASLv2). See [LICENSE](https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE) for details.
+The quota service and clients are all completely open source, under the Apache Software Foundation License v2.0 (ASLv2). See [LICENSE](https://raw.githubusercontent.com/square/quotaservice/master/LICENSE) for details.
 
 # Goals
 
@@ -295,7 +295,7 @@ if tokensNextAvailableNanos + futureWaitNanos - currentTimeNanos > maxDebtNanos 
 
 ## API: Protobuf service
 
-A protobuf service endpoint will be exposed by the quota service, as defined [here](https://github.com/maniksurtani/quotaservice/blob/master/protos/quota_service.proto).
+A protobuf service endpoint will be exposed by the quota service, as defined [here](https://github.com/square/quotaservice/blob/master/protos/quota_service.proto).
 
 ### Alternative APIs
 
@@ -420,7 +420,7 @@ The following configuration elements need to be provided to the quota service:
     * Max debt millis - the maximum amount of time in the future a request can pre-reserve tokens (default: `10000`)
     * Max tokens per request (default: `fill_rate`)
 
-See the GoDocs on [`configs.ServiceConfig`](https://godoc.org/github.com/maniksurtani/quotaservice/configs#ServiceConfig) for more details.
+See the GoDocs on [`configs.ServiceConfig`](https://godoc.org/github.com/square/quotaservice/configs#ServiceConfig) for more details.
 
 ## Service-level objectives
 

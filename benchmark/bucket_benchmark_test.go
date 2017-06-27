@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 // Package buckets defines interfaces for abstractions of token buckets.
 package benchmark
@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/maniksurtani/quotaservice"
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/test/helpers"
+	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/test/helpers"
 
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 var benchmarkCfg = func() *pbconfig.ServiceConfig {

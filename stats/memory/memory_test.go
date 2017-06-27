@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package memory
 
@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/maniksurtani/quotaservice/events"
-	"github.com/maniksurtani/quotaservice/stats"
+	"github.com/square/quotaservice/events"
+	"github.com/square/quotaservice/stats"
 )
 
 var listener stats.Listener

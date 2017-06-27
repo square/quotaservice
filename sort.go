@@ -1,10 +1,10 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
 import (
-	pb "github.com/maniksurtani/quotaservice/protos/config"
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 // Implements an interface for sorting server configs

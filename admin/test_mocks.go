@@ -1,14 +1,14 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package admin
 
 import (
 	"errors"
 
-	"github.com/maniksurtani/quotaservice/config"
-	pb "github.com/maniksurtani/quotaservice/protos/config"
-	"github.com/maniksurtani/quotaservice/stats"
+	"github.com/square/quotaservice/config"
+	pb "github.com/square/quotaservice/protos/config"
+	"github.com/square/quotaservice/stats"
 )
 
 type MockAdministrable struct {

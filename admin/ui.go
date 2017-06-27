@@ -1,5 +1,5 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package admin
 
@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/logging"
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/logging"
 )
 
 // uiHandler is an http.Handler for the web UI.

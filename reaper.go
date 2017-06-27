@@ -1,13 +1,14 @@
 // Licensed under the Apache License, Version 2.0
-// Details: https://raw.githubusercontent.com/maniksurtani/quotaservice/master/LICENSE
+// Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
 package quotaservice
 
 import (
-	"github.com/maniksurtani/quotaservice/config"
-	"github.com/maniksurtani/quotaservice/logging"
-	pbconfig "github.com/maniksurtani/quotaservice/protos/config"
 	"time"
+
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/logging"
+	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
 // watcher watches reapableBuckets for activity.
@@ -144,7 +145,7 @@ func (r *reaper) reapIdleBuckets(bc *bucketContainer, newWatchers <-chan *watche
 				// newWatchers closed; stop the reaper.
 				r.newWatchers = nil
 				r.watchers = nil
-				return 
+				return
 			}
 
 		case <-ticker.C:
