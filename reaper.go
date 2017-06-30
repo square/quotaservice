@@ -128,7 +128,7 @@ func (r *reaper) checkExpirations(bc *bucketContainer) time.Duration {
 	return newSleep
 }
 
-// watch watches all buckets for activity, deleting the bucket if no activity has been detected
+// reapIdleBuckets watches all buckets for activity, deleting the bucket if no activity has been detected
 // after a given duration.
 func (r *reaper) reapIdleBuckets(bc *bucketContainer, newWatchers <-chan *watcher) {
 	sleep := r.cfg.InitSleep
