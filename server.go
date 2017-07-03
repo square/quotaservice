@@ -276,7 +276,7 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 				s.bucketContainer.createNamespaceLocked(newNsCfg)
 			} else {
 				// Just correct the config pointer on the old namespace
-				ns.cfg = newNsCfg
+				ns.swapCfg(newNsCfg)
 			}
 		} else {
 			ns.destroy()

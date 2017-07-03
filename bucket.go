@@ -89,6 +89,8 @@ func (ns *namespace) removeBucket(bucketName string) {
 
 // destroy calls Destroy() on all buckets in this namespace
 func (ns *namespace) destroy() {
+	ns.Lock()
+	defer ns.Unlock()
 	if ns.defaultBucket != nil {
 		ns.defaultBucket.Destroy()
 	}
@@ -96,6 +98,13 @@ func (ns *namespace) destroy() {
 	for _, bucket := range ns.buckets {
 		bucket.Destroy()
 	}
+}
+
+// swapCfg swaps the bucket config for the namespace.
+func (ns *namespace) swapCfg(newCfg *pbconfig.NamespaceConfig) {
+	ns.Lock()
+	defer ns.Unlock()
+	ns.cfg = newCfg
 }
 
 // BucketFactory creates buckets.
