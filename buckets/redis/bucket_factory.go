@@ -119,7 +119,9 @@ func (bf *bucketFactory) flush(version int32) {
 	// Store flushedAtVersion to prevent multiple nodes flushing Redis unnecessarily, while the flush is in
 	// progress. This may be racy, but it's a minor optimization. At worst case, we have > 1 flushes (from > 1
 	// nodes in the cluster), which, while wasteful, isn't dangerous.
-	bf.client.Set(flushedAtVersionKey, version, 0)
+	if _, err := bf.client.Set(flushedAtVersionKey, version, 0).Result(); err != nil {
+		logging.Printf("Failed to set flushedAtVersionKey: %v", err)
+	}
 
 	// We could consider a batched SCAN + DELETE if the FLUSHDB operation is slow. But for the most part, this is
 	// "fast enough" - to the order of a few 100s of µs.
@@ -128,7 +130,9 @@ func (bf *bucketFactory) flush(version int32) {
 	}
 
 	// Re-set flushedAtVersion, since previous entry would have been removed with the flush.
-	bf.client.Set(flushedAtVersionKey, version, 0)
+	if _, err := bf.client.Set(flushedAtVersionKey, version, 0).Result(); err != nil {
+		logging.Printf("Failed to set flushedAtVersionKey: %v", err)
+	}
 	logging.Printf("Flushed Redis in %v", time.Since(start))
 }
 
