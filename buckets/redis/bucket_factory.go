@@ -50,19 +50,26 @@ type bucketFactory struct {
 	redisOpts         *redis.Options
 	scriptSHA         string
 	connectionRetries int
+	flushdbCommand    string
 }
 
-// NewBucketFactory creates a new bucketFactory instance
-func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaservice.BucketFactory {
+// NewBucketFactory creates a new bucketFactory instance.
+// flushdbCommand specifies the name of the Flushdb command. "flushdb"
+// is used if it's empty.
+func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, flushdbCommand string) quotaservice.BucketFactory {
 	if connectionRetries < 1 {
 		connectionRetries = 1
+	}
+	if flushdbCommand == "" {
+		flushdbCommand = "flushdb"
 	}
 
 	return &bucketFactory{
 		redisOpts:         redisOpts,
 		connectionRetries: connectionRetries,
 		sharedAttributes:  make(map[string]*configAttributes),
-		refcounts:         make(map[string]int)}
+		refcounts:         make(map[string]int),
+		flushdbCommand:    flushdbCommand}
 }
 
 // Init initializes a bucketFactory for use, implementing Init() on the quotaservice.BucketFactory interface
@@ -116,7 +123,9 @@ func (bf *bucketFactory) flush(version int32) {
 
 	// We could consider a batched SCAN + DELETE if the FLUSHDB operation is slow. But for the most part, this is
 	// "fast enough" - to the order of a few 100s of µs.
-	bf.client.FlushDb()
+	if err := bf.client.Process(redis.NewStatusCmd(bf.flushdbCommand)); err != nil {
+		logging.Printf("Failed to flushdb: %v", err)
+	}
 
 	// Re-set flushedAtVersion, since previous entry would have been removed with the flush.
 	bf.client.Set(flushedAtVersionKey, version, 0)
