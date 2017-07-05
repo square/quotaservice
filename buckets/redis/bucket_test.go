@@ -40,7 +40,7 @@ func setUp() {
 	cfg = config.NewDefaultServiceConfig()
 	config.AddNamespace(cfg, dynNs)
 
-	factory = NewBucketFactory(&redis.Options{Addr: "localhost:6379"}, 2).(*bucketFactory)
+	factory = NewBucketFactory(&redis.Options{Addr: "localhost:6379"}, 2, "flushdb").(*bucketFactory)
 	factory.Init(cfg)
 	bucket = factory.NewBucket("redis", "redis", config.NewDefaultBucketConfig(""), false).(*staticBucket)
 }
