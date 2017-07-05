@@ -17,5 +17,5 @@ func NewReaperConfig() ReaperConfig {
 	return ReaperConfig{
 		BucketWatcherBuffer: 10000,
 		InitSleep:           10 * time.Second,
-		MinFrequency:        1 * time.Hour}
+		MinFrequency:        10 * time.Minute}
 }
