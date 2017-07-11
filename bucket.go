@@ -275,12 +275,16 @@ func (bc *bucketContainer) createNewNamedBucketFromCfg(namespace, bucketName str
 		return nil
 	}
 
-	bucket, _ = bc.r.applyWatch(bucket, namespace, bucketName, bCfg)
-	ns.buckets[bucketName] = bucket
-
 	if dyn {
+		// Apply a watcher if a bucket is dynamic. We don't expire
+		// static buckets since FindBucket won't create a new bucket
+		// for static buckets. Also, removing idle static buckets
+		// won't help much since the number of static buckets is
+		// small.
+		bucket, _ = bc.r.applyWatch(bucket, namespace, bucketName, bCfg)
 		ns.dynamicBucketCount++
 	}
+	ns.buckets[bucketName] = bucket
 
 	bucket.ReportActivity()
 	return bucket
