@@ -55,6 +55,8 @@ func TestGetNotFound(t *testing.T) {
 }
 
 func getURL(url string, t *testing.T) string {
+	t.Helper()
+
 	res, err := http.Get(url)
 
 	if err != nil {

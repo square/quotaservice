@@ -108,6 +108,8 @@ func TestBucketsDelete(t *testing.T) {
 }
 
 func doBucketsRequest(t *testing.T, a Administrable, object interface{}, method, path, body string) {
+	t.Helper()
+
 	apiHandler := newBucketsAPIHandler(a)
 	ts := httptest.NewServer(apiHandler)
 	defer ts.Close()

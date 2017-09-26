@@ -69,6 +69,8 @@ func TestConfig(t *testing.T) {
 }
 
 func assertNamespace(t *testing.T, namespace string, ns *pbconfig.NamespaceConfig, numBuckets int, expectDefault, expectDynamic bool, maxDynamic int32) {
+	t.Helper()
+
 	if namespace != ns.Name {
 		t.Fatalf("namespace.Name is %v and not %v", ns.Name, namespace)
 	}
@@ -91,6 +93,8 @@ func assertNamespace(t *testing.T, namespace string, ns *pbconfig.NamespaceConfi
 }
 
 func assertBucket(t *testing.T, name, namespace string, b *pbconfig.BucketConfig, size, fillRate, waitTimeoutMillis, maxIdleMillis, maxDebtMillis, maxTokensPerRequest int64) {
+	t.Helper()
+
 	if b == nil {
 		t.Fatal("Bucket doesn't exist")
 	}
