@@ -107,6 +107,8 @@ func TestTooManyTokensRequested(t *testing.T) {
 }
 
 func stopServer(t *testing.T, s *server) {
+	t.Helper()
+
 	_, err := s.Stop()
 	helpers.CheckError(t, err)
 }

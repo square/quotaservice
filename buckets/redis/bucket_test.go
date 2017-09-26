@@ -120,6 +120,8 @@ func TestRefCountsForDynamic(t *testing.T) {
 }
 
 func assertNoSharedAttribs(t *testing.T) {
+	t.Helper()
+
 	if len(factory.sharedAttributes) != 0 {
 		t.Fatalf("Expected no shared attributes. Found %+v and refcounts %+v", factory.sharedAttributes, factory.refcounts)
 	}
@@ -130,6 +132,8 @@ func assertNoSharedAttribs(t *testing.T) {
 }
 
 func assertRefCounts(ns string, expected int, t *testing.T) {
+	t.Helper()
+
 	if _, exists := factory.sharedAttributes[ns]; !exists {
 		t.Fatalf("Expected shared attributes for namespace %v but found %+v", ns, factory.sharedAttributes)
 	}

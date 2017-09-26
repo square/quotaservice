@@ -155,6 +155,8 @@ func TestBucketRemoval(t *testing.T) {
 }
 
 func checkEvent(namespace, name string, dyn bool, eventType events.EventType, tokens int64, waitTime time.Duration, actual events.Event, t *testing.T) {
+	t.Helper()
+
 	if actual == nil {
 		t.Fatal("Expecting event; was nil.")
 	}
