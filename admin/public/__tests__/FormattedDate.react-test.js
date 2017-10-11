@@ -1,4 +1,4 @@
-import { formatDate } from '../src/components/FormattedDate.jsx'
+import { formatDate } from '../src/components/FormattedDate.jsx';
 
 test('date formatting', () => {
   expect(formatDate(1487202496)).toEqual(`

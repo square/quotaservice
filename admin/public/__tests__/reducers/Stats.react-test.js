@@ -1,13 +1,7 @@
-import { stats } from '../../src/reducers/stats.jsx'
-
-import {
-  STATS_TOGGLE,
-  STATS_REQUEST, STATS_FAILURE,
-  STATS_FETCH_SUCCESS, STATS_COMMIT_SUCCESS
-} from '../../src/actions/stats.jsx'
-
-import { SELECT_NAMESPACE } from '../../src/actions/namespaces.jsx'
-import { CONFIGS_REQUEST } from '../../src/actions/configs.jsx'
+import { CONFIGS_REQUEST } from '../../src/actions/configs.jsx';
+import { SELECT_NAMESPACE } from '../../src/actions/namespaces.jsx';
+import { STATS_FAILURE, STATS_FETCH_SUCCESS, STATS_REQUEST, STATS_TOGGLE } from '../../src/actions/stats.jsx';
+import { stats } from '../../src/reducers/stats.jsx';
 
 describe('stats reducer', () => {
   it('should return the initial state', () => {
@@ -17,7 +11,7 @@ describe('stats reducer', () => {
   it('should handle STATS_TOGGLE', () => {
     expect(stats({ show: false }, { type: STATS_TOGGLE })).toEqual({ show: true })
     expect(stats({ show: true }, { type: STATS_TOGGLE })).toEqual({ show: false })
-    expect(stats({ }, { type: STATS_TOGGLE })).toEqual({ show: true })
+    expect(stats({}, { type: STATS_TOGGLE })).toEqual({ show: true })
   })
 
   it('should handle CONFIGS_REQUEST, SELECT_NAMESPACE', () => {

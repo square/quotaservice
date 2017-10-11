@@ -10,10 +10,14 @@
   },
   "env": {
     "browser": true,
-    "node": true
+    "node": true,
+    "jest": true
   },
   "rules": {
-    "quotes": [2, "single"],
+    "quotes": [
+      2,
+      "single"
+    ],
     "strict": 0,
     "react/jsx-uses-react": 2,
     "react/jsx-uses-vars": 2,
@@ -22,5 +26,8 @@
   "plugins": [
     "react"
   ],
-  "extends": ["eslint:recommended", "plugin:react/recommended"]
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended"
+  ]
 }

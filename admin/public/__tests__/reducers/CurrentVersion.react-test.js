@@ -1,5 +1,5 @@
-import { currentVersion } from '../../src/reducers/configs.jsx'
-import { CONFIGS_FETCH_SUCCESS } from '../../src/actions/configs.jsx'
+import { CONFIGS_FETCH_SUCCESS } from '../../src/actions/configs.jsx';
+import { currentVersion } from '../../src/reducers/configs.jsx';
 
 describe('currentVersion reducer', () => {
   it('should return the initial state', () => {
