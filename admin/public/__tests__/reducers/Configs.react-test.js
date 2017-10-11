@@ -1,9 +1,10 @@
-import { configs } from '../../src/reducers/configs.jsx'
-
 import {
-  CONFIGS_REQUEST, CONFIGS_FAILURE,
-  CONFIGS_FETCH_SUCCESS, CONFIGS_COMMIT_SUCCESS
-} from '../../src/actions/configs.jsx'
+  CONFIGS_COMMIT_SUCCESS,
+  CONFIGS_FAILURE,
+  CONFIGS_FETCH_SUCCESS,
+  CONFIGS_REQUEST,
+} from '../../src/actions/configs.jsx';
+import { configs } from '../../src/reducers/configs.jsx';
 
 describe('configs reducer', () => {
   it('should return the initial state', () => {

@@ -1,10 +1,9 @@
-import Immutable from 'seamless-immutable'
+import Immutable from 'seamless-immutable';
 
-import { history, INITIAL_HISTORY } from '../../src/reducers/history.jsx'
-import { UNDO, REDO } from '../../src/actions/history.jsx'
-
-import { namespaces } from '../../src/reducers/namespaces.jsx'
-import * as MutableActions from '../../src/actions/mutable.jsx'
+import { REDO, UNDO } from '../../src/actions/history.jsx';
+import * as MutableActions from '../../src/actions/mutable.jsx';
+import { history, INITIAL_HISTORY } from '../../src/reducers/history.jsx';
+import { namespaces } from '../../src/reducers/namespaces.jsx';
 
 const reducer = history(namespaces)
 
@@ -28,14 +27,14 @@ describe('history reducer', () => {
         future: []
       }
     }, {
-      type: UNDO
-    })).toEqual({
-      items: pastState,
-      history: {
-        past: [],
-        future: [{ items: undoState, change: 2 }]
-      }
-    })
+        type: UNDO
+      })).toEqual({
+        items: pastState,
+        history: {
+          past: [],
+          future: [{ items: undoState, change: 2 }]
+        }
+      })
   })
 
   it('should handle REDO', () => {
@@ -53,14 +52,14 @@ describe('history reducer', () => {
         future: [{ items: undoState, change: 2 }]
       }
     }, {
-      type: REDO
-    })).toEqual({
-      items: undoState,
-      history: {
-        past: [{ items: pastState, change: 2 }],
-        future: []
-      }
-    })
+        type: REDO
+      })).toEqual({
+        items: undoState,
+        history: {
+          past: [{ items: pastState, change: 2 }],
+          future: []
+        }
+      })
   })
 
   it('should handle mutable actions', () => {
@@ -75,13 +74,13 @@ describe('history reducer', () => {
 
     let state = INITIAL_HISTORY
     let nextState = {
-      items: namespace("new.namespace"),
+      items: namespace('new.namespace'),
       history: {
         past: [{
           items: Immutable.from({}),
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace"
+            key: 'new.namespace'
           }
         }],
         future: []
@@ -90,26 +89,26 @@ describe('history reducer', () => {
 
     expect(reducer(state, {
       type: MutableActions.ADD_NAMESPACE,
-      namespace: "new.namespace"
+      namespace: 'new.namespace'
     })).toEqual(nextState)
 
     // Test merging
 
     state = nextState
     nextState = {
-      items: namespace("new.namespace", { foo: "bar" }),
+      items: namespace('new.namespace', { foo: 'bar' }),
       history: {
         past: [{
           change: {
             type: MutableActions.UPDATE_NAMESPACE,
-            key: "new.namespace.foo",
-            value: "bar"
+            key: 'new.namespace.foo',
+            value: 'bar'
           },
-          items: namespace("new.namespace")
+          items: namespace('new.namespace')
         }, {
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace"
+            key: 'new.namespace'
           },
           items: Immutable.from({})
         }],
@@ -119,9 +118,9 @@ describe('history reducer', () => {
 
     expect(reducer(state, {
       type: MutableActions.UPDATE_NAMESPACE,
-      namespace: "new.namespace",
-      key: "foo",
-      value: "bar"
+      namespace: 'new.namespace',
+      key: 'foo',
+      value: 'bar'
     })).toEqual(nextState)
 
 
@@ -129,19 +128,19 @@ describe('history reducer', () => {
 
     state = nextState
     nextState = {
-      items: namespace("new.namespace", { foo: "bar2" }),
+      items: namespace('new.namespace', { foo: 'bar2' }),
       history: {
         past: [{
           change: {
             type: MutableActions.UPDATE_NAMESPACE,
-            key: "new.namespace.foo",
-            value: "bar2"
+            key: 'new.namespace.foo',
+            value: 'bar2'
           },
-          items: namespace("new.namespace")
+          items: namespace('new.namespace')
         }, {
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace"
+            key: 'new.namespace'
           },
           items: Immutable.from({})
         }],
@@ -151,36 +150,36 @@ describe('history reducer', () => {
 
     expect(reducer(state, {
       type: MutableActions.UPDATE_NAMESPACE,
-      namespace: "new.namespace",
-      key: "foo",
-      value: "bar2"
+      namespace: 'new.namespace',
+      key: 'foo',
+      value: 'bar2'
     })).toEqual(nextState)
 
     state = nextState
     nextState = {
       items: Immutable.from(Object.assign(
         {},
-        namespace("new.namespace2"),
-        namespace("new.namespace", { foo: "bar2" }),
+        namespace('new.namespace2'),
+        namespace('new.namespace', { foo: 'bar2' }),
       )),
       history: {
         past: [{
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace2"
+            key: 'new.namespace2'
           },
-          items: namespace("new.namespace", { foo: "bar2" })
-        },{
+          items: namespace('new.namespace', { foo: 'bar2' })
+        }, {
           change: {
             type: MutableActions.UPDATE_NAMESPACE,
-            key: "new.namespace.foo",
-            value: "bar2"
+            key: 'new.namespace.foo',
+            value: 'bar2'
           },
-          items: namespace("new.namespace")
+          items: namespace('new.namespace')
         }, {
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace"
+            key: 'new.namespace'
           },
           items: Immutable.from({})
         }],
@@ -190,7 +189,7 @@ describe('history reducer', () => {
 
     expect(reducer(state, {
       type: MutableActions.ADD_NAMESPACE,
-      namespace: "new.namespace2"
+      namespace: 'new.namespace2'
     })).toEqual(nextState)
 
 
@@ -199,38 +198,38 @@ describe('history reducer', () => {
     nextState = {
       items: Immutable.from(Object.assign(
         {},
-        namespace("new.namespace2"),
-        namespace("new.namespace", { foo: "bar3" }),
+        namespace('new.namespace2'),
+        namespace('new.namespace', { foo: 'bar3' }),
       )),
       history: {
         past: [{
           change: {
             type: MutableActions.UPDATE_NAMESPACE,
-            key: "new.namespace.foo",
-            value: "bar3"
+            key: 'new.namespace.foo',
+            value: 'bar3'
           },
           items: Immutable.from(Object.assign(
             {},
-            namespace("new.namespace2"),
-            namespace("new.namespace", { foo: "bar2" }),
+            namespace('new.namespace2'),
+            namespace('new.namespace', { foo: 'bar2' }),
           ))
         }, {
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace2"
+            key: 'new.namespace2'
           },
-          items: namespace("new.namespace", { foo: "bar2" })
-        },{
+          items: namespace('new.namespace', { foo: 'bar2' })
+        }, {
           change: {
             type: MutableActions.UPDATE_NAMESPACE,
-            key: "new.namespace.foo",
-            value: "bar2"
+            key: 'new.namespace.foo',
+            value: 'bar2'
           },
-          items: namespace("new.namespace")
+          items: namespace('new.namespace')
         }, {
           change: {
             type: MutableActions.ADD_NAMESPACE,
-            key: "new.namespace"
+            key: 'new.namespace'
           },
           items: Immutable.from({})
         }],
@@ -240,16 +239,16 @@ describe('history reducer', () => {
 
     expect(reducer(state, {
       type: MutableActions.UPDATE_NAMESPACE,
-      namespace: "new.namespace",
-      key: "foo",
-      value: "bar3"
+      namespace: 'new.namespace',
+      key: 'foo',
+      value: 'bar3'
     })).toEqual(nextState)
   })
 
   it('should handle immutable actions', () => {
     expect(reducer(INITIAL_HISTORY, {
-      type: "MY_ACTION",
-      payload: "test"
+      type: 'MY_ACTION',
+      payload: 'test'
     })).toEqual(INITIAL_HISTORY)
   })
 })

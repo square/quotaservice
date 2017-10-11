@@ -3,10 +3,11 @@
   "version": "0.0.1",
   "description": "Admin UI for square/quotaservice",
   "scripts": {
-    "lint": "eslint 'src/**'",
+    "lint": "eslint 'src/**' '__tests__/**'",
     "start": "node server.js",
     "test": "jest",
-    "dist": "webpack --config webpack.config.production.js --progress --profile --colors",
+    "dist":
+      "webpack --config webpack.config.production.js --progress --profile --colors",
     "clean-dist": "webpack --config webpack.config.production.js"
   },
   "repository": {

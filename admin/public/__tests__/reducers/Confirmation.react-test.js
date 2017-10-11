@@ -1,5 +1,5 @@
-import { confirm } from '../../src/reducers/confirmation.jsx'
-import { CONFIRM } from '../../src/actions/confirmation.jsx'
+import { CONFIRM } from '../../src/actions/confirmation.jsx';
+import { confirm } from '../../src/reducers/confirmation.jsx';
 
 describe('confirm reducer', () => {
   it('should return the initial state', () => {
