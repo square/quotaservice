@@ -42,7 +42,6 @@
   },
   "dependencies": {
     "block-stream": "0.0.9",
-    "enzyme-adapter-react-16": "^1.0.1",
     "prop-types": "^15.6.0",
     "react-redux": "~5.0.1",
     "redux": "^3.7.2",
