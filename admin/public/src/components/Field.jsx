@@ -1,4 +1,6 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
 export default class Field extends Component {
   constructor(props) {
@@ -41,7 +43,7 @@ export default class Field extends Component {
   }
 
   render() {
-    const { placeholder, title, keyName }= this.props
+    const { placeholder, title, keyName } = this.props
     const { id, value } = this.state
 
     let keyTitle = keyName

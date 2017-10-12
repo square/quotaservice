@@ -1,5 +1,8 @@
-import React, { Component, PropTypes } from 'react'
-import { formatDate } from './FormattedDate.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import { formatDate } from './FormattedDate';
 
 export default class Config extends Component {
   render() {

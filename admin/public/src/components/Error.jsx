@@ -1,5 +1,7 @@
-import React, { Component, PropTypes } from 'react'
-import { RequestError, InternalError, ApiError } from 'redux-api-middleware'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+import { ApiError, InternalError, RequestError } from 'redux-api-middleware';
 
 export default class Error extends Component {
   renderError(error) {
