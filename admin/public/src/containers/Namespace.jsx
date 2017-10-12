@@ -1,7 +1,10 @@
-import React, { Component, PropTypes } from 'react'
-import Bucket from './Bucket.jsx'
-import Field from '../components/Field.jsx'
-import NamespaceHeader from '../components/NamespaceHeader.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import Field from '../components/Field.jsx';
+import NamespaceHeader from '../components/NamespaceHeader.jsx';
+import Bucket from './Bucket.jsx';
 
 export default class Namespace extends Component {
   handleNamespaceChange = (keyName) => {
@@ -58,7 +61,7 @@ export default class Namespace extends Component {
         {this.renderBucket(namespace.dynamic_bucket_template, true)}
         {this.renderBucket(namespace.default_bucket, false)}
         {buckets && Object.keys(buckets).map(key =>
-            this.renderBucket(buckets[key], false)
+          this.renderBucket(buckets[key], false)
         )}
       </div>
     </div>)

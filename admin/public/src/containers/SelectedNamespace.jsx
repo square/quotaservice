@@ -1,7 +1,9 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
-import Namespace from './Namespace.jsx'
-import Stats from './Stats.jsx'
+import Namespace from './Namespace.jsx';
+import Stats from './Stats.jsx';
 
 export default class SelectedNamespace extends Component {
   render() {

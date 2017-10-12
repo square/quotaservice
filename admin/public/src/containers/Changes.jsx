@@ -1,5 +1,8 @@
-import React, { Component, PropTypes } from 'react'
-import Change from '../components/Change.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import Change from '../components/Change.jsx';
 
 export default class Changes extends Component {
   renderChanges() {

@@ -1,6 +1,8 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
-import NamespaceTile from './NamespaceTile.jsx'
+import NamespaceTile from './NamespaceTile.jsx';
 
 export default class Namespaces extends Component {
   render() {
@@ -22,7 +24,7 @@ export default class Namespaces extends Component {
 
     return (<div className={classNames.join(' ')}>
       {items && Object.keys(items).map(key =>
-          <NamespaceTile key={key} namespace={items[key]} {...actions} />
+        <NamespaceTile key={key} namespace={items[key]} {...actions} />
       )}
     </div>)
   }

@@ -1,5 +1,4 @@
-import { configure, shallow } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-15';
+import { shallow } from 'enzyme';
 import React from 'react';
 import { ApiError, InternalError, RequestError } from 'redux-api-middleware';
 
@@ -10,10 +9,6 @@ function setup(error) {
 }
 
 describe('Error', () => {
-  beforeAll(() => {
-    configure({ adapter: new Adapter() })
-  })
-
   it('should render generic error', () => {
     const enzymeWrapper = setup(new Error())
     expect(enzymeWrapper.find('div').hasClass('error')).toBe(true)

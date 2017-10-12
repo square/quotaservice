@@ -1,5 +1,4 @@
-import { configure, shallow } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-15';
+import { shallow } from 'enzyme';
 import React from 'react';
 
 import Field from '../../src/components/Field.jsx';
@@ -21,10 +20,6 @@ function setup() {
 }
 
 describe('Field', () => {
-  beforeAll(() => {
-    configure({ adapter: new Adapter() })
-  })
-
   it('handles integer entry', () => {
     const { handleChange, enzymeWrapper } = setup();
 

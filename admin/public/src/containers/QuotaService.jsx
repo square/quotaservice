@@ -1,9 +1,11 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
-import Confirmation from '../components/Confirmation.jsx'
-import Namespaces from './Namespaces.jsx'
-import SelectedNamespace from './SelectedNamespace.jsx'
-import Sidebar from './Sidebar.jsx'
+import Confirmation from '../components/Confirmation.jsx';
+import Namespaces from './Namespaces.jsx';
+import SelectedNamespace from './SelectedNamespace.jsx';
+import Sidebar from './Sidebar.jsx';
 
 export default class QuotaService extends Component {
   componentDidMount() {
