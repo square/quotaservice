@@ -29,7 +29,7 @@ export default class Change extends Component {
         return <span className="change-text">add {change.key}</span>
       case UPDATE_NAMESPACE:
       case UPDATE_BUCKET:
-        return <span className="change-text">set {change.key} to "{change.value}"</span>
+        return <span className="change-text">set {change.key} to &quot;{change.value}&quot;</span>
       case REMOVE_NAMESPACE:
       case REMOVE_BUCKET:
         return <span className="change-text">remove {change.key}</span>

@@ -1,6 +1,6 @@
-import { CONFIRM } from '../actions/confirmation.jsx'
+import { CONFIRM } from '../actions/confirmation.jsx';
 
-export function confirm(state = null, action) {
+export function confirm(state, action) {
   switch (action.type) {
     case CONFIRM:
       return action
