@@ -1,8 +1,15 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
 import {
-  ADD_NAMESPACE, UPDATE_NAMESPACE, REMOVE_NAMESPACE,
-  ADD_BUCKET, UPDATE_BUCKET, REMOVE_BUCKET
-} from '../actions/mutable.jsx'
+  ADD_BUCKET,
+  ADD_NAMESPACE,
+  REMOVE_BUCKET,
+  REMOVE_NAMESPACE,
+  UPDATE_BUCKET,
+  UPDATE_NAMESPACE,
+} from '../actions/mutable.jsx';
 
 export default class Change extends Component {
   render() {
@@ -16,13 +23,13 @@ export default class Change extends Component {
   description() {
     const { change } = this.props
 
-    switch(change.type) {
+    switch (change.type) {
       case ADD_NAMESPACE:
       case ADD_BUCKET:
         return <span className="change-text">add {change.key}</span>
       case UPDATE_NAMESPACE:
       case UPDATE_BUCKET:
-        return <span className="change-text">set {change.key} to "{change.value}"</span>
+        return <span className="change-text">set {change.key} to &quot;{change.value}&quot;</span>
       case REMOVE_NAMESPACE:
       case REMOVE_BUCKET:
         return <span className="change-text">remove {change.key}</span>

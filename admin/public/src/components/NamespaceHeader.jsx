@@ -1,4 +1,6 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
 export default class NamespaceHeader extends Component {
   handleNamespaceRemove = () => {

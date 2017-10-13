@@ -1,6 +1,9 @@
-import React, { Component, PropTypes } from 'react'
-import Error from '../components/Error.jsx'
-import NamespaceHeader from '../components/NamespaceHeader.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import Error from '../components/Error.jsx';
+import NamespaceHeader from '../components/NamespaceHeader.jsx';
 
 export default class Stats extends Component {
   constructor() {
@@ -120,8 +123,8 @@ export default class Stats extends Component {
       />
       <div className="buckets">
         {this.renderBucketSearch()}
-        {topHits && this.renderTopList('top dynamic bucket hits', topHits) }
-        {topMisses && this.renderTopList('top dynamic bucket misses', topMisses) }
+        {topHits && this.renderTopList('top dynamic bucket hits', topHits)}
+        {topMisses && this.renderTopList('top dynamic bucket misses', topMisses)}
       </div>
     </div>)
   }

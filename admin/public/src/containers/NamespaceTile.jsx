@@ -1,4 +1,6 @@
-import React, { Component, PropTypes } from 'react'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
 export default class NamespaceTile extends Component {
   onClick = () => {
@@ -12,11 +14,11 @@ export default class NamespaceTile extends Component {
 
     return (<div className="flex-box flex-tile namespace" onClick={this.onClick}>
       <p className="title">{namespace.name}</p>
-      <hr/>
+      <hr />
       {this.renderBucket(namespace.dynamic_bucket_template)}
       {this.renderBucket(namespace.default_bucket)}
       {Object.keys(buckets).map(key =>
-          this.renderBucket(buckets[key])
+        this.renderBucket(buckets[key])
       )}
     </div>)
   }

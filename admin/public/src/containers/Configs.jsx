@@ -1,5 +1,8 @@
-import React, { Component, PropTypes } from 'react'
-import Config from '../components/Config.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import Config from '../components/Config.jsx';
 
 export default class Configs extends Component {
   changeConfig(config) {

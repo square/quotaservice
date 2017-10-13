@@ -1,5 +1,9 @@
-import React, { Component, PropTypes } from 'react'
-import Field from '../components/Field.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
+
+import Field from '../components/Field.jsx';
+
 
 export default class Bucket extends Component {
   handleChange = (keyName) => {

@@ -1,10 +1,12 @@
-import React, { Component, PropTypes } from 'react'
-import Changes from './Changes.jsx'
-import Configs from './Configs.jsx'
-import AddField from '../components/AddField.jsx'
-import Error from '../components/Error.jsx'
+import PropTypes from 'prop-types';
+import React from 'react';
+import { Component } from 'react';
 
-import { BUCKET_KEY_MAP } from '../reducers/namespaces.jsx'
+import AddField from '../components/AddField.jsx';
+import Error from '../components/Error.jsx';
+import { BUCKET_KEY_MAP } from '../reducers/namespaces.jsx';
+import Changes from './Changes.jsx';
+import Configs from './Configs.jsx';
 
 export default class Sidebar extends Component {
   constructor() {

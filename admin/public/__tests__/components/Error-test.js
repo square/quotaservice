@@ -1,8 +1,8 @@
-import React from 'react'
-import { shallow } from 'enzyme'
+import { shallow } from 'enzyme';
+import React from 'react';
+import { ApiError, InternalError, RequestError } from 'redux-api-middleware';
 
-import Error from '../../src/components/Error.jsx'
-import { RequestError, InternalError, ApiError } from 'redux-api-middleware'
+import Error from '../../src/components/Error.jsx';
 
 function setup(error) {
   return shallow(<Error error={error} />)
