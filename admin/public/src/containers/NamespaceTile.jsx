@@ -9,10 +9,10 @@ export default class NamespaceTile extends Component {
   }
 
   render() {
-    const { namespace } = this.props
+    const { isSelected, namespace } = this.props
     const buckets = namespace.buckets || {}
 
-    return (<div className="flex-box flex-tile namespace" onClick={this.onClick}>
+    return (<div className={'flex-box flex-tile namespace' + (isSelected ? ' selected' : '')} onClick={this.onClick}>
       <p className="title">{namespace.name}</p>
       <hr />
       {this.renderBucket(namespace.dynamic_bucket_template)}
@@ -32,6 +32,7 @@ export default class NamespaceTile extends Component {
 }
 
 NamespaceTile.propTypes = {
+  isSelected: PropTypes.bool.isRequired,
   namespace: PropTypes.object.isRequired,
   selectNamespace: PropTypes.func.isRequired
 }
