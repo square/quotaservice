@@ -34,6 +34,10 @@
       overflow-x: hidden;
       text-overflow: ellipsis;
     }
+
+    &.selected {
+      border-color: black;
+    }
   }
 }
 

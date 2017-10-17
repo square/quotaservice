@@ -24,7 +24,11 @@ export default class Namespaces extends Component {
 
     return (<div className={classNames.join(' ')}>
       {items && Object.keys(items).map(key =>
-        <NamespaceTile key={key} namespace={items[key]} {...actions} />
+        <NamespaceTile
+          key={key}
+          isSelected={items[key] === selectedNamespace}
+          namespace={items[key]}
+          {...actions} />
       )}
     </div>)
   }
