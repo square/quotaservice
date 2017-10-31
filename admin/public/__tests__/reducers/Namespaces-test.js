@@ -285,7 +285,10 @@ describe('selectedNamespace reducer', () => {
     expect(selectedNamespace(undefined, {
       type: MutableActions.ADD_NAMESPACE,
       namespace: 'foo'
-    })).toEqual('foo')
+    })).toEqual({
+      namespace: 'foo',
+      canMakeChanges: true,
+    });
   })
 
   it('should handle REMOVE_NAMESPACE', () => {
@@ -297,7 +300,11 @@ describe('selectedNamespace reducer', () => {
   it('should handle SELECT_NAMESPACE', () => {
     expect(selectedNamespace(undefined, {
       type: SELECT_NAMESPACE,
-      namespace: 'foo'
-    })).toEqual('foo')
+      namespace: 'foo',
+      canMakeChanges: false,
+    })).toEqual({
+      namespace: 'foo',
+      canMakeChanges: false,
+    });
   })
 })

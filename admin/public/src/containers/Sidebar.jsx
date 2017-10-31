@@ -18,6 +18,11 @@ export default class Sidebar extends Component {
     }
   }
 
+  canMakeChanges() {
+    const { selectedNamespace } = this.props;
+    return selectedNamespace ? selectedNamespace.canMakeChanges : false;
+  }
+
   handleChange(key) {
     return (e) => this.setState({ [key]: e.target.value })
   }
@@ -41,7 +46,7 @@ export default class Sidebar extends Component {
       const { selectedNamespace, actions } = this.props
 
       if (bucket !== '') {
-        actions.addBucket(selectedNamespace.name, bucket)
+        actions.addBucket(selectedNamespace.namespace.name, bucket)
       }
     }
   }
@@ -57,27 +62,31 @@ export default class Sidebar extends Component {
 
   renderAddBucket() {
     if (!this.props.selectedNamespace)
-      return null
+      return null;
 
-    return (<AddField
+    if (!this.canMakeChanges())
+      return null;
+
+    return <AddField
       value={this.state.bucket}
       handleChange={this.handleChange('bucket')}
       placeholder='Bucket name'
       submitText='Add Bucket'
       handleSubmit={this.handleAddBucket()}
-    />)
+    />
   }
 
   renderSpecialBucketButtons() {
     const { selectedNamespace } = this.props
 
-    if (!selectedNamespace)
+    if (!selectedNamespace || !this.canMakeChanges())
       return null
 
     const buttons = []
+    const { namespace } = selectedNamespace;
 
     for (let [name, key] of Object.entries(BUCKET_KEY_MAP)) {
-      if (!selectedNamespace[key]) {
+      if (!namespace[key]) {
         buttons.push(<button
           key={key} className="btn btn-primary"
           onClick={this.handleAddBucket(name)}
@@ -88,19 +97,21 @@ export default class Sidebar extends Component {
     if (buttons.length == 0)
       return null;
 
-    return (<div className="flex-container flex-wrap flex-end">
-      {buttons}
-    </div>)
+    return (
+      <div className="flex-container flex-wrap flex-end">
+        {buttons}
+      </div>
+    )
   }
 
   renderAddNamespace() {
-    return (<AddField
+    return <AddField
       value={this.state.namespace}
       handleChange={this.handleChange('namespace')}
       placeholder='Namespace name'
       submitText='Add Namespace'
       handleSubmit={this.handleAddNamespace}
-    />)
+    />
   }
 
   handleCommit = () => {
@@ -111,22 +122,22 @@ export default class Sidebar extends Component {
   renderChanges() {
     const { namespaces, actions } = this.props
 
-    return (<Changes
+    return <Changes
       handleUndo={actions.undo}
       handleRedo={actions.redo}
-      handleRefresh={actions.fetchConfigs}
+      handleRefresh={this.props.handleRefresh}
       handleCommit={this.handleCommit}
       changes={namespaces.history}
-    />)
+    />
   }
 
   renderConfigs() {
     const { configs, actions } = this.props
 
-    return (<Configs
+    return <Configs
       configs={configs}
       loadConfig={actions.loadConfig}
-    />)
+    />
   }
 
   renderVersion() {
@@ -173,5 +184,6 @@ Sidebar.propTypes = {
   configs: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
   currentVersion: PropTypes.number.isRequired,
+  handleRefresh: PropTypes.func.isRequired,
   env: PropTypes.object.isRequired
 }

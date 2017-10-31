@@ -1,0 +1,68 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`QuotaService renders ok 1`] = `
+<div>
+  <div
+    className="flex-container fill-height-container"
+  >
+    <Sidebar
+      actions={
+        Object {
+          "fetchCapabilities": [Function],
+          "fetchConfigs": [Function],
+        }
+      }
+      capabilities={Object {}}
+      configs={Object {}}
+      currentVersion={1}
+      dispatch={[Function]}
+      env={
+        Object {
+          "capabilities": true,
+        }
+      }
+      handleRefresh={[Function]}
+      namespaces={Object {}}
+      stats={Object {}}
+    />
+    <Namespaces
+      actions={
+        Object {
+          "fetchCapabilities": [Function],
+          "fetchConfigs": [Function],
+        }
+      }
+      capabilities={Object {}}
+      configs={Object {}}
+      currentVersion={1}
+      dispatch={[Function]}
+      env={
+        Object {
+          "capabilities": true,
+        }
+      }
+      namespaces={Object {}}
+      stats={Object {}}
+    />
+    <SelectedNamespace
+      actions={
+        Object {
+          "fetchCapabilities": [Function],
+          "fetchConfigs": [Function],
+        }
+      }
+      capabilities={Object {}}
+      configs={Object {}}
+      currentVersion={1}
+      dispatch={[Function]}
+      env={
+        Object {
+          "capabilities": true,
+        }
+      }
+      namespaces={Object {}}
+      stats={Object {}}
+    />
+  </div>
+</div>
+`;
