@@ -43,7 +43,7 @@ export default class Field extends Component {
   }
 
   render() {
-    const { placeholder, title, keyName } = this.props
+    const { disabled, placeholder, title, keyName } = this.props
     const { id, value } = this.state
 
     let keyTitle = keyName
@@ -51,24 +51,28 @@ export default class Field extends Component {
       keyTitle = <abbr title={title}>{keyName}</abbr>
     }
 
-    return (<div className='flex-container input-box'>
-      <label htmlFor={id} className='input-label'>
-        {keyTitle}
-      </label>
-      <div className='input-field'>
-        <input
-          type='text'
-          id={id}
-          value={value}
-          onChange={this.handleChange}
-          placeholder={placeholder}
-        />
+    return (
+      <div className='flex-container input-box'>
+        <label htmlFor={id} className='input-label'>
+          {keyTitle}
+        </label>
+        <div className='input-field'>
+          <input
+            type='text'
+            id={id}
+            value={value}
+            disabled={disabled === true}
+            onChange={this.handleChange}
+            placeholder={placeholder}
+          />
+        </div>
       </div>
-    </div>)
+    )
   }
 }
 
 Field.propTypes = {
+  disabled: PropTypes.bool,
   value: PropTypes.any,
   handleChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,

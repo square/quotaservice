@@ -1,3 +1,12 @@
 {
-  "presets": ["es2015", "stage-0", "react"]
+  "presets": [
+    "env",
+    "stage-0",
+    "react"
+  ],
+  "plugins": [
+    "transform-runtime",
+    "transform-async-to-generator",
+    "transform-object-rest-spread"
+  ]
 }

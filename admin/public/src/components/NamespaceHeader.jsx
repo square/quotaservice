@@ -9,17 +9,22 @@ export default class NamespaceHeader extends Component {
   }
 
   render() {
-    const { namespace, handleBack } = this.props
+    const { canMakeChanges = true, namespace, handleBack } = this.props
 
-    return (<div className="namespace-navbar flex-container">
-      <button className="btn" onClick={handleBack}>Back</button>
-      <p className="title">{namespace.name}</p>
-      <button className="btn btn-danger" onClick={this.handleNamespaceRemove}>Remove Namespace</button>
-    </div>)
+    return (
+      <div className="namespace-navbar flex-container">
+        <button className="btn" onClick={handleBack}>Back</button>
+        <p className="title">{namespace.name}</p>
+        {canMakeChanges &&
+          <button className="btn btn-danger" onClick={this.handleNamespaceRemove}>Remove Namespace</button>
+        }
+      </div>
+    )
   }
 }
 
 NamespaceHeader.propTypes = {
+  canMakeChanges: PropTypes.bool,
   namespace: PropTypes.object.isRequired,
   removeNamespace: PropTypes.func.isRequired,
   handleBack: PropTypes.func.isRequired

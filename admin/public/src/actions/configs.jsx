@@ -18,32 +18,33 @@ export function loadConfig(config) {
 }
 
 export function fetchConfigs() {
-  return dispatch => dispatch({
-    [CALL_API]: {
-      endpoint: '/api/configs',
-      method: 'GET',
-      credentials: 'same-origin',
-      types: [CONFIGS_REQUEST, CONFIGS_FETCH_SUCCESS, CONFIGS_FAILURE]
+  return async dispatch => {
+    try {
+      dispatch({ type: CONFIGS_REQUEST });
+      const response = await fetch('/api/configs', { method: 'GET', credentials: 'same-origin' });
+      return dispatch({ type: CONFIGS_FETCH_SUCCESS, payload: await response.json() });
+    } catch (e) {
+      return dispatch({ type: CONFIGS_FAILURE });
     }
-  })
+  }
 }
 
 export function commitConfig(namespaces, version) {
   const json = JSON.stringify({ namespaces: namespaces })
 
   return confirm({
-      [CALL_API]: {
-        endpoint: '/api',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Version': version
-        },
-        body: json,
-        credentials: 'same-origin',
-        types: [CONFIGS_REQUEST, CONFIGS_COMMIT_SUCCESS, CONFIGS_FAILURE]
-      }
-    },
+    [CALL_API]: {
+      endpoint: '/api',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Version': version
+      },
+      body: json,
+      credentials: 'same-origin',
+      types: [CONFIGS_REQUEST, CONFIGS_COMMIT_SUCCESS, CONFIGS_FAILURE]
+    }
+  },
     'You are about to submit the following configuration.',
     <div className="code">{JSON.stringify(namespaces, null, 4)}</div>
   )

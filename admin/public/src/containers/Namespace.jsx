@@ -37,50 +37,60 @@ export default class Namespace extends Component {
   }
 
   render() {
-    const { namespace, removeNamespace } = this.props
+    const { canMakeChanges = true, namespace, removeNamespace } = this.props
     const buckets = namespace.buckets
 
-    return (<div className="namespace flex-box flex-tile">
-      <NamespaceHeader namespace={namespace}
-        handleBack={this.handleBack}
-        removeNamespace={removeNamespace}
-      />
-      <div className="buckets flex-container flex-column flex-wrap">
-        <div className="bucket flex-box flex-tile">
-          <div className="flex-container legend">
-            <h4>namespace config</h4>
+    return (
+      <div className="namespace flex-box flex-tile">
+        <NamespaceHeader namespace={namespace}
+          canMakeChanges={canMakeChanges}
+          handleBack={this.handleBack}
+          removeNamespace={removeNamespace}
+        />
+        <div className="buckets flex-container flex-column flex-wrap">
+          <div className="bucket flex-box flex-tile">
+            <div className="flex-container legend">
+              <h4>Namespace Configuration</h4>
+            </div>
+            <Field
+              parent={namespace.name}
+              disabled={canMakeChanges === false}
+              keyName="max_dynamic_buckets"
+              handleChange={this.handleNamespaceChange}
+              value={namespace.max_dynamic_buckets}
+              title="Maximum amount of dynamic buckets allowed before requests are rejected."
+            />
           </div>
-          <Field
-            parent={namespace.name}
-            keyName="max_dynamic_buckets"
-            handleChange={this.handleNamespaceChange}
-            value={namespace.max_dynamic_buckets}
-            title="Maximum amount of dynamic buckets allowed before requests are rejected."
-          />
+          {this.renderBucket(namespace.dynamic_bucket_template, true)}
+          {this.renderBucket(namespace.default_bucket, false)}
+          {buckets && Object.keys(buckets).map(key =>
+            this.renderBucket(buckets[key], false)
+          )}
         </div>
-        {this.renderBucket(namespace.dynamic_bucket_template, true)}
-        {this.renderBucket(namespace.default_bucket, false)}
-        {buckets && Object.keys(buckets).map(key =>
-          this.renderBucket(buckets[key], false)
-        )}
       </div>
-    </div>)
+    )
   }
 
   renderBucket(bucket, showDynamicStats) {
     if (!bucket)
       return
 
-    return (<Bucket
-      key={bucket.name} bucket={bucket} showDynamicStats={showDynamicStats}
+    const { canMakeChanges } = this.props;
+
+    return <Bucket
+      key={bucket.name}
+      bucket={bucket}
+      canMakeChanges={canMakeChanges}
+      showDynamicStats={showDynamicStats}
       handleChange={this.handleBucketChange(bucket)}
       handleRemove={this.handleBucketRemove(bucket)}
       handleShowDynamicStats={this.handleShowDynamicStats}
-    />)
+    />
   }
 }
 
 Namespace.propTypes = {
+  canMakeChanges: PropTypes.bool.isRequired,
   namespace: PropTypes.object.isRequired,
   selectNamespace: PropTypes.func.isRequired,
   updateNamespace: PropTypes.func.isRequired,

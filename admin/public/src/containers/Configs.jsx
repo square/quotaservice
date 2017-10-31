@@ -18,12 +18,14 @@ export default class Configs extends Component {
       return null
     }
 
-    return (<div className='configs'>
-      {items.map(c => {
-        let key = c.version + c.date
-        return (<Config config={c} key={key} handleClick={this.changeConfig(c)} />)
-      })}
-    </div>)
+    return (
+      <div className='configs'>
+        {items.map(c => {
+          let key = (c.version || 1) + c.date
+          return (<Config config={c} key={key} handleClick={this.changeConfig(c)} />)
+        })}
+      </div>
+    )
   }
 }
 

@@ -2,6 +2,7 @@ const path = require('path');
 
 module.exports = {
   devtool: 'eval',
+  target: 'web',
   entry: [
     'webpack-dev-server/client?http://localhost:3000',
     './src/index.jsx'

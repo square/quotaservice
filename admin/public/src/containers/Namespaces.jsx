@@ -6,15 +6,8 @@ import NamespaceTile from './NamespaceTile.jsx';
 
 export default class Namespaces extends Component {
   render() {
-    const { actions, configs, namespaces, selectedNamespace } = this.props
+    const { actions, namespaces, selectedNamespace, capabilities, env } = this.props
     const { items } = namespaces
-
-    if (configs.inRequest) {
-      return (<div className='flex-container flex-box-lg'>
-        <div className='loader'>Loading...</div>
-      </div>)
-    }
-
     const classNames = ['namespaces', 'flex-container', 'flex-box-lg']
 
     // Hides this div for small screens <= 1000px
@@ -22,21 +15,28 @@ export default class Namespaces extends Component {
       classNames.push('flexed')
     }
 
-    return (<div className={classNames.join(' ')}>
-      {items && Object.keys(items).map(key =>
-        <NamespaceTile
-          key={key}
-          isSelected={items[key] === selectedNamespace}
-          namespace={items[key]}
-          {...actions} />
-      )}
-    </div>)
+    return (
+      <div className={classNames.join(' ')}>
+        {items && Object.keys(items).map(key =>
+          <NamespaceTile
+            capabilities={capabilities}
+            capabilitiesEnabled={env.capabilities === true}
+            eventEmitter={window}
+            isSelected={items[key].name === (selectedNamespace ? selectedNamespace.namespace.name : '')}
+            key={key}
+            namespace={items[key]}
+            selectNamespace={actions.selectNamespace}
+          />
+        )}
+      </div>
+    )
   }
 }
 
 Namespaces.propTypes = {
   actions: PropTypes.object.isRequired,
   namespaces: PropTypes.object.isRequired,
+  env: PropTypes.object.isRequired,
+  capabilities: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
-  configs: PropTypes.object.isRequired
 }

@@ -1,5 +1,86 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`NamespaceTile capabilities renders ok when able to make changes 1`] = `
+<div
+  className="flex-box flex-tile namespace"
+  onClick={[Function]}
+>
+  <p
+    className="title"
+  >
+    <span
+      className="canMakeChanges"
+    >
+      🛠 
+    </span>
+    namespace-name
+  </p>
+  <hr />
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket1-name"
+  >
+    bucket1-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket2-name"
+  >
+    bucket2-name
+  </div>
+</div>
+`;
+
+exports[`NamespaceTile capabilities renders ok when can not make changes 1`] = `
+<div
+  className="flex-box flex-tile namespace"
+  onClick={[Function]}
+>
+  <p
+    className="title"
+  >
+    namespace-name
+  </p>
+  <hr />
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket1-name"
+  >
+    bucket1-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket2-name"
+  >
+    bucket2-name
+  </div>
+</div>
+`;
+
 exports[`NamespaceTile renderes in selected state 1`] = `
 <div
   className="flex-box flex-tile namespace selected"
@@ -7,8 +88,34 @@ exports[`NamespaceTile renderes in selected state 1`] = `
 >
   <p
     className="title"
-  />
+  >
+    namespace-name
+  </p>
   <hr />
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket1-name"
+  >
+    bucket1-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket2-name"
+  >
+    bucket2-name
+  </div>
 </div>
 `;
 
@@ -19,7 +126,33 @@ exports[`NamespaceTile renders with minimum data 1`] = `
 >
   <p
     className="title"
-  />
+  >
+    namespace-name
+  </p>
   <hr />
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="dynamic_bucket_template-name"
+  >
+    dynamic_bucket_template-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket1-name"
+  >
+    bucket1-name
+  </div>
+  <div
+    className="bucket"
+    key="bucket2-name"
+  >
+    bucket2-name
+  </div>
 </div>
 `;

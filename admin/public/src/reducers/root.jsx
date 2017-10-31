@@ -4,6 +4,7 @@ import { stats } from './stats.jsx'
 import { history } from './history.jsx'
 import { configs, currentVersion } from './configs.jsx'
 import { confirm } from './confirmation.jsx'
+import { capabilities } from './capabilities.jsx'
 
 export default combineReducers({
   namespaces: history(namespaces),
@@ -11,5 +12,6 @@ export default combineReducers({
   currentVersion,
   stats,
   configs,
-  confirm
+  confirm,
+  capabilities
 })
