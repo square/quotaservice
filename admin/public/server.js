@@ -1,34 +1,34 @@
 const express = require('express');
 const webpack = require('webpack');
-const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackDevServer = require('webpack-dev-server');
 const config = require('./webpack.config');
 
-const app = express();
 const compiler = webpack(config);
 const FIXTURES = `${__dirname}/__tests__/fixtures`;
 
-app.get('/api/capabilities', (req, res) =>
-  res.sendFile(`${FIXTURES}/capabilities.json`)
-);
-
-app.get('/api/configs', (req, res) =>
-  res.sendFile(`${FIXTURES}/configs.json`)
-);
-
-app.use(webpackDevMiddleware(compiler, {
+const server = new webpackDevServer(compiler, {
   publicPath: config.output.publicPath,
-  hot: false,
   stats: {
     colors: true,
   },
+  /* Enable this to use a QuotaService instance directly for development.
   proxy: {
     '/api': 'http://localhost:8080'
   }
-}));
+  */
+});
 
-app.use(express.static(__dirname));
+server.app.get('/api/capabilities', (req, res) =>
+  res.sendFile(`${FIXTURES}/capabilities.json`)
+);
 
-app.listen(3000, 'localhost', err => {
+server.app.get('/api/configs', (req, res) =>
+  res.sendFile(`${FIXTURES}/configs.json`)
+);
+
+server.app.use(express.static(__dirname));
+
+server.listen(3000, 'localhost', err => {
   if (err) {
     console.log(err);
   }
