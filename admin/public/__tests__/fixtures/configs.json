@@ -1,0 +1,242 @@
+{
+  "configs": [
+    {
+      "namespaces": {
+        "yogurt": {
+          "name": "yogurt",
+          "default_bucket": {
+            "name": "___DEFAULT_BUCKET___",
+            "namespace": "yogurt",
+            "size": 500,
+            "fill_rate": 500,
+            "wait_timeout_millis": 1000,
+            "max_idle_millis": -1,
+            "max_debt_millis": 10000,
+            "max_tokens_per_request": 1000
+          },
+          "buckets": {
+            "capital": {
+              "name": "capital",
+              "namespace": "yogurt",
+              "size": 150,
+              "fill_rate": 150,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            },
+            "compliancepundit": {
+              "name": "compliancepundit",
+              "namespace": "yogurt",
+              "size": 250,
+              "fill_rate": 250,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            },
+            "frisky": {
+              "name": "frisky",
+              "namespace": "yogurt",
+              "size": 100,
+              "fill_rate": 100,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            },
+            "riskarbiter": {
+              "name": "riskarbiter",
+              "namespace": "yogurt",
+              "size": 2500,
+              "fill_rate": 2500,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            }
+          }
+        },
+        "yogurt:events": {
+          "name": "yogurt:events",
+          "dynamic_bucket_template": {
+            "name": "___DYNAMIC_BUCKET_TPL___",
+            "namespace": "yogurt:events",
+            "size": 100000,
+            "fill_rate": 30,
+            "wait_timeout_millis": 1000,
+            "max_idle_millis": -1,
+            "max_debt_millis": 10000,
+            "max_tokens_per_request": 10000
+          },
+          "max_dynamic_buckets": 1000,
+          "buckets": {
+            "ACCOUNT_LINK": {
+              "name": "ACCOUNT_LINK",
+              "namespace": "yogurt:events",
+              "size": 720000,
+              "fill_rate": 200,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 10000
+            },
+            "PLANK_TRANSACTION": {
+              "name": "PLANK_TRANSACTION",
+              "namespace": "yogurt:events",
+              "size": 3000000,
+              "fill_rate": 850,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            },
+            "HOMER_EVENT": {
+              "name": "HOMER_EVENT",
+              "namespace": "yogurt:events",
+              "size": 230000,
+              "fill_rate": 63,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            },
+            "CONNECTED_USERS_EVENT": {
+              "name": "CONNECTED_USERS_EVENT",
+              "namespace": "yogurt:events",
+              "size": 10800000,
+              "fill_rate": 3000,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 10000
+            },
+            "INSTANT_RICK": {
+              "name": "INSTANT_RICK",
+              "namespace": "yogurt:events",
+              "size": 720000,
+              "fill_rate": 200,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            },
+            "INSTRUMENTS_INSTANT_RICK": {
+              "name": "INSTRUMENTS_INSTANT_RICK",
+              "namespace": "yogurt:events",
+              "size": 720000,
+              "fill_rate": 200,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 10000
+            },
+            "MORTY_SETTLEMENT": {
+              "name": "MORTY_SETTLEMENT",
+              "namespace": "yogurt:events",
+              "size": 2000000,
+              "fill_rate": 60,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            },
+            "PAYMENT_EVENT": {
+              "name": "PAYMENT_EVENT",
+              "namespace": "yogurt:events",
+              "size": 2000000,
+              "fill_rate": 560,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            },
+            "PRE_PROCESSED_PII_PAYMENT": {
+              "name": "PRE_PROCESSED_PII_PAYMENT",
+              "namespace": "yogurt:events",
+              "size": 2000000,
+              "fill_rate": 560,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 100000
+            }
+          }
+        },
+        "costminus": {
+          "name": "costminus",
+          "buckets": {
+            "costminus:donut": {
+              "name": "costminus:donut",
+              "namespace": "costminus",
+              "size": 500,
+              "fill_rate": 16,
+              "wait_timeout_millis": 10,
+              "max_idle_millis": -1,
+              "max_debt_millis": 100,
+              "max_tokens_per_request": 1
+            }
+          }
+        },
+        "card_defaults": {
+          "name": "card_defaults",
+          "dynamic_bucket_template": {
+            "name": "___DYNAMIC_BUCKET_TPL___",
+            "namespace": "card_defaults",
+            "size": 39583,
+            "fill_rate": 11,
+            "wait_timeout_millis": -1,
+            "max_idle_millis": 86400000,
+            "max_debt_millis": 181818,
+            "max_tokens_per_request": 10000
+          }
+        }
+      },
+      "version": 281,
+      "user": "bob",
+      "date": 1508954892
+    },
+    {
+      "namespaces": {
+        "yogurt": {
+          "name": "yogurt",
+          "default_bucket": {
+            "name": "___DEFAULT_BUCKET___",
+            "namespace": "yogurt",
+            "size": 500,
+            "fill_rate": 500,
+            "wait_timeout_millis": 1000,
+            "max_idle_millis": -1,
+            "max_debt_millis": 10000,
+            "max_tokens_per_request": 1000
+          },
+          "buckets": {
+            "goodstuff": {
+              "name": "goodstuff",
+              "namespace": "yogurt",
+              "size": 150,
+              "fill_rate": 150,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            },
+            "cookiemonster": {
+              "name": "cookiemonster",
+              "namespace": "yogurt",
+              "size": 250,
+              "fill_rate": 250,
+              "wait_timeout_millis": 1000,
+              "max_idle_millis": -1,
+              "max_debt_millis": 10000,
+              "max_tokens_per_request": 1000
+            }
+          }
+        }
+      },
+      "version": 280,
+      "user": "archer",
+      "date": 1508953627
+    }
+  ]
+}

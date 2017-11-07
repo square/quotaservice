@@ -7,18 +7,20 @@ import Stats from './Stats.jsx';
 
 export default class SelectedNamespace extends Component {
   render() {
-    const {
-      selectedNamespace, stats, actions
-    } = this.props
+    const { selectedNamespace, stats, actions } = this.props;
 
     if (!selectedNamespace)
-      return null
+      return null;
 
-    return (<div className='flex-container flex-box-lg selected-namespace'>
-      {stats.show ?
-        <Stats namespace={selectedNamespace} stats={stats} {...actions} /> :
-        <Namespace namespace={selectedNamespace} {...actions} />}
-    </div>)
+    const { namespace, canMakeChanges } = selectedNamespace;
+
+    return (
+      <div className="flex-container flex-box-lg selected-namespace">
+        {stats.show ?
+          <Stats namespace={namespace} stats={stats} {...actions} /> :
+          <Namespace namespace={namespace} canMakeChanges={canMakeChanges} {...actions} />}
+      </div>
+    )
   }
 }
 

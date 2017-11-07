@@ -161,6 +161,11 @@ export function selectedNamespace(state = null, action) {
     case ADD_NAMESPACE:
     case SELECT_NAMESPACE:
       return action.namespace
+        ? {
+          namespace: action.namespace,
+          canMakeChanges: action.canMakeChanges !== false,
+        }
+        : null;
     case REMOVE_NAMESPACE:
       return null
     default:

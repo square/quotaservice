@@ -8,15 +8,29 @@ import SelectedNamespace from './SelectedNamespace.jsx';
 import Sidebar from './Sidebar.jsx';
 
 export default class QuotaService extends Component {
+  fetchData() {
+    const { actions, env } = this.props;
+    const { fetchConfigs, fetchCapabilities } = actions;
+
+    return fetchConfigs().then(configs => {
+      if (env.capabilities) {
+        return fetchCapabilities(configs.payload);
+      }
+      return null;
+    });
+  }
+
   componentDidMount() {
-    this.props.actions.fetchConfigs()
+    this.fetchData();
   }
 
   componentWillReceiveProps(nextProps) {
-    const { configs, actions } = nextProps
+    const { configs } = nextProps
 
+    // Refetch the configs after the save because there's a chance the backend
+    // may do some additional processing on the data.
     if (!configs.inRequest && !configs.error && configs.items === undefined) {
-      actions.fetchConfigs()
+      this.fetchData();
     }
   }
 
@@ -29,23 +43,39 @@ export default class QuotaService extends Component {
     />)
   }
 
-  render() {
-    const { confirm } = this.props
+  renderLoading() {
+    return (
+      <div className='flex-container flex-box-lg'>
+        <div className='loader'>Loading...</div>
+      </div>
+    );
+  }
 
+  render() {
+    const { selectedNamespace, configs, capabilities, confirm } = this.props
     const classNames = ['flex-container', 'fill-height-container']
+    const isLoading = configs.inRequest || (capabilities && capabilities.inRequest);
+    const canMakeChanges = selectedNamespace ? selectedNamespace.canMakeChanges : true;
 
     if (confirm) {
       classNames.push('blur')
     }
 
-    return (<div>
-      {confirm && this.renderConfirmation()}
-      <div className={classNames.join(' ')}>
-        <Sidebar {...this.props} />
-        <Namespaces {...this.props} />
-        <SelectedNamespace {...this.props} />
+    return (
+      <div>
+        {confirm && this.renderConfirmation()}
+
+        {!canMakeChanges &&
+          <div className="warning">You do not have permissions to make changes to this namespace.</div>
+        }
+
+        <div className={classNames.join(' ')}>
+          <Sidebar {...this.props} handleRefresh={this.fetchData.bind(this)} />
+          {isLoading ? this.renderLoading() : <Namespaces {...this.props} />}
+          <SelectedNamespace {...this.props} />
+        </div>
       </div>
-    </div>)
+    )
   }
 }
 
@@ -55,6 +85,7 @@ QuotaService.propTypes = {
   namespaces: PropTypes.object.isRequired,
   stats: PropTypes.object.isRequired,
   configs: PropTypes.object.isRequired,
+  capabilities: PropTypes.object.isRequired,
   selectedNamespace: PropTypes.object,
   currentVersion: PropTypes.number.isRequired,
   env: PropTypes.object.isRequired,
