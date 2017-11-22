@@ -11,7 +11,7 @@ export function toggleStats() {
   }).then(() => {
     const state = getState()
     if (state.stats.show) {
-      dispatch(fetchStatsAction(state.selectedNamespace, null))
+      dispatch(fetchStatsAction(state.selectedNamespace.namespace, null))
     }
   })
 }

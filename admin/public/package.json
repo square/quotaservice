@@ -34,6 +34,7 @@
     "jest": "^21.2.1",
     "jest-enzyme": "^4.0.1",
     "node-sass": "^4.0.0",
+    "randomstring": "^1.1.5",
     "react": "^16.0.0",
     "react-addons-test-utils": "^15.4.1",
     "react-dom": "^16.0.0",
