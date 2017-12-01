@@ -116,14 +116,14 @@ func apiVersionHandler(a Administrable, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		versionHeader := r.Header.Get("Version")
 
-		if versionHeader == "" {
+		if r.Method == http.MethodGet && versionHeader == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		version, err := strconv.Atoi(versionHeader)
 		if err != nil {
-			writeJSONError(w, &httpError{err.Error(), http.StatusInternalServerError})
+			writeJSONError(w, &httpError{fmt.Sprintf("There was an error parsing the 'Version' header. Please verify version is provided and is properly formatted. %s", err.Error()), http.StatusBadRequest})
 			return
 		}
 
