@@ -150,7 +150,7 @@ func createPath(conn *zk.Conn, path string) (err error) {
 			return nil
 		}
 
-		logging.Printf("Could not create zk path, sleeping for 100ms")
+		logging.Printf("Could not create zk path, sleeping for 100ms error=%s", err.Error())
 		time.Sleep(100 * time.Millisecond)
 	}
 
