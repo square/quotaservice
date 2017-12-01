@@ -116,11 +116,9 @@ func apiVersionHandler(a Administrable, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		versionHeader := r.Header.Get("Version")
 
-		if r.Method == http.MethodGet {
-			if versionHeader == "" {
-				next.ServeHTTP(w, r)
-				return
-			}
+		if r.Method == http.MethodGet && versionHeader == "" {
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		version, err := strconv.Atoi(versionHeader)
