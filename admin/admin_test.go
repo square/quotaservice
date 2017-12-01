@@ -16,36 +16,83 @@ import (
 	"github.com/square/quotaservice/test/helpers"
 )
 
-func TestNamespacesPostBadVersion(t *testing.T) {
-	a := NewMockAdministrable()
-	a.Configs().Version = 10
-
-	apiHandler := apiVersionHandler(a, http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			writeJSONOk(w)
-		}),
-	)
-
-	ts := httptest.NewServer(apiHandler)
+func TestNamespacesPostWithVersion(t *testing.T) {
+	ts := establishTestServer(3)
 	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
 
-	client := &http.Client{}
-	request, err := http.NewRequest("POST", ts.URL, strings.NewReader(""))
-	request.Header.Set("Version", "3")
-	res, err := client.Do(request)
-
-	if err != nil {
-		t.Fatal(err)
+	if jsonResponse["error"] != "" {
+		t.Errorf("POST request with correct version header should succeed", jsonResponse)
 	}
+}
 
-	jsonResponse := make(map[string]string)
-	err = unmarshalJSON(res.Body, &jsonResponse)
-	if err != nil {
-		t.Fatal(err)
+func TestNamespacesPostNoVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodPost, "", t)
+
+	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
+		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
 	}
+}
 
-	if jsonResponse["error"] != "Conflict" {
+func TestNamespacesPostIncorrectVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
+
+	if jsonResponse["error"] != http.StatusText(http.StatusConflict) {
 		t.Errorf("Expected 409 Conflict, but received \"%+v\"", jsonResponse)
+	}
+}
+
+func TestNamespacesPostBadVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "ABC", t)
+
+	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
+		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
+	}
+}
+
+func TestNamespacesGetWithVersion(t *testing.T) {
+	ts := establishTestServer(3)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
+
+	if jsonResponse["error"] != "" {
+		t.Errorf("GET request with correct version header should succeed", jsonResponse)
+	}
+}
+
+func TestNamespacesGetNoVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodGet, "", t)
+
+	if jsonResponse["error"] != "" {
+		t.Errorf("GET request without version header should succeed", jsonResponse)
+	}
+}
+
+func TestNamespacesGetIncorrectVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
+
+	if jsonResponse["error"] != http.StatusText(http.StatusConflict) {
+		t.Errorf("Expected 409 Conflict, but received \"%+v\"", jsonResponse)
+	}
+}
+
+func TestNamespacesGetBadVersion(t *testing.T) {
+	ts := establishTestServer(10)
+	defer ts.Close()
+	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "ABC", t)
+
+	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
+		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
 	}
 }
 
@@ -114,4 +161,41 @@ func TestUnmarshalNamespaceConfig(t *testing.T) {
 	if !reflect.DeepEqual(n, reRead) {
 		t.Fatalf("Two representations aren't equal: %+v != %+v", n, reRead)
 	}
+}
+
+func establishTestServer(version int32) *httptest.Server {
+	a := NewMockAdministrable()
+	a.Configs().Version = version
+
+	apiHandler := apiVersionHandler(a, http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			writeJSONOk(w)
+		}),
+	)
+
+	return httptest.NewServer(apiHandler)
+}
+
+func executeRequestForVersioningTest(ts *httptest.Server, versioned bool, method string, version string, t *testing.T) map[string]string {
+	client := &http.Client{}
+	request, err := http.NewRequest(method, ts.URL, strings.NewReader(""))
+
+	if versioned {
+		request.Header.Set("Version", version)
+	}
+
+	res, err := client.Do(request)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	jsonResponse := make(map[string]string)
+	err = unmarshalJSON(res.Body, &jsonResponse)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return jsonResponse
 }
