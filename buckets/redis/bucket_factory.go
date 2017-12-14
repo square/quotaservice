@@ -45,12 +45,14 @@ type bucketFactory struct {
 	// the embedded mutex.
 	sharedAttributes map[string]*configAttributes
 
-	cfg               *pbconfig.ServiceConfig
-	client            *redis.Client
-	redisOpts         *redis.Options
-	scriptSHA         string
-	connectionRetries int
-	flushdbCommand    string
+	cfg                       *pbconfig.ServiceConfig
+	client                    *redis.Client
+	redisOpts                 *redis.Options
+	scriptSHA                 string
+	connectionRetries         int
+	flushdbCommand            string
+	connectionNeedsResolution bool
+	numTimesConnResolved      int // For testing and debugging purposes
 }
 
 // NewBucketFactory creates a new bucketFactory instance.
@@ -65,11 +67,13 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, flushdbCo
 	}
 
 	return &bucketFactory{
-		redisOpts:         redisOpts,
-		connectionRetries: connectionRetries,
-		sharedAttributes:  make(map[string]*configAttributes),
-		refcounts:         make(map[string]int),
-		flushdbCommand:    flushdbCommand}
+		redisOpts:                 redisOpts,
+		connectionRetries:         connectionRetries,
+		sharedAttributes:          make(map[string]*configAttributes),
+		refcounts:                 make(map[string]int),
+		flushdbCommand:            flushdbCommand,
+		connectionNeedsResolution: false,
+		numTimesConnResolved:      0}
 }
 
 // Init initializes a bucketFactory for use, implementing Init() on the quotaservice.BucketFactory interface
@@ -162,6 +166,70 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	if oldClient == bf.client {
 		bf.connectToRedisLocked()
 	}
+}
+
+func (bf *bucketFactory) handleConnectionFailure(oldClient *redis.Client) {
+	bf.Lock()
+	defer bf.Unlock()
+
+	if oldClient == bf.client && !bf.connectionNeedsResolution {
+		logging.Print("Attempting to establish new connection to redis")
+		bf.connectionNeedsResolution = true
+		go bf.establishNewConnectionToRedis(oldClient)
+	}
+}
+
+func (bf *bucketFactory) establishNewConnectionToRedis(oldClient *redis.Client) {
+	client := oldClient
+	numsTried := 0
+	exponentialDelay := 1 * time.Second
+	exponentialDelayCeiling := 3 * time.Minute
+
+	for disconnected := true; disconnected; {
+		attemptsRemaining := bf.connectionRetries
+
+		for attemptsRemaining > 0 {
+			attemptsRemaining--
+			numsTried++
+			bf.reconnectToRedis(client)
+
+			client = bf.Client().(*redis.Client)
+			_, err := client.Ping().Result()
+			if err == nil {
+				disconnected = false
+				break
+			}
+			logging.Print("Unable to reconnect to redis. Will retry again in 1s.")
+			time.Sleep(1 * time.Second)
+		}
+
+		if disconnected {
+			logging.Printf("Attempted to reconnect %v times. Will sleep for %v seconds", bf.connectionRetries, exponentialDelay)
+			time.Sleep(exponentialDelay)
+			exponentialDelay *= 2
+
+			if exponentialDelay > exponentialDelayCeiling {
+				logging.Printf("Resetting exponential delay for sleep because it exceeds the ceiling value of %v seconds", exponentialDelayCeiling)
+				exponentialDelay = 1 * time.Second
+			}
+		}
+
+	}
+
+	logging.Printf("Established connection after attempting %v times", numsTried)
+	bf.Lock()
+	defer bf.Unlock()
+	bf.connectionNeedsResolution = false
+	bf.numTimesConnResolved++
+	exponentialDelay = 1 * time.Second
+	logging.Printf("Handler has resolved %v connection(s) so far", bf.numTimesConnResolved)
+}
+
+func (bf *bucketFactory) getNumTimesConnResolved() int {
+	bf.Lock()
+	defer bf.Unlock()
+
+	return bf.numTimesConnResolved
 }
 
 // Client returns a reference to the underlying client instance, implementing Client() on the quotaservice.BucketFactory
@@ -293,7 +361,7 @@ func loadScript(c *redis.Client) (sha string) {
 	`
 	s := c.ScriptLoad(lua)
 	if s.Err() != nil {
-		logging.Fatalf("Unable to load LUA script into Redis; error=%v", s.Err())
+		logging.Printf("Unable to load LUA script into Redis; error=%v", s.Err())
 		return
 	}
 
