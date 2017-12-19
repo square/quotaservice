@@ -22,7 +22,7 @@ func TestNamespacesPostWithVersion(t *testing.T) {
 	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
 
 	if jsonResponse["error"] != "" {
-		t.Errorf("POST request with correct version header should succeed", jsonResponse)
+		t.Errorf("POST request with correct version header should succeed: %+v", jsonResponse)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestNamespacesGetWithVersion(t *testing.T) {
 	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
 
 	if jsonResponse["error"] != "" {
-		t.Errorf("GET request with correct version header should succeed", jsonResponse)
+		t.Errorf("GET request with correct version header should succeed: %+v", jsonResponse)
 	}
 }
 
@@ -72,7 +72,7 @@ func TestNamespacesGetNoVersion(t *testing.T) {
 	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodGet, "", t)
 
 	if jsonResponse["error"] != "" {
-		t.Errorf("GET request without version header should succeed", jsonResponse)
+		t.Errorf("GET request without version header should succeed: %+v", jsonResponse)
 	}
 }
 
