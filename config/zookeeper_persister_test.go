@@ -17,7 +17,7 @@ import (
 var servers []string
 
 func TestMain(m *testing.M) {
-	t, err := zk.StartTestCluster(1, nil, nil)
+	t, err := zk.StartTestCluster(1, nil, os.Stderr)
 	helpers.PanicError(err)
 
 	defer func() { _ = t.Stop() }()
