@@ -1,8 +1,5 @@
 language: go
 
-go:
-  - 1.9
-
 cache:
   directories:
     - admin/public/node_modules
@@ -12,6 +9,10 @@ services:
 
 matrix:
   include:
+    # Default: go test ./...
+    - go: 1.9
+
+    # Runs tests for admin UI
     - go: 1.x
       env: TEST=UI
 
