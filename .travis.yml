@@ -17,6 +17,7 @@ matrix:
       env: TEST=UI
 
 install:
+  - jdk_switcher use oraclejdk9
   - wget http://apache.claz.org/zookeeper/stable/zookeeper-3.4.10.tar.gz
   - tar -zxf zookeeper*tar.gz
   - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
