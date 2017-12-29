@@ -50,31 +50,25 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		a.maxIdleTimeMillis, a.maxDebtNanos}
 
-	keepTrying := true
 	var waitTime time.Duration
 	var err error
-	for attempt := 0; keepTrying && attempt < a.factory.connectionRetries; attempt++ {
-		client := a.factory.Client().(*redis.Client)
-		res := client.EvalSha(a.factory.scriptSHA, a.keys, args...)
-		switch waitTimeNanos := res.Val().(type) {
-		case int64:
-			waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
-			keepTrying = false
-		default:
-			err = res.Err()
-			if unknownCloseError(err) {
-				logging.Printf("Unknown response '%v' of type %T. Full result %+v",
-					waitTimeNanos, waitTimeNanos, res)
-			}
 
-			a.factory.reconnectToRedis(client)
+	client := a.factory.Client().(*redis.Client)
+	res := client.EvalSha(a.factory.scriptSHA, a.keys, args...)
+	switch waitTimeNanos := res.Val().(type) {
+	case int64:
+		waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
+		break
+	default:
+		err = res.Err()
+		if unknownCloseError(err) {
+			logging.Printf("Unknown response '%v' of type %T. Full result %+v",
+				waitTimeNanos, waitTimeNanos, res)
+
 		}
-	}
-
-	if keepTrying {
-		// TODO(kaneda): Gracefully handle Redis access errors?
-		logging.Fatalf("Couldn't reconnect to Redis, even after %v attempts with error %+v",
-			a.factory.connectionRetries, err)
+		// Try reconnect to redis
+		a.factory.reconnectToRedis(client)
+		return 0, false
 	}
 
 	if waitTime < 0 {
