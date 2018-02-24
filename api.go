@@ -9,6 +9,7 @@ import (
 	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/logging"
+	pb "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/stats"
 )
 
@@ -20,6 +21,14 @@ type Server interface {
 	ServeAdminConsole(*http.ServeMux, string, bool)
 	SetListener(listener events.Listener, eventQueueBufSize int)
 	SetStatsListener(listener stats.Listener)
+	Configs() *pb.ServiceConfig
+	UpdateConfig(c *pb.ServiceConfig, user string) error
+	AddBucket(namespace string, b *pb.BucketConfig, user string) error
+	UpdateBucket(namespace string, b *pb.BucketConfig, user string) error
+	DeleteBucket(namespace, name, user string) error
+	AddNamespace(n *pb.NamespaceConfig, user string) error
+	UpdateNamespace(n *pb.NamespaceConfig, user string) error
+	DeleteNamespace(n, user string) error
 }
 
 // NewWithDefaultConfig creates a new quotaservice server with an empty in-memory config and default reaper.
