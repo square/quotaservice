@@ -416,3 +416,7 @@ func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
 
 	return unmarshalledConfigs, nil
 }
+
+func (s *server) GetServerAdministrable() admin.Administrable {
+	return s
+}
