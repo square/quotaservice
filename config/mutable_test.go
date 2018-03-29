@@ -43,19 +43,10 @@ func TestGlobalCreateBucket(t *testing.T) {
 }
 
 func TestCreateBucket(t *testing.T) {
-	nilMapBucketsCfg := defaultConfig()
-	nilMapBucketsCfg.Namespaces["testNamespace"].Buckets = nil
-	bucket := NewDefaultBucketConfig("newBucket")
-	err := CreateBucket(nilMapBucketsCfg, "testNamespace", bucket)
-
-	if err != nil {
-		t.Error("CreateBucket was supposed to create create a bucket in namespace with nil buckets map")
-	}
-
 	cfg := defaultConfig()
-	bucket = NewDefaultBucketConfig("newBucket")
+	bucket := NewDefaultBucketConfig("newBucket")
 
-	err = CreateBucket(cfg, "nilNamespace", bucket)
+	err := CreateBucket(cfg, "nilNamespace", bucket)
 
 	if err == nil {
 		t.Error("CreateBucket was supposed to error on nonexistent namespace")
@@ -112,6 +103,17 @@ func TestCreateBucket(t *testing.T) {
 
 	if err == nil {
 		t.Fatalf("CreateBucket should have errored on duplicate DynamicBucketTemplate")
+	}
+}
+
+func TestCreateBucketInConfigWithNilBucketsMap(t *testing.T) {
+	nilMapBucketsCfg := defaultConfig()
+	nilMapBucketsCfg.Namespaces["testNamespace"].Buckets = nil
+	bucket := NewDefaultBucketConfig("newBucket")
+	err := CreateBucket(nilMapBucketsCfg, "testNamespace", bucket)
+
+	if err != nil {
+		t.Error("CreateBucket was supposed to create create a bucket in namespace with nil buckets map")
 	}
 }
 
