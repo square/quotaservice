@@ -38,6 +38,9 @@ func CreateBucket(clonedCfg *pbconfig.ServiceConfig, namespace string, b *pbconf
 		} else if ns.Buckets[b.Name] != nil {
 			return errors.New("Bucket " + b.Name + " already exists")
 		} else {
+			if ns.Buckets == nil {
+				ns.Buckets = make(map[string]*pbconfig.BucketConfig)
+			}
 			ns.Buckets[b.Name] = b
 		}
 	}

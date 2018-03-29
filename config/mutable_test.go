@@ -106,6 +106,17 @@ func TestCreateBucket(t *testing.T) {
 	}
 }
 
+func TestCreateBucketInConfigWithNilBucketsMap(t *testing.T) {
+	nilMapBucketsCfg := defaultConfig()
+	nilMapBucketsCfg.Namespaces["testNamespace"].Buckets = nil
+	bucket := NewDefaultBucketConfig("newBucket")
+	err := CreateBucket(nilMapBucketsCfg, "testNamespace", bucket)
+
+	if err != nil {
+		t.Error("CreateBucket was supposed to create create a bucket in namespace with nil buckets map")
+	}
+}
+
 func TestGlobalUpdateBucket(t *testing.T) {
 	cfg := defaultConfig()
 	bucket := NewDefaultBucketConfig("newBucket")
