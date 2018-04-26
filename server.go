@@ -221,6 +221,14 @@ func (s *server) createBucketContainer() {
 func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 	s.Lock()
 	defer s.Unlock()
+
+	// Guard against updating the existing config with a lower valued version number
+	if s.cfgs != nil && newConfig.Version <= s.cfgs.Version {
+		logging.Printf("Proposed config version %d is lower than existing config version %d. Ignoring.",
+			newConfig.Version, s.cfgs.Version)
+		return
+	}
+
 	s.bucketContainer.Lock()
 	defer s.bucketContainer.Unlock()
 

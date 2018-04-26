@@ -106,6 +106,25 @@ func TestTooManyTokensRequested(t *testing.T) {
 	}
 }
 
+func TestInitWithLowerVersionedConfig(t *testing.T) {
+	p := config.NewMemoryConfigPersister()
+	s := New(&MockBucketFactory{}, p, NewReaperConfigForTests(), 0, &MockEndpoint{}).(*server)
+
+	// Write a config with version 2
+	s.cfgs = config.NewDefaultServiceConfig()
+	s.cfgs.Version = 2
+
+	// Attempt to write a version 1 of the config
+	newCfg := config.NewDefaultServiceConfig()
+	newCfg.Version = 1
+
+	s.updateBucketContainer(newCfg)
+
+	if s.cfgs.Version != 2 {
+		t.Fatal("Expected version 2 to not have been overwritten")
+	}
+}
+
 func stopServer(t *testing.T, s *server) {
 	t.Helper()
 
