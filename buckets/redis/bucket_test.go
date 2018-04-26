@@ -133,26 +133,6 @@ func TestRefCountsForDynamic(t *testing.T) {
 	assertNoSharedAttribs(t)
 }
 
-func TestInitWithLowerVersionedConfig(t *testing.T) {
-	// Write a config with version 2
-	cfg = config.NewDefaultServiceConfig()
-	cfg.Version = 2
-	factory.Init(cfg)
-
-	if factory.cfg.Version != 2 {
-		t.Fatal("Expected version 2")
-	}
-
-	// Attempt to write a version 1 of the config
-	newCfg := config.NewDefaultServiceConfig()
-	newCfg.Version = 1
-	factory.Init(newCfg)
-
-	if factory.cfg.Version != 2 {
-		t.Fatal("Expected version 2 to not have been overwritten")
-	}
-}
-
 func assertNoSharedAttribs(t *testing.T) {
 	t.Helper()
 
