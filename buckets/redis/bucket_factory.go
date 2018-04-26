@@ -82,6 +82,12 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	bf.Lock()
 	defer bf.Unlock()
 
+	// Guard against updating the existing config with a lower valued version number
+	if bf.cfg != nil && cfg.Version <= bf.cfg.Version {
+		logging.Printf("Proposed config version %d is lower than existing config version %d. Ignoring.",
+			cfg.Version, bf.cfg.Version)
+		return
+	}
 	bf.cfg = cfg
 
 	if bf.client == nil {
