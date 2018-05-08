@@ -30,6 +30,7 @@ type zkWatch struct {
 }
 
 type ZkConfigPersister struct {
+	initialized bool
 	// Current configuration hash
 	config string
 
@@ -118,8 +119,11 @@ func (z *ZkConfigPersister) waitForEvents(watch *zkWatch) {
 		case event := <-watch.channel:
 			if event.Err != nil {
 				logging.Print("Received error from zookeeper", event)
+			} else {
+				logging.Printf("Received event %+v on zookeeper watch", event)
 			}
 		case <-watch.stopper:
+			logging.Print("Received stop signal; stopping zookeeper watcher goroutine")
 			return
 		}
 
@@ -177,7 +181,10 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 		return nil
 	}
 
-	if err := z.archiveConfig(key, b); err != nil {
+	path := fmt.Sprintf("%s/%s", z.path, key)
+	logging.Printf("Storing config version %v in path %v", versionOf(b), path)
+
+	if err := z.archiveConfig(path, b); err != nil {
 		return err
 	}
 
@@ -197,6 +204,11 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 }
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
+	if z.initialized {
+		logging.Print("Refreshing configs from zookeeper")
+	} else {
+		logging.Print("Reading configs from zookeeper for the first time")
+	}
 	children, _, err := z.conn.Children(z.path)
 
 	if err != nil {
@@ -218,6 +230,11 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		configs[child] = data
 	}
 
+	if z.initialized {
+		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
+	} else {
+		logging.Printf("Establishing zookeeper watch on %v", z.path)
+	}
 	config, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
@@ -238,11 +255,12 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		// Doesn't matter; another notification is pending.
 	}
 
+	z.initialized = true
+
 	return ch, nil
 }
 
-func (z *ZkConfigPersister) archiveConfig(key string, config []byte) error {
-	path := fmt.Sprintf("%s/%s", z.path, key)
+func (z *ZkConfigPersister) archiveConfig(path string, config []byte) error {
 	_, err := z.conn.Create(path, config, 0, zk.WorldACL(zk.PermAll))
 	return err
 }
@@ -278,4 +296,14 @@ func (z *ZkConfigPersister) Close() {
 	close(z.watcher)
 
 	z.conn.Close()
+}
+
+func versionOf(b []byte) int32 {
+	c, err := Unmarshal(bytes.NewReader(b))
+	if err != nil {
+		logging.Printf("Unable to read version from config when persisting: %v", err)
+		return -1
+	}
+
+	return c.Version
 }

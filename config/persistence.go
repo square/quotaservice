@@ -19,7 +19,7 @@ type ConfigPersister interface {
 	ConfigChangedWatcher() <-chan struct{}
 	// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
 	ReadPersistedConfig() (io.Reader, error)
-	// Returns an array of readers of historical configurations.
+	// Returns an array of readers of historical configurations, used to display a history for admin consoles.
 	ReadHistoricalConfigs() ([]io.Reader, error)
 }
 

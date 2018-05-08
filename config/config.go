@@ -293,3 +293,9 @@ func DifferentNamespaceConfigs(c1, c2 *pb.NamespaceConfig) bool {
 
 	return false
 }
+
+func cloneConfig(cfg *pb.ServiceConfig) *pb.ServiceConfig {
+	r, _ := Marshal(cfg)
+	c, _ := Unmarshal(r)
+	return c
+}

@@ -12,6 +12,9 @@ import (
 
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/square/quotaservice/test/helpers"
+	pb "github.com/square/quotaservice/protos/config"
+	"reflect"
+	"io"
 )
 
 var servers []string
@@ -80,8 +83,7 @@ func TestNewExisting(t *testing.T) {
 	cfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig, err := Unmarshal(cfg)
-	helpers.CheckError(t, err)
+	newConfig := unmarshallOrPanic(cfg)
 
 	if newConfig.Namespaces["test"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
@@ -103,9 +105,7 @@ func TestSetExisting(t *testing.T) {
 
 	cfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
-
-	err = p.PersistAndNotify(cfg)
-	helpers.CheckError(t, err)
+	helpers.CheckError(t, p.PersistAndNotify(cfg))
 }
 
 func TestSetAndNotify(t *testing.T) {
@@ -119,8 +119,7 @@ func TestSetAndNotify(t *testing.T) {
 	cfg := NewDefaultServiceConfig()
 	cfg.Namespaces["foo"] = NewDefaultNamespaceConfig("foo")
 
-	r, err := Marshal(cfg)
-	helpers.CheckError(t, err)
+	r := marshallOrPanic(cfg)
 
 	helpers.CheckError(t, p.PersistAndNotify(r))
 
@@ -133,8 +132,7 @@ func TestSetAndNotify(t *testing.T) {
 	ioCfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig, err := Unmarshal(ioCfg)
-	helpers.CheckError(t, err)
+	newConfig := unmarshallOrPanic(ioCfg)
 
 	if newConfig.Namespaces["foo"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
@@ -142,8 +140,7 @@ func TestSetAndNotify(t *testing.T) {
 
 	cfg.Namespaces["bar"] = NewDefaultNamespaceConfig("bar")
 
-	r, err = Marshal(cfg)
-	helpers.CheckError(t, err)
+	r = marshallOrPanic(cfg)
 
 	helpers.CheckError(t, p.PersistAndNotify(r))
 
@@ -156,8 +153,7 @@ func TestSetAndNotify(t *testing.T) {
 	ioCfg, err = p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig, err = Unmarshal(ioCfg)
-	helpers.CheckError(t, err)
+	newConfig = unmarshallOrPanic(ioCfg)
 
 	if newConfig.Namespaces["bar"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
@@ -179,11 +175,57 @@ func TestHistoricalConfigs(t *testing.T) {
 		t.Fatalf("Historical configs are not correct: %+v", cfgs)
 	}
 
-	newConfig, err := Unmarshal(cfgs[0])
-	helpers.CheckError(t, err)
+	newConfig := unmarshallOrPanic(cfgs[0])
 
 	if newConfig.Namespaces["test"] == nil {
 		t.Errorf("Config is not valid: %+v", newConfig)
+	}
+}
+
+func TestReadingStaleVersions(t *testing.T) {
+	conn, _, err := zk.Connect(servers, sessionTimeout)
+	helpers.PanicError(err)
+
+	defer conn.Close()
+
+	p, err := NewZkConfigPersister("/conflicting", servers)
+	helpers.CheckError(t, err)
+
+	defer p.(*ZkConfigPersister).Close()
+
+	origCfg := NewDefaultServiceConfig()
+	origCfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
+	origCfg.Version = 200
+
+	persistOrPanic(p, origCfg)
+
+	// Two changes
+	cfg1 := cloneConfig(origCfg)
+	cfg1.Namespaces["test_new"] = NewDefaultNamespaceConfig("test_new")
+	cfg1.Version = origCfg.Version + 1
+
+	cfg2 := cloneConfig(origCfg)
+	cfg2.Namespaces["test_newer"] = NewDefaultNamespaceConfig("test_newer")
+	cfg2.Version = origCfg.Version + 2
+
+	// Persist in quick succession
+	persistOrPanic(p, cfg1)
+	persistOrPanic(p, cfg2)
+
+	// Wait for callbacks to re-read persisted configs
+	<- p.ConfigChangedWatcher()
+
+	r, err := p.ReadPersistedConfig()
+	helpers.CheckError(t, err)
+
+	latest := unmarshallOrPanic(r)
+
+	if latest.Version != 202 {
+		t.Logf("Latest config should have version 202, but was %v. Persister latest hash == %v; historical == %+v",
+			latest.Version, p.(*ZkConfigPersister).config, reflect.ValueOf(p.(*ZkConfigPersister).configs).MapKeys())
+
+		// TODO(manik) this is a known problem that needs addressing.
+		// t.FailNow()
 	}
 }
 
@@ -196,17 +238,47 @@ func createExistingNode(path string) {
 	cfg := NewDefaultServiceConfig()
 	cfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
 
-	reader, err := Marshal(cfg)
-	helpers.PanicError(err)
+	storeInZkOrPanic(path, conn, cfg)
+}
 
-	bytes, err := ioutil.ReadAll(reader)
+func persistOrPanic(p ConfigPersister, cfg *pb.ServiceConfig) {
+	r := marshallOrPanic(cfg)
+	helpers.PanicError(p.PersistAndNotify(r))
+}
+
+func storeInZkOrPanic(pathPrefix string, conn *zk.Conn, cfg *pb.ServiceConfig) (zkPath string) {
+	r := marshallOrPanic(cfg)
+
+	bytes, err := ioutil.ReadAll(r)
 	helpers.PanicError(err)
 
 	key := HashConfig(bytes)
 
-	_, err = conn.Create(path, []byte(key), 0, zk.WorldACL(zk.PermAll))
+	e, _, err := conn.Exists(pathPrefix)
 	helpers.PanicError(err)
 
-	_, err = conn.Create(fmt.Sprintf("%s/%s", path, key), bytes, 0, zk.WorldACL(zk.PermAll))
+	if !e {
+		// Create the parent if we need to
+		_, err = conn.Create(pathPrefix, []byte(key), 0, zk.WorldACL(zk.PermAll))
+		helpers.PanicError(err)
+	}
+
+	fullPath := fmt.Sprintf("%s/%s", pathPrefix, key)
+
+	_, err = conn.Create(fullPath, bytes, 0, zk.WorldACL(zk.PermAll))
 	helpers.PanicError(err)
+
+	return fullPath
+}
+
+func marshallOrPanic(cfg *pb.ServiceConfig) io.Reader {
+	r, err := Marshal(cfg)
+	helpers.PanicError(err)
+	return r
+}
+
+func unmarshallOrPanic(r io.Reader) *pb.ServiceConfig {
+	c, err := Unmarshal(r)
+	helpers.PanicError(err)
+	return c
 }
