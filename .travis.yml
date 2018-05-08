@@ -17,8 +17,6 @@ matrix:
       env: TEST=UI
 
 install:
-  - wget https://archive.apache.org/dist/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz
-  - tar -zxf zookeeper*tar.gz
   - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
 
 script: test/script.sh
