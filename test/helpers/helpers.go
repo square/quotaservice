@@ -38,3 +38,10 @@ func PanicError(e error) {
 		panic(fmt.Sprintf("Not expecting error %+v", e))
 	}
 }
+
+// ExpectingError checks that an error passed in is, in fact, an error. If not, it will fail the test.
+func ExpectingError(t *testing.T, e error) {
+	if e == nil {
+		t.Fatal("Expecting error, got nil")
+	}
+}

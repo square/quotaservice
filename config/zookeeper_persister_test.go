@@ -223,6 +223,43 @@ func TestReadingStaleVersions(t *testing.T) {
 	}
 }
 
+// TestConcurrentUpdate attempts to recreate a case where two concurrent readers read a version, attempt an update to
+// the next version, and both succeed, creating potential for lost changes.
+func TestConcurrentUpdate(t *testing.T) {
+	conn, _, err := zk.Connect(servers, sessionTimeout)
+	helpers.PanicError(err)
+
+	defer conn.Close()
+
+	p, err := NewZkConfigPersister("/lost_changes", servers)
+	helpers.CheckError(t, err)
+
+	defer p.(*ZkConfigPersister).Close()
+
+	origCfg := NewDefaultServiceConfig()
+	origCfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
+	origCfg.Version = 200
+
+	persistOrPanic(p, origCfg)
+
+	// Both cfg1 and cfg2 are configs derived from origConfig, but diverging
+	cfg1 := cloneConfig(origCfg)
+	cfg1.Namespaces["test_new"] = NewDefaultNamespaceConfig("test_new")
+	cfg1.Version = origCfg.Version + 1
+
+	persistOrPanic(p, cfg1)
+
+	cfg2 := cloneConfig(origCfg)
+	cfg2.Namespaces["test_newer"] = NewDefaultNamespaceConfig("test_newer")
+	cfg2.Version = origCfg.Version + 1
+
+	r := marshallOrPanic(cfg2)
+	err = p.PersistAndNotify(r)
+
+	// TODO(manik) clobbering is currently possible, this test fails. Uncomment assertion below and commit along with fix.
+	//helpers.ExpectingError(t, err)
+}
+
 func createExistingNode(path string) {
 	conn, _, err := zk.Connect(servers, sessionTimeout)
 	helpers.PanicError(err)
