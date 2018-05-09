@@ -187,17 +187,10 @@ func (s *server) configListener(ch <-chan struct{}) {
 }
 
 func (s *server) readUpdatedConfig(jitter time.Duration) {
-	configReader, err := s.persister.ReadPersistedConfig()
+	newConfig, err := s.persister.ReadPersistedConfig()
 
 	if err != nil {
 		logging.Println("error reading persisted config", err)
-		return
-	}
-
-	newConfig, err := config.Unmarshal(configReader)
-
-	if err != nil {
-		logging.Println("error reading marshalled config", err)
 		return
 	}
 
@@ -318,13 +311,8 @@ func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error
 	clonedCfg.Date = time.Now().Unix()
 	clonedCfg.Version = currentVersion + 1
 
-	r, e := config.Marshal(clonedCfg)
-
-	if e != nil {
-		return e
-	}
-
-	return s.persister.PersistAndNotify(r)
+	// TODO(manik) make use of the old hash for an optimistic version check
+	return s.persister.PersistAndNotify("", clonedCfg)
 }
 
 // Implements admin.Administrable
@@ -403,26 +391,14 @@ func (s *server) DynamicBucketStats(namespace, bucket string) *stats.BucketScore
 
 func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
 	configs, err := s.persister.ReadHistoricalConfigs()
-
 	if err != nil {
 		return nil, err
 	}
+	sorted := make(sortedConfigs, len(configs))
+	copy(sorted, configs)
+	sort.Sort(sorted)
 
-	unmarshalledConfigs := make(sortedConfigs, len(configs))
-
-	for i, newConfig := range configs {
-		unmarshalledConfig, err := config.Unmarshal(newConfig)
-
-		if err != nil {
-			return nil, err
-		}
-
-		unmarshalledConfigs[i] = unmarshalledConfig
-	}
-
-	sort.Sort(unmarshalledConfigs)
-
-	return unmarshalledConfigs, nil
+	return sorted, nil
 }
 
 func (s *server) GetServerAdministrable() admin.Administrable {

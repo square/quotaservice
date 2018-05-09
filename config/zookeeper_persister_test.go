@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
-	"github.com/square/quotaservice/test/helpers"
 	pb "github.com/square/quotaservice/protos/config"
+	"github.com/square/quotaservice/test/helpers"
 	"io"
 )
 
@@ -58,11 +58,8 @@ func TestNew(t *testing.T) {
 	cfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	cfgArray, err := ioutil.ReadAll(cfg)
-	helpers.CheckError(t, err)
-
-	if len(cfgArray) > 0 {
-		t.Errorf("Received non-empty cfg on new node: %+v", cfgArray)
+	if cfg != nil {
+		t.Error("Received non-nil cfg on new node")
 	}
 }
 
@@ -82,10 +79,8 @@ func TestNewExisting(t *testing.T) {
 	cfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig := unmarshallOrPanic(cfg)
-
-	if newConfig.Namespaces["test"] == nil {
-		t.Errorf("Config is not valid: %+v", newConfig)
+	if cfg.Namespaces["test"] == nil {
+		t.Errorf("Config is not valid: %+v", cfg)
 	}
 }
 
@@ -104,7 +99,7 @@ func TestSetExisting(t *testing.T) {
 
 	cfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
-	helpers.CheckError(t, p.PersistAndNotify(cfg))
+	helpers.CheckError(t, p.PersistAndNotify("", cfg))
 }
 
 func TestSetAndNotify(t *testing.T) {
@@ -119,7 +114,7 @@ func TestSetAndNotify(t *testing.T) {
 	cfg.Namespaces["foo"] = NewDefaultNamespaceConfig("foo")
 	cfg.Version++
 
-	helpers.CheckError(t, p.PersistAndNotify(marshallOrPanic(cfg)))
+	helpers.CheckError(t, p.PersistAndNotify("", cfg))
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -130,15 +125,13 @@ func TestSetAndNotify(t *testing.T) {
 	ioCfg, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig := unmarshallOrPanic(ioCfg)
-
-	if newConfig.Namespaces["foo"] == nil {
-		t.Errorf("Config is not valid: %+v", newConfig)
+	if ioCfg.Namespaces["foo"] == nil {
+		t.Errorf("Config is not valid: %+v", ioCfg)
 	}
 
 	cfg.Namespaces["bar"] = NewDefaultNamespaceConfig("bar")
 	cfg.Version++
-	helpers.CheckError(t, p.PersistAndNotify(marshallOrPanic(cfg)))
+	helpers.CheckError(t, p.PersistAndNotify("", cfg))
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -149,10 +142,8 @@ func TestSetAndNotify(t *testing.T) {
 	ioCfg, err = p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
 
-	newConfig = unmarshallOrPanic(ioCfg)
-
-	if newConfig.Namespaces["bar"] == nil {
-		t.Errorf("Config is not valid: %+v", newConfig)
+	if ioCfg.Namespaces["bar"] == nil {
+		t.Errorf("Config is not valid: %+v", ioCfg)
 	}
 }
 
@@ -171,10 +162,8 @@ func TestHistoricalConfigs(t *testing.T) {
 		t.Fatalf("Historical configs are not correct: %+v", cfgs)
 	}
 
-	newConfig := unmarshallOrPanic(cfgs[0])
-
-	if newConfig.Namespaces["test"] == nil {
-		t.Errorf("Config is not valid: %+v", newConfig)
+	if cfgs[0].Namespaces["test"] == nil {
+		t.Errorf("Config is not valid: %+v", cfgs[0])
 	}
 }
 
@@ -209,14 +198,12 @@ func TestReadingStaleVersions(t *testing.T) {
 	persistOrPanic(p, cfg2)
 
 	// Wait for callbacks to re-read persisted configs
-	<- p.ConfigChangedWatcher()
-	<- p.ConfigChangedWatcher()
-	<- p.ConfigChangedWatcher()
+	<-p.ConfigChangedWatcher()
+	<-p.ConfigChangedWatcher()
+	<-p.ConfigChangedWatcher()
 
-	r, err := p.ReadPersistedConfig()
+	latest, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
-
-	latest := unmarshallOrPanic(r)
 
 	if latest.Version != 202 {
 		t.Fatalf("Expected latest version = 200, got %v", latest.Version)
@@ -253,8 +240,7 @@ func TestConcurrentUpdate(t *testing.T) {
 	cfg2.Namespaces["test_newer"] = NewDefaultNamespaceConfig("test_newer")
 	cfg2.Version = origCfg.Version + 1
 
-	r := marshallOrPanic(cfg2)
-	err = p.PersistAndNotify(r)
+	err = p.PersistAndNotify("", cfg2)
 
 	// TODO(manik) clobbering is currently possible, this test fails. Uncomment assertion below and commit along with fix.
 	//helpers.ExpectingError(t, err)
@@ -273,8 +259,7 @@ func createExistingNode(path string) {
 }
 
 func persistOrPanic(p ConfigPersister, cfg *pb.ServiceConfig) {
-	r := marshallOrPanic(cfg)
-	helpers.PanicError(p.PersistAndNotify(r))
+	helpers.PanicError(p.PersistAndNotify("", cfg))
 }
 
 func storeInZkOrPanic(pathPrefix string, conn *zk.Conn, cfg *pb.ServiceConfig) (zkPath string) {
@@ -283,7 +268,7 @@ func storeInZkOrPanic(pathPrefix string, conn *zk.Conn, cfg *pb.ServiceConfig) (
 	bytes, err := ioutil.ReadAll(r)
 	helpers.PanicError(err)
 
-	key := HashConfig(bytes)
+	key := HashConfig(cfg)
 
 	e, _, err := conn.Exists(pathPrefix)
 	helpers.PanicError(err)
@@ -306,10 +291,4 @@ func marshallOrPanic(cfg *pb.ServiceConfig) io.Reader {
 	r, err := Marshal(cfg)
 	helpers.PanicError(err)
 	return r
-}
-
-func unmarshallOrPanic(r io.Reader) *pb.ServiceConfig {
-	c, err := Unmarshal(r)
-	helpers.PanicError(err)
-	return c
 }

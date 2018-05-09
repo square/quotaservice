@@ -18,7 +18,7 @@ func TestWithNoRpcs(t *testing.T) {
 }
 
 func TestValidServer(t *testing.T) {
-	s := New(&MockBucketFactory{}, config.NewMemoryConfigPersister(), NewReaperConfigForTests(), 0, &MockEndpoint{}).(*server)
+	s := New(&MockBucketFactory{}, config.NewMemoryConfig(config.NewDefaultServiceConfig()), NewReaperConfigForTests(), 0, &MockEndpoint{}).(*server)
 	_, err := s.Start()
 	helpers.CheckError(t, err)
 	stopServer(t, s)
@@ -31,15 +31,9 @@ func TestUpdateConfig(t *testing.T) {
 	originalConfig := config.NewDefaultServiceConfig()
 	originalConfig.Version = 2
 	originalConfig.Date = time.Now().Unix() - 10
-	marshalledConfig, err := config.Marshal(originalConfig)
+	helpers.CheckError(t, p.PersistAndNotify("", originalConfig))
 
-	if err != nil {
-		t.Fatal("Error when updating config", err)
-	}
-
-	helpers.CheckError(t, p.PersistAndNotify(marshalledConfig))
-
-	_, err = s.Start()
+	_, err := s.Start()
 	helpers.CheckError(t, err)
 	defer stopServer(t, s)
 
