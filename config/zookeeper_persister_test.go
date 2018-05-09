@@ -13,7 +13,6 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/square/quotaservice/test/helpers"
 	pb "github.com/square/quotaservice/protos/config"
-	"reflect"
 	"io"
 )
 
@@ -118,10 +117,9 @@ func TestSetAndNotify(t *testing.T) {
 
 	cfg := NewDefaultServiceConfig()
 	cfg.Namespaces["foo"] = NewDefaultNamespaceConfig("foo")
+	cfg.Version++
 
-	r := marshallOrPanic(cfg)
-
-	helpers.CheckError(t, p.PersistAndNotify(r))
+	helpers.CheckError(t, p.PersistAndNotify(marshallOrPanic(cfg)))
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -139,10 +137,8 @@ func TestSetAndNotify(t *testing.T) {
 	}
 
 	cfg.Namespaces["bar"] = NewDefaultNamespaceConfig("bar")
-
-	r = marshallOrPanic(cfg)
-
-	helpers.CheckError(t, p.PersistAndNotify(r))
+	cfg.Version++
+	helpers.CheckError(t, p.PersistAndNotify(marshallOrPanic(cfg)))
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -214,6 +210,8 @@ func TestReadingStaleVersions(t *testing.T) {
 
 	// Wait for callbacks to re-read persisted configs
 	<- p.ConfigChangedWatcher()
+	<- p.ConfigChangedWatcher()
+	<- p.ConfigChangedWatcher()
 
 	r, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
@@ -221,11 +219,7 @@ func TestReadingStaleVersions(t *testing.T) {
 	latest := unmarshallOrPanic(r)
 
 	if latest.Version != 202 {
-		t.Logf("Latest config should have version 202, but was %v. Persister latest hash == %v; historical == %+v",
-			latest.Version, p.(*ZkConfigPersister).config, reflect.ValueOf(p.(*ZkConfigPersister).configs).MapKeys())
-
-		// TODO(manik) this is a known problem that needs addressing.
-		// t.FailNow()
+		t.Fatalf("Expected latest version = 200, got %v", latest.Version)
 	}
 }
 

@@ -217,7 +217,11 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	}
 
 	configs := make(map[string][]byte)
+	latestHashVersion := 0
+	var latestHash string
 
+	// Iterate over all children in this path for 2 reasons: add all of them to the historical version map, and to work
+	// out which is the most recent, to use as the current version.
 	for _, child := range children {
 		path := fmt.Sprintf("%s/%s", z.path, child)
 		data, _, err := z.conn.Get(path)
@@ -228,6 +232,16 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		}
 
 		configs[child] = data
+
+		// TODO(manik) replace this with a ZK node that tracks the latest version rather than deserializing each node
+		currentVersion := versionOf(data)
+
+		// TODO(manik) we can currently have multiple hashes with the same version; this needs to be fixed at the time
+		// of writing
+		if currentVersion >= latestHashVersion {
+			latestHashVersion = currentVersion
+			latestHash = child
+		}
 	}
 
 	if z.initialized {
@@ -235,7 +249,12 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	} else {
 		logging.Printf("Establishing zookeeper watch on %v", z.path)
 	}
-	config, _, ch, err := z.conn.GetW(z.path)
+
+	// Ignoring the response to getting the contents of the watch. We don't care which node triggered the watch, since
+	// we're working out the "most recent" config above by iterating over all available configurations and sorting by
+	// the configuration's Version field. All we care about here is the channel watching the ZK path, to be notified of
+	// future changes.
+	_, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
 		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
@@ -246,7 +265,9 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	defer z.Unlock()
 
 	z.configs = configs
-	z.config = string(config)
+	z.config = latestHash
+
+	logging.Printf("Setting latest config hash to %v (version %v)", z.config, latestHashVersion)
 
 	select {
 	case z.watcher <- struct{}{}:
@@ -298,12 +319,12 @@ func (z *ZkConfigPersister) Close() {
 	z.conn.Close()
 }
 
-func versionOf(b []byte) int32 {
+func versionOf(b []byte) int {
 	c, err := Unmarshal(bytes.NewReader(b))
 	if err != nil {
 		logging.Printf("Unable to read version from config when persisting: %v", err)
 		return -1
 	}
 
-	return c.Version
+	return int(c.Version)
 }
