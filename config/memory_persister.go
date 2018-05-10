@@ -54,13 +54,7 @@ func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, er
 	m.RLock()
 	defer m.RUnlock()
 
-	cfgs := make([]*pb.ServiceConfig, 0, len(m.configs))
-
-	for _, v := range m.configs {
-		cfgs = append(cfgs, cloneConfig(v))
-	}
-
-	return cfgs, nil
+	return cloneConfigs(m.configs), nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are

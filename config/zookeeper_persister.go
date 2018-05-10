@@ -297,13 +297,7 @@ func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error)
 	z.RLock()
 	defer z.RUnlock()
 
-	cfgs := make([]*pb.ServiceConfig, 0, len(z.configs))
-
-	for _, config := range z.configs {
-		cfgs = append(cfgs, cloneConfig(config))
-	}
-
-	return cfgs, nil
+	return cloneConfigs(z.configs), nil
 }
 
 // Close makes sure all event listeners are done
