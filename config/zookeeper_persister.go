@@ -52,21 +52,8 @@ type ZkConfigPersister struct {
 // Mirrors go-zookeeper's connOption
 type connOption func(c *zk.Conn)
 
-func NewZkConfigPersister(path string, servers []string, options ...connOption) (ConfigPersister, error) {
-	conn, _, err := zk.Connect(servers, sessionTimeout, func(c *zk.Conn) {
-		c.SetLogger(logging.CurrentLogger())
-
-		// Allows overriding logger/etc. go-zookeeper options
-		for _, option := range options {
-			option(c)
-		}
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = createPath(conn, path)
+func NewZkConfigPersisterWithConnection(path string, conn *zk.Conn) (ConfigPersister, error) {
+	err := createPath(conn, path)
 
 	if err != nil {
 		conn.Close()
@@ -89,6 +76,23 @@ func NewZkConfigPersister(path string, servers []string, options ...connOption) 
 	persister.watch = watch
 
 	return persister, nil
+}
+
+func NewZkConfigPersister(path string, servers []string, options ...connOption) (ConfigPersister, error) {
+	conn, _, err := zk.Connect(servers, sessionTimeout, func(c *zk.Conn) {
+		c.SetLogger(logging.CurrentLogger())
+
+		// Allows overriding logger/etc. go-zookeeper options
+		for _, option := range options {
+			option(c)
+		}
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewZkConfigPersisterWithConnection(path, conn)
 }
 
 func (z *ZkConfigPersister) createWatch(listener eventListener) (*zkWatch, error) {
