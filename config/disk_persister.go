@@ -5,10 +5,10 @@ package config
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	pb "github.com/square/quotaservice/protos/config"
+	"github.com/golang/protobuf/proto"
 )
 
 // DiskConfigPersister is a ConfigPersister that saves configs to the local filesystem.
@@ -46,15 +46,16 @@ func writeFile(path string, bytes []byte) error {
 	return e
 }
 
-// PersistAndNotify persists a marshalled configuration passed in.
-func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	b, e := ioutil.ReadAll(marshalledConfig)
+// PersistAndNotify persists a configuration passed in.
+func (d *DiskConfigPersister) PersistAndNotify(oldHash string, cfg *pb.ServiceConfig) error {
+	// TODO(manik) Optimistic version check with oldHash
 
+	b, e := proto.Marshal(cfg)
 	if e != nil {
 		return e
 	}
 
-	path := fmt.Sprintf("%s-%s", d.location, HashConfig(b))
+	path := fmt.Sprintf("%s-%s", d.location, HashConfigBytes(b))
 	e = writeFile(path, b)
 
 	if e != nil {
@@ -81,29 +82,36 @@ func (d *DiskConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error
 	return nil
 }
 
-// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (d *DiskConfigPersister) ReadPersistedConfig() (io.Reader, error) {
-	return os.Open(d.location)
+// ReadPersistedConfig provides a config previously persisted.
+func (d *DiskConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
+	r, e := os.Open(d.location)
+	if e != nil {
+		return nil, e
+	}
+
+	return Unmarshal(r)
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
-func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error) {
 	files, err := filepath.Glob(fmt.Sprintf("%s-*", d.location))
 
 	if err != nil {
 		return nil, err
 	}
 
-	configs := make([]io.Reader, len(files))
+	configs := make([]*pb.ServiceConfig, len(files))
 
 	for i, file := range files {
 		reader, e := os.Open(file)
-
 		if e != nil {
 			return nil, e
 		}
 
-		configs[i] = reader
+		configs[i], e = Unmarshal(reader)
+		if e != nil {
+			return nil, e
+		}
 	}
 
 	return configs, nil

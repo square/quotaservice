@@ -4,35 +4,36 @@
 package config
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
+	pb "github.com/square/quotaservice/protos/config"
+	"sync"
 )
 
 type MemoryConfigPersister struct {
 	config  string
-	configs map[string][]byte
+	configs map[string]*pb.ServiceConfig
 	*Notifier
+	*sync.RWMutex
 }
 
 func NewMemoryConfigPersister() ConfigPersister {
 	p := &MemoryConfigPersister{
-		configs:  make(map[string][]byte),
-		Notifier: NewNotifier()}
+		configs:  make(map[string]*pb.ServiceConfig),
+		Notifier: NewNotifier(),
+		RWMutex:  &sync.RWMutex{}}
 
 	p.Notify()
 	return p
 }
 
-// PersistAndNotify persists a marshalled configuration passed in.
-func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	b, err := ioutil.ReadAll(marshalledConfig)
-	if err != nil {
-		return err
-	}
+// PersistAndNotify persists a configuration passed in.
+func (m *MemoryConfigPersister) PersistAndNotify(oldHash string, cfg *pb.ServiceConfig) error {
+	// TODO(manik) Optimistic version check with oldHash
 
-	m.config = HashConfig(b)
-	m.configs[m.config] = b
+	m.Lock()
+	defer m.Unlock()
+
+	m.config = HashConfig(cfg)
+	m.configs[m.config] = cloneConfig(cfg)
 
 	// ... and notify
 	m.Notify()
@@ -40,20 +41,26 @@ func (m *MemoryConfigPersister) PersistAndNotify(marshalledConfig io.Reader) err
 	return nil
 }
 
-// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (m *MemoryConfigPersister) ReadPersistedConfig() (io.Reader, error) {
-	return bytes.NewReader(m.configs[m.config]), nil
+// ReadPersistedConfig provides a config previously persisted.
+func (m *MemoryConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
+	m.RLock()
+	defer m.RUnlock()
+
+	return cloneConfig(m.configs[m.config]), nil
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
-func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
-	var readers []io.Reader
+func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error) {
+	m.RLock()
+	defer m.RUnlock()
+
+	cfgs := make([]*pb.ServiceConfig, 0, len(m.configs))
 
 	for _, v := range m.configs {
-		readers = append(readers, bytes.NewReader(v))
+		cfgs = append(cfgs, cloneConfig(v))
 	}
 
-	return readers, nil
+	return cfgs, nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are

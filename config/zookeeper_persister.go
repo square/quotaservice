@@ -4,16 +4,15 @@
 package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/square/quotaservice/logging"
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 const (
@@ -35,8 +34,8 @@ type ZkConfigPersister struct {
 	config string
 
 	// Historical map of configurations
-	// hash -> marshalled config
-	configs map[string][]byte
+	// hash -> config
+	configs map[string]*pb.ServiceConfig
 
 	// Base Zookeeper path
 	path string
@@ -78,7 +77,7 @@ func NewZkConfigPersister(path string, servers []string, options ...connOption) 
 		conn:    conn,
 		path:    path,
 		watcher: make(chan struct{}, 1),
-		configs: make(map[string][]byte)}
+		configs: make(map[string]*pb.ServiceConfig)}
 
 	watch, err := persister.createWatch(persister.currentConfigEventListener)
 
@@ -165,10 +164,11 @@ func createPath(conn *zk.Conn, path string) (err error) {
 	return err
 }
 
-// PersistAndNotify persists a marshalled configuration passed in.
-func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
-	b, e := ioutil.ReadAll(marshalledConfig)
+// PersistAndNotify persists a configuration passed in.
+func (z *ZkConfigPersister) PersistAndNotify(oldHash string, cfg *pb.ServiceConfig) error {
+	// TODO(manik) Optimistic version check with oldHash
 
+	b, e := proto.Marshal(cfg)
 	if e != nil {
 		return e
 	}
@@ -176,13 +176,13 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 	z.RLock()
 	defer z.RUnlock()
 
-	key := HashConfig(b)
+	key := HashConfigBytes(b)
 	if key == z.config {
 		return nil
 	}
 
 	path := fmt.Sprintf("%s/%s", z.path, key)
-	logging.Printf("Storing config version %v in path %v", versionOf(b), path)
+	logging.Printf("Storing config version %v in path %v", cfg.Version, path)
 
 	if err := z.archiveConfig(path, b); err != nil {
 		return err
@@ -195,12 +195,12 @@ func (z *ZkConfigPersister) PersistAndNotify(marshalledConfig io.Reader) error {
 	return err
 }
 
-// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
-func (z *ZkConfigPersister) ReadPersistedConfig() (io.Reader, error) {
+// ReadPersistedConfig provides a config previously persisted.
+func (z *ZkConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 	z.RLock()
 	defer z.RUnlock()
 
-	return bytes.NewReader(z.configs[z.config]), nil
+	return cloneConfig(z.configs[z.config]), nil
 }
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
@@ -216,14 +216,14 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		return nil, err
 	}
 
-	configs := make(map[string][]byte)
-	latestHashVersion := 0
+	configs := make(map[string]*pb.ServiceConfig)
+	latestHashVersion := int32(0)
 	var latestHash string
 
 	// Iterate over all children in this path for 2 reasons: add all of them to the historical version map, and to work
 	// out which is the most recent, to use as the current version.
-	for _, child := range children {
-		path := fmt.Sprintf("%s/%s", z.path, child)
+	for _, hash := range children {
+		path := fmt.Sprintf("%s/%s", z.path, hash)
 		data, _, err := z.conn.Get(path)
 
 		if err != nil {
@@ -231,16 +231,15 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 			return nil, err
 		}
 
-		configs[child] = data
+		configs[hash] = &pb.ServiceConfig{}
+		proto.Unmarshal(data, configs[hash])
 
 		// TODO(manik) replace this with a ZK node that tracks the latest version rather than deserializing each node
-		currentVersion := versionOf(data)
-
 		// TODO(manik) we can currently have multiple hashes with the same version; this needs to be fixed at the time
 		// of writing
-		if currentVersion >= latestHashVersion {
-			latestHashVersion = currentVersion
-			latestHash = child
+		if configs[hash].Version >= latestHashVersion {
+			latestHashVersion = configs[hash].Version
+			latestHash = hash
 		}
 	}
 
@@ -294,17 +293,17 @@ func (z *ZkConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
-func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error) {
 	z.RLock()
 	defer z.RUnlock()
 
-	var readers []io.Reader
+	cfgs := make([]*pb.ServiceConfig, 0, len(z.configs))
 
 	for _, config := range z.configs {
-		readers = append(readers, bytes.NewReader(config))
+		cfgs = append(cfgs, cloneConfig(config))
 	}
 
-	return readers, nil
+	return cfgs, nil
 }
 
 // Close makes sure all event listeners are done
@@ -317,14 +316,4 @@ func (z *ZkConfigPersister) Close() {
 	close(z.watcher)
 
 	z.conn.Close()
-}
-
-func versionOf(b []byte) int {
-	c, err := Unmarshal(bytes.NewReader(b))
-	if err != nil {
-		logging.Printf("Unable to read version from config when persisting: %v", err)
-		return -1
-	}
-
-	return int(c.Version)
 }

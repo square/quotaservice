@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos/config"
 	"gopkg.in/yaml.v2"
 )
@@ -24,6 +25,7 @@ const (
 	DefaultBucketName         = "___DEFAULT_BUCKET___"
 	DynamicBucketTemplateName = "___DYNAMIC_BUCKET_TPL___"
 	initialVersion            = 0
+	initialHash               = "___INITIAL_HASH___"
 )
 
 func ApplyDefaults(sc *pb.ServiceConfig) {
@@ -190,14 +192,9 @@ func FullyQualifiedName(namespace, bucketName string) string {
 }
 
 func NewMemoryConfig(p *pb.ServiceConfig) ConfigPersister {
-	marshalled, e := Marshal(p)
-	if e != nil {
-		panic(e)
-	}
-
 	persister := NewMemoryConfigPersister()
-	if err := persister.PersistAndNotify(marshalled); err != nil {
-		panic(err)
+	if err := persister.PersistAndNotify(initialHash, p); err != nil {
+		logging.Fatalf("Unable to persist initial configuration: %v", err)
 	}
 
 	return persister
@@ -225,6 +222,12 @@ func Unmarshal(r io.Reader) (*pb.ServiceConfig, error) {
 	}
 
 	return p, nil
+}
+
+func UnmarshalBytes(b []byte) (*pb.ServiceConfig, error) {
+	p := &pb.ServiceConfig{}
+	e := proto.Unmarshal(b, p)
+	return p, e
 }
 
 func AddBucket(n *pb.NamespaceConfig, b *pb.BucketConfig) error {
@@ -295,7 +298,5 @@ func DifferentNamespaceConfigs(c1, c2 *pb.NamespaceConfig) bool {
 }
 
 func cloneConfig(cfg *pb.ServiceConfig) *pb.ServiceConfig {
-	r, _ := Marshal(cfg)
-	c, _ := Unmarshal(r)
-	return c
+	return proto.Clone(cfg).(*pb.ServiceConfig)
 }

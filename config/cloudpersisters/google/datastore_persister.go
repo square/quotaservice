@@ -19,10 +19,7 @@
 package google
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +29,8 @@ import (
 	"github.com/square/quotaservice/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
+	pb "github.com/square/quotaservice/protos/config"
+	"github.com/golang/protobuf/proto"
 )
 
 // storedEntity stores the configuration as a serialized protobuf, and some metadata about the configuration.
@@ -56,24 +55,21 @@ type DatastoreConfigPersister struct {
 	newVersions chan int
 }
 
-func (p *DatastoreConfigPersister) PersistAndNotify(r io.Reader) error {
+func (p *DatastoreConfigPersister) PersistAndNotify(oldHash string, cfg *pb.ServiceConfig) error {
+	// TODO(manik) Optimistic version check with oldHash
+
+	b, e := proto.Marshal(cfg)
+	if e != nil {
+		return e
+	}
 	// Persist...
-	b, e := ioutil.ReadAll(r)
-	if e != nil {
-		return e
-	}
-
-	cfg, e := config.Unmarshal(bytes.NewReader(b))
-	if e != nil {
-		return e
-	}
-
 	s := &storedEntity{Contents: b,
 		Version: cfg.Version,
 		Date:    time.Unix(cfg.Date, 0),
 		User:    cfg.User,
-		Hash:    config.HashConfig(b)}
+		Hash:    config.HashConfigBytes(b)}
 
+	// TODO(manik) datastore key should be the hash, not version?
 	k := datastore.NameKey(p.entity, fmt.Sprintf("version:%v", cfg.Version), nil)
 	k.Namespace = p.namespace
 
@@ -117,7 +113,7 @@ func (p *DatastoreConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return p.Notifier.Watcher
 }
 
-func (p *DatastoreConfigPersister) ReadPersistedConfig() (io.Reader, error) {
+func (p *DatastoreConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 	_, s, e := p.getLatest(false)
 	if e != nil {
 		return nil, e
@@ -125,7 +121,7 @@ func (p *DatastoreConfigPersister) ReadPersistedConfig() (io.Reader, error) {
 
 	p.newVersions <- int(s.Version)
 
-	return bytes.NewReader(s.Contents), nil
+	return config.UnmarshalBytes(s.Contents)
 }
 
 func (p *DatastoreConfigPersister) getLatest(keyOnly bool) (*datastore.Key, *storedEntity, error) {
@@ -146,16 +142,17 @@ func (p *DatastoreConfigPersister) getLatest(keyOnly bool) (*datastore.Key, *sto
 	}
 
 	if len(keys) != 1 {
-		return nil, nil, fmt.Errorf("Expected 1 result, got %v result(s)", len(keys))
+		return nil, nil, fmt.Errorf("expected 1 result, got %v result(s)", len(keys))
 	}
 
 	return keys[0], entities[0], nil
 }
 
-func (p *DatastoreConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) {
+func (p *DatastoreConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error) {
 	var entities []*storedEntity
+	var e error
 
-	if _, e := p.client.GetAll(context.Background(),
+	if _, e = p.client.GetAll(context.Background(),
 		datastore.NewQuery(p.entity).
 			Namespace(p.namespace).
 			Order("-Version"),
@@ -163,10 +160,13 @@ func (p *DatastoreConfigPersister) ReadHistoricalConfigs() ([]io.Reader, error) 
 		return nil, e
 	}
 
-	res := make([]io.Reader, len(entities))
+	res := make([]*pb.ServiceConfig, len(entities))
 
 	for i, t := range entities {
-		res[i] = bytes.NewReader(t.Contents)
+		res[i], e = config.UnmarshalBytes(t.Contents)
+		if e != nil {
+			return nil, e
+		}
 	}
 
 	return res, nil

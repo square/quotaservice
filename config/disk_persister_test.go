@@ -35,9 +35,7 @@ func TestDiskPersistence(t *testing.T) {
 	helpers.CheckError(t, AddNamespace(s, nc))
 
 	// Store s.
-	r, e := Marshal(s)
-	helpers.CheckError(t, e)
-	e = persister.PersistAndNotify(r)
+	e = persister.PersistAndNotify("", s)
 	helpers.CheckError(t, e)
 
 	// Test notification
@@ -48,9 +46,7 @@ func TestDiskPersistence(t *testing.T) {
 		t.Fatal("Config channel should not be empty!")
 	}
 
-	r, e = persister.ReadPersistedConfig()
-	helpers.CheckError(t, e)
-	unmarshalled, e := Unmarshal(r)
+	unmarshalled, e := persister.ReadPersistedConfig()
 	helpers.CheckError(t, e)
 
 	if !reflect.DeepEqual(s, unmarshalled) {
@@ -64,8 +60,7 @@ func TestDiskPersistence(t *testing.T) {
 		t.Fatalf("Historical configs is not correct! %+v", cfgs)
 	}
 
-	unmarshalled, e = Unmarshal(cfgs[0])
-	helpers.CheckError(t, e)
+	unmarshalled = cfgs[0]
 
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
