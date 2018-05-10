@@ -300,3 +300,13 @@ func DifferentNamespaceConfigs(c1, c2 *pb.NamespaceConfig) bool {
 func cloneConfig(cfg *pb.ServiceConfig) *pb.ServiceConfig {
 	return proto.Clone(cfg).(*pb.ServiceConfig)
 }
+
+func cloneConfigs(cfgs map[string]*pb.ServiceConfig) []*pb.ServiceConfig {
+	cloned := make([]*pb.ServiceConfig, 0, len(cfgs))
+
+	for _, v := range cfgs {
+		cloned = append(cloned, cloneConfig(v))
+	}
+
+	return cloned
+}
