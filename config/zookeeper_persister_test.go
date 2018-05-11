@@ -6,14 +6,15 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
+	"github.com/square/quotaservice/config/zkhelpers"
 	pb "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"
 	"io"
+	"os"
 )
 
 var servers []string
@@ -26,24 +27,24 @@ func TestMain(m *testing.M) {
 	servers = make([]string, 1)
 	servers[0] = fmt.Sprintf("localhost:%d", t.Servers[0].Port)
 
-	createExistingNode("/existing")
-	createExistingNode("/historic")
-	r := m.Run()
-
-	os.Exit(r)
+	os.Exit(m.Run())
 }
 
 func TestNewPathError(t *testing.T) {
-	p, err := NewZkConfigPersister("/LOCAL/quotaservice", servers)
+	conn := setup()
+
+	p, err := NewZkConfigPersisterWithConnection("/LOCAL/quotaservice", conn)
 
 	if err == nil {
+		defer p.(*ZkConfigPersister).Close()
 		t.Error("Should have received error on new because path does not exit")
-		p.(*ZkConfigPersister).Close()
 	}
 }
 
 func TestNew(t *testing.T) {
-	p, err := NewZkConfigPersister("/quotaservice", servers)
+	conn := setup()
+
+	p, err := NewZkConfigPersisterWithConnection("/quotaservice", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -64,7 +65,9 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewExisting(t *testing.T) {
-	p, err := NewZkConfigPersister("/existing", servers)
+	conn := setup("/existing")
+
+	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -85,7 +88,9 @@ func TestNewExisting(t *testing.T) {
 }
 
 func TestSetExisting(t *testing.T) {
-	p, err := NewZkConfigPersister("/existing", servers)
+	conn := setup("/existing")
+
+	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -103,7 +108,9 @@ func TestSetExisting(t *testing.T) {
 }
 
 func TestSetAndNotify(t *testing.T) {
-	p, err := NewZkConfigPersister("/existing", servers)
+	conn := setup("/existing")
+
+	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -148,12 +155,14 @@ func TestSetAndNotify(t *testing.T) {
 }
 
 func TestHistoricalConfigs(t *testing.T) {
-	p, err := NewZkConfigPersister("/historic", servers)
+	conn := setup("/historic")
+
+	p, err := NewZkConfigPersisterWithConnection("/historic", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
 
-	<-p.ConfigChangedWatcher()
+	waitOrTimeout(p.ConfigChangedWatcher(), time.Minute)
 
 	cfgs, err := p.ReadHistoricalConfigs()
 	helpers.CheckError(t, err)
@@ -168,12 +177,9 @@ func TestHistoricalConfigs(t *testing.T) {
 }
 
 func TestReadingStaleVersions(t *testing.T) {
-	conn, _, err := zk.Connect(servers, sessionTimeout)
-	helpers.PanicError(err)
+	conn := setup("/conflicting")
 
-	defer conn.Close()
-
-	p, err := NewZkConfigPersister("/conflicting", servers)
+	p, err := NewZkConfigPersisterWithConnection("/conflicting", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -198,9 +204,9 @@ func TestReadingStaleVersions(t *testing.T) {
 	persistOrPanic(p, cfg2)
 
 	// Wait for callbacks to re-read persisted configs
-	<-p.ConfigChangedWatcher()
-	<-p.ConfigChangedWatcher()
-	<-p.ConfigChangedWatcher()
+	waitOrTimeout(p.ConfigChangedWatcher(), time.Minute)
+	waitOrTimeout(p.ConfigChangedWatcher(), time.Minute)
+	waitOrTimeout(p.ConfigChangedWatcher(), time.Minute)
 
 	latest, err := p.ReadPersistedConfig()
 	helpers.CheckError(t, err)
@@ -213,12 +219,9 @@ func TestReadingStaleVersions(t *testing.T) {
 // TestConcurrentUpdate attempts to recreate a case where two concurrent readers read a version, attempt an update to
 // the next version, and both succeed, creating potential for lost changes.
 func TestConcurrentUpdate(t *testing.T) {
-	conn, _, err := zk.Connect(servers, sessionTimeout)
-	helpers.PanicError(err)
+	conn := setup("/lost_changes")
 
-	defer conn.Close()
-
-	p, err := NewZkConfigPersister("/lost_changes", servers)
+	p, err := NewZkConfigPersisterWithConnection("/lost_changes", conn)
 	helpers.CheckError(t, err)
 
 	defer p.(*ZkConfigPersister).Close()
@@ -246,16 +249,11 @@ func TestConcurrentUpdate(t *testing.T) {
 	//helpers.ExpectingError(t, err)
 }
 
-func createExistingNode(path string) {
-	conn, _, err := zk.Connect(servers, sessionTimeout)
-	helpers.PanicError(err)
-
-	defer conn.Close()
-
+func createExistingNode(zkConn *zk.Conn, path string) {
 	cfg := NewDefaultServiceConfig()
 	cfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
 
-	storeInZkOrPanic(path, conn, cfg)
+	storeInZkOrPanic(path, zkConn, cfg)
 }
 
 func persistOrPanic(p ConfigPersister, cfg *pb.ServiceConfig) {
@@ -291,4 +289,32 @@ func marshallOrPanic(cfg *pb.ServiceConfig) io.Reader {
 	r, err := Marshal(cfg)
 	helpers.PanicError(err)
 	return r
+}
+
+func waitOrTimeout(c <-chan struct{}, timeout time.Duration) {
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
+
+	select {
+	case <- c:
+	case <- ticker.C:
+	}
+}
+
+// setup performs pre-flight setup, including cleaning out stale state in Zookeeper. This should be called at the start
+// of every test. The Zookeeper client connection returned can be used during the test, and must be closed at the end
+// of the test.
+func setup(nodesToCreate ...string) *zk.Conn {
+	conn, _, err := zk.Connect(servers, sessionTimeout)
+	helpers.PanicError(err)
+
+	// Empty out the contents of Zookeeper
+	err = zkhelpers.DeleteRecursively(conn, zkhelpers.DefaultRoot)
+	helpers.PanicError(err)
+
+	for _, node := range nodesToCreate {
+		createExistingNode(conn, node)
+	}
+
+	return conn
 }
