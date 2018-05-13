@@ -24,7 +24,7 @@ export default class QuotaService extends Component {
     this.fetchData();
   }
 
-  componentWillReceiveProps(nextProps) {
+  UNSAFE_componentWillReceiveProps(nextProps) {
     const { configs } = nextProps
 
     // Refetch the configs after the save because there's a chance the backend

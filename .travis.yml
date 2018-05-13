@@ -11,22 +11,18 @@ matrix:
   include:
     # Default: go test ./...
     - go: 1.9.2
+    - go: 1.10.2
 
     # Runs tests for admin UI
-    - go: 1.x
+    - go: 1.10.2
       env: TEST=UI
 
-
-before_install:
-  - go get github.com/mattn/goveralls
-  - go get golang.org/x/tools/cmd/cover
-
 install:
+  - go get golang.org/x/tools/cmd/cover && go get github.com/mattn/goveralls
   - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
 
 script:
-  - test/script.sh
-  - $GOPATH/bin/goveralls -service=travis-ci -package github.com/square/quotaservice
+  - test/script.sh && goveralls -service=travis-ci -package github.com/square/quotaservice
 
 notifications:
   slack:
