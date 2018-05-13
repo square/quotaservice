@@ -1,9 +1,9 @@
 # Quota Service
 [![license](https://img.shields.io/badge/license-apache_2.0-red.svg?style=flat)](https://raw.githubusercontent.com/square/quotaservice/master/LICENSE)
 [![Travis status](https://travis-ci.org/square/quotaservice.svg?branch=master "Travis status")](https://travis-ci.org/square/quotaservice)
+[![Coverage Status](https://coveralls.io/repos/github/square/quotaservice/badge.svg)](https://coveralls.io/github/square/quotaservice)
 [![GoDoc](https://godoc.org/github.com/square/quotaservice?status.png)](https://godoc.org/github.com/square/quotaservice)
 ![Project Status](https://img.shields.io/badge/status-beta-orange.svg)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/square/quotaservice?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Overview
 

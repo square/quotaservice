@@ -12,6 +12,6 @@ case "$TEST" in
     ;;
   *)
     go vet $(go list ./... | grep -v /vendor/)
-    go test -race -v ./...
+    go test -race -v -covermode atomic ./...
     ;;
 esac
