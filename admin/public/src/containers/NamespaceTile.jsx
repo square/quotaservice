@@ -32,7 +32,7 @@ export default class NamespaceTile extends Component {
     ));
   }
 
-  componentWillMount() {
+  UNSAFE_componentWillMount() {
     const { capabilities, capabilitiesEnabled } = this.props;
     if (capabilitiesEnabled && !capabilities.inRequest && !capabilities.error) {
       this.fetchCanMakeChanges();
