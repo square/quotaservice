@@ -18,7 +18,6 @@ import (
 
 	"math/rand"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/square/quotaservice/config"
 	pb "github.com/square/quotaservice/protos/config"
 )
@@ -295,7 +294,7 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 
 func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {
 	s.Lock()
-	clonedCfg := proto.Clone(s.cfgs).(*pb.ServiceConfig)
+	clonedCfg := config.CloneConfig(s.cfgs)
 	currentVersion := clonedCfg.Version
 	s.Unlock()
 

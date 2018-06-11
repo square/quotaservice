@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"io"
+	"os"
+
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/square/quotaservice/config/zkhelpers"
 	pb "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"
-	"io"
-	"os"
 )
 
 var servers []string
@@ -191,11 +192,11 @@ func TestReadingStaleVersions(t *testing.T) {
 	persistOrPanic(p, origCfg)
 
 	// Two changes
-	cfg1 := cloneConfig(origCfg)
+	cfg1 := CloneConfig(origCfg)
 	cfg1.Namespaces["test_new"] = NewDefaultNamespaceConfig("test_new")
 	cfg1.Version = origCfg.Version + 1
 
-	cfg2 := cloneConfig(origCfg)
+	cfg2 := CloneConfig(origCfg)
 	cfg2.Namespaces["test_newer"] = NewDefaultNamespaceConfig("test_newer")
 	cfg2.Version = origCfg.Version + 2
 
@@ -233,13 +234,13 @@ func TestConcurrentUpdate(t *testing.T) {
 	persistOrPanic(p, origCfg)
 
 	// Both cfg1 and cfg2 are configs derived from origConfig, but diverging
-	cfg1 := cloneConfig(origCfg)
+	cfg1 := CloneConfig(origCfg)
 	cfg1.Namespaces["test_new"] = NewDefaultNamespaceConfig("test_new")
 	cfg1.Version = origCfg.Version + 1
 
 	persistOrPanic(p, cfg1)
 
-	cfg2 := cloneConfig(origCfg)
+	cfg2 := CloneConfig(origCfg)
 	cfg2.Namespaces["test_newer"] = NewDefaultNamespaceConfig("test_newer")
 	cfg2.Version = origCfg.Version + 1
 
@@ -296,8 +297,8 @@ func waitOrTimeout(c <-chan struct{}, timeout time.Duration) {
 	defer ticker.Stop()
 
 	select {
-	case <- c:
-	case <- ticker.C:
+	case <-c:
+	case <-ticker.C:
 	}
 }
 
