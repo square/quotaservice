@@ -297,15 +297,15 @@ func DifferentNamespaceConfigs(c1, c2 *pb.NamespaceConfig) bool {
 	return false
 }
 
-func cloneConfig(cfg *pb.ServiceConfig) *pb.ServiceConfig {
+func CloneConfig(cfg *pb.ServiceConfig) *pb.ServiceConfig {
 	return proto.Clone(cfg).(*pb.ServiceConfig)
 }
 
-func cloneConfigs(cfgs map[string]*pb.ServiceConfig) []*pb.ServiceConfig {
+func CloneConfigs(cfgs map[string]*pb.ServiceConfig) []*pb.ServiceConfig {
 	cloned := make([]*pb.ServiceConfig, 0, len(cfgs))
 
 	for _, v := range cfgs {
-		cloned = append(cloned, cloneConfig(v))
+		cloned = append(cloned, CloneConfig(v))
 	}
 
 	return cloned

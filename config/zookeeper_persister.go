@@ -204,7 +204,7 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 	z.RLock()
 	defer z.RUnlock()
 
-	return cloneConfig(z.configs[z.config]), nil
+	return CloneConfig(z.configs[z.config]), nil
 }
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
@@ -301,7 +301,7 @@ func (z *ZkConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, error)
 	z.RLock()
 	defer z.RUnlock()
 
-	return cloneConfigs(z.configs), nil
+	return CloneConfigs(z.configs), nil
 }
 
 // Close makes sure all event listeners are done

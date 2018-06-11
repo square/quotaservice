@@ -4,8 +4,9 @@
 package config
 
 import (
-	pb "github.com/square/quotaservice/protos/config"
 	"sync"
+
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 type MemoryConfigPersister struct {
@@ -33,7 +34,7 @@ func (m *MemoryConfigPersister) PersistAndNotify(oldHash string, cfg *pb.Service
 	defer m.Unlock()
 
 	m.config = HashConfig(cfg)
-	m.configs[m.config] = cloneConfig(cfg)
+	m.configs[m.config] = CloneConfig(cfg)
 
 	// ... and notify
 	m.Notify()
@@ -46,7 +47,7 @@ func (m *MemoryConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error)
 	m.RLock()
 	defer m.RUnlock()
 
-	return cloneConfig(m.configs[m.config]), nil
+	return CloneConfig(m.configs[m.config]), nil
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
@@ -54,7 +55,7 @@ func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, er
 	m.RLock()
 	defer m.RUnlock()
 
-	return cloneConfigs(m.configs), nil
+	return CloneConfigs(m.configs), nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
