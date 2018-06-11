@@ -10,11 +10,11 @@ services:
 matrix:
   include:
     # Default: go test ./...
-    - go: 1.9.2
-    - go: 1.10.2
+    - go: 1.9.7
+    - go: 1.10.3
 
     # Runs tests for admin UI
-    - go: 1.10.2
+    - go: 1.10.3
       env: TEST=UI
 
 install:
