@@ -5,8 +5,6 @@ package admin
 
 import (
 	"net/http"
-
-	pb "github.com/square/quotaservice/protos/config"
 )
 
 type configsAPIHandler struct {
@@ -18,7 +16,7 @@ func newConfigsAPIHandler(admin Administrable) (a *configsAPIHandler) {
 }
 
 type configsResponse struct {
-	Configs []*pb.ServiceConfig `json:"configs"`
+	Configs []*ConfigAndHash `json:"configs"`
 }
 
 func (a *configsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

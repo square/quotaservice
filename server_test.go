@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/square/quotaservice/admin"
 	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/test/helpers"
 )
@@ -39,7 +40,7 @@ func TestUpdateConfig(t *testing.T) {
 
 	newConfig := config.NewDefaultServiceConfig()
 
-	if err := s.UpdateConfig(newConfig, "test"); err != nil {
+	if err := s.UpdateConfig(newConfig, admin.NewContext("test", admin.TODO)); err != nil {
 		t.Fatal("Error when updating config", err)
 	}
 

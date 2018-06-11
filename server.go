@@ -6,7 +6,6 @@ package quotaservice
 import (
 	"fmt"
 	"net/http"
-	"sort"
 	"sync"
 	"time"
 
@@ -292,7 +291,7 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 	}
 }
 
-func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error) error {
+func (s *server) updateConfig(ctx *admin.Context, updater func(*pb.ServiceConfig) error) error {
 	s.Lock()
 	clonedCfg := config.CloneConfig(s.cfgs)
 	currentVersion := clonedCfg.Version
@@ -306,60 +305,59 @@ func (s *server) updateConfig(user string, updater func(*pb.ServiceConfig) error
 
 	config.ApplyDefaults(clonedCfg)
 
-	clonedCfg.User = user
+	clonedCfg.User = ctx.User
 	clonedCfg.Date = time.Now().Unix()
 	clonedCfg.Version = currentVersion + 1
 
-	// TODO(manik) make use of the old hash for an optimistic version check
-	return s.persister.PersistAndNotify("", clonedCfg)
+	return s.persister.PersistAndNotify(ctx.OldHash, clonedCfg)
 }
 
 // Implements admin.Administrable
-func (s *server) Configs() *pb.ServiceConfig {
+func (s *server) Configs() *admin.ConfigAndHash {
 	s.RLock()
 	defer s.RUnlock()
-	return s.cfgs
+	return admin.NewConfigAndHash(s.cfgs)
 }
 
-func (s *server) UpdateConfig(c *pb.ServiceConfig, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) UpdateConfig(c *pb.ServiceConfig, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		*clonedCfg = *c
 		return nil
 	})
 }
 
-func (s *server) AddBucket(namespace string, b *pb.BucketConfig, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) AddBucket(namespace string, b *pb.BucketConfig, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.CreateBucket(clonedCfg, namespace, b)
 	})
 }
 
-func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) UpdateBucket(namespace string, b *pb.BucketConfig, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.UpdateBucket(clonedCfg, namespace, b)
 	})
 }
 
-func (s *server) DeleteBucket(namespace, name, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) DeleteBucket(namespace, name string, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.DeleteBucket(clonedCfg, namespace, name)
 	})
 }
 
-func (s *server) AddNamespace(n *pb.NamespaceConfig, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) AddNamespace(n *pb.NamespaceConfig, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.CreateNamespace(clonedCfg, n)
 	})
 }
 
-func (s *server) UpdateNamespace(n *pb.NamespaceConfig, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) UpdateNamespace(n *pb.NamespaceConfig, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.UpdateNamespace(clonedCfg, n)
 	})
 }
 
-func (s *server) DeleteNamespace(n, user string) error {
-	return s.updateConfig(user, func(clonedCfg *pb.ServiceConfig) error {
+func (s *server) DeleteNamespace(n string, ctx *admin.Context) error {
+	return s.updateConfig(ctx, func(clonedCfg *pb.ServiceConfig) error {
 		return config.DeleteNamespace(clonedCfg, n)
 	})
 }
@@ -388,16 +386,13 @@ func (s *server) DynamicBucketStats(namespace, bucket string) *stats.BucketScore
 	return s.statsListener.Get(namespace, bucket)
 }
 
-func (s *server) HistoricalConfigs() ([]*pb.ServiceConfig, error) {
+func (s *server) HistoricalConfigs() ([]*admin.ConfigAndHash, error) {
 	configs, err := s.persister.ReadHistoricalConfigs()
 	if err != nil {
 		return nil, err
 	}
-	sorted := make(sortedConfigs, len(configs))
-	copy(sorted, configs)
-	sort.Sort(sorted)
 
-	return sorted, nil
+	return addHashesAndSortDesc(configs), nil
 }
 
 func (s *server) GetServerAdministrable() admin.Administrable {

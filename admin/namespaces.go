@@ -37,7 +37,7 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		err := a.a.DeleteNamespace(ns, user)
+		err := a.a.DeleteNamespace(ns, NewContext(user, TODO))
 
 		if err != nil {
 			writeJSONError(w, &httpError{err.Error(), http.StatusBadRequest})
@@ -51,14 +51,14 @@ func (a *namespacesAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 
 		changeNamespace(w, r, ns, func(c *pb.NamespaceConfig) error {
-			return a.a.UpdateNamespace(c, user)
+			return a.a.UpdateNamespace(c, NewContext(user, TODO))
 		})
 	case "POST":
 		if ns == "" {
 			updateConfig(a, w, r)
 		} else {
 			changeNamespace(w, r, ns, func(c *pb.NamespaceConfig) error {
-				return a.a.AddNamespace(c, user)
+				return a.a.AddNamespace(c, NewContext(user, TODO))
 			})
 		}
 	default:
@@ -93,7 +93,7 @@ func updateConfig(a *namespacesAPIHandler, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	e = a.a.UpdateConfig(c, getUsername(r))
+	e = a.a.UpdateConfig(c, NewContext(getUsername(r), TODO))
 
 	if e != nil {
 		writeJSONError(w, &httpError{e.Error(), http.StatusInternalServerError})

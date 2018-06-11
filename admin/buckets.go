@@ -33,7 +33,7 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, err)
 		}
 	case "DELETE":
-		err := a.a.DeleteBucket(namespace, bucket, user)
+		err := a.a.DeleteBucket(namespace, bucket, NewContext(user, TODO))
 
 		if err != nil {
 			writeJSONError(w, &httpError{err.Error(), http.StatusBadRequest})
@@ -42,11 +42,11 @@ func (a *bucketsAPIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case "PUT":
 		changeBucket(w, r, bucket, func(c *pb.BucketConfig) error {
-			return a.a.UpdateBucket(namespace, c, user)
+			return a.a.UpdateBucket(namespace, c, NewContext(user, TODO))
 		})
 	case "POST":
 		changeBucket(w, r, bucket, func(c *pb.BucketConfig) error {
-			return a.a.AddBucket(namespace, c, user)
+			return a.a.AddBucket(namespace, c, NewContext(user, TODO))
 		})
 	default:
 		writeJSONError(w, &httpError{"Unknown method " + r.Method, http.StatusBadRequest})

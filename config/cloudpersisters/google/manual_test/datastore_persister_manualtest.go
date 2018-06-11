@@ -17,17 +17,20 @@ import (
 // Change these constants to match your settings on Google Cloud. Visit https://console.cloud.google.com/datastore
 // for more details.
 const (
-	projectId       = "my-project-id-on-google-cloud"
-	credentialsFile = "/path/to/my/credentials/file.json"
-	namespace       = "MyGoogleDatastoreNamespace"
-	entity          = "MyGoogleDatastoreEntityKind"
-	initVersion     = 0
+	projectId       = "cloud-hackweek-20180611"
+	credentialsFile = "/Users/manik/cloud-hackweek-20180611.json"
+
+	// WARNING: DO NOT point to a production namespace, since this will write test data.
+	dsNamespace = "QuotaServiceConfigs"
+	initVersion = 0
 )
 
 var counter = 0
 
 // main runs a "manual" test, which involves setting up your credentials and Google Cloud account details in the
 // constants above. As such, this isn't designed to be run in CI.
+//
+// WARNING: DO NOT point to a production namespace, since this will write test data.
 func main() {
 	dp := createGoogleDatastorePersister()
 	configChangedWatcher := dp.ConfigChangedWatcher()
@@ -39,7 +42,7 @@ func main() {
 	updateConfig(cfg)
 
 	// Persist the configuration.
-	e := dp.PersistAndNotify("", cfg)
+	e := dp.PersistAndNotify("", cfg) // TODO use a real oldHash to test optimistic version check
 	helpers.PanicError(e)
 	consume(configChangedWatcher, 10*time.Second)
 
@@ -78,7 +81,7 @@ func main() {
 }
 
 func createGoogleDatastorePersister() config.ConfigPersister {
-	dp, e := google.New(projectId, credentialsFile, namespace, entity, time.Second)
+	dp, e := google.New(projectId, credentialsFile, dsNamespace, time.Second)
 	helpers.PanicError(e)
 	return dp
 }
