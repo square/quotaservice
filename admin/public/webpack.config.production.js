@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
+  mode: 'production',
   entry: [
     './src/index.jsx'
   ],
@@ -12,16 +13,10 @@ module.exports = {
     path: path.join(__dirname, 'js'),
     filename: 'bundle.js'
   },
+  optimization: {
+    minimize: true
+  },
   plugins: [
-    new webpack.optimize.UglifyJsPlugin({
-      output: {
-        comments: false
-      },
-      compress: {
-        warnings: false,
-        screw_ie8: true
-      }
-    }),
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify('production')
