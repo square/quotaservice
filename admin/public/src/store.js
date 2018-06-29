@@ -8,8 +8,7 @@ export default function configureStore() {
   const middlewares = [apiMiddleware, thunk]
 
   if (process.env.NODE_ENV !== 'production') {
-    const createLogger = require('redux-logger')
-    const logger = createLogger()
+    const { logger } = require('redux-logger')
     middlewares.push(logger)
   }
 

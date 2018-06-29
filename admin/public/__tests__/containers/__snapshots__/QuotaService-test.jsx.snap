@@ -8,14 +8,14 @@ exports[`QuotaService renders ok 1`] = `
     <Sidebar
       actions={
         Object {
-          "fetchCapabilities": [Function],
+          "fetchCapabilities": [MockFunction],
           "fetchConfigs": [Function],
         }
       }
       capabilities={Object {}}
       configs={Object {}}
       currentVersion={1}
-      dispatch={[Function]}
+      dispatch={[MockFunction]}
       env={
         Object {
           "capabilities": true,
@@ -28,14 +28,14 @@ exports[`QuotaService renders ok 1`] = `
     <Namespaces
       actions={
         Object {
-          "fetchCapabilities": [Function],
+          "fetchCapabilities": [MockFunction],
           "fetchConfigs": [Function],
         }
       }
       capabilities={Object {}}
       configs={Object {}}
       currentVersion={1}
-      dispatch={[Function]}
+      dispatch={[MockFunction]}
       env={
         Object {
           "capabilities": true,
@@ -47,14 +47,14 @@ exports[`QuotaService renders ok 1`] = `
     <SelectedNamespace
       actions={
         Object {
-          "fetchCapabilities": [Function],
+          "fetchCapabilities": [MockFunction],
           "fetchConfigs": [Function],
         }
       }
       capabilities={Object {}}
       configs={Object {}}
       currentVersion={1}
-      dispatch={[Function]}
+      dispatch={[MockFunction]}
       env={
         Object {
           "capabilities": true,
