@@ -420,7 +420,7 @@ The following configuration elements need to be provided to the quota service:
     * Max debt millis - the maximum amount of time in the future a request can pre-reserve tokens (default: `10000`)
     * Max tokens per request (default: `fill_rate`)
 
-See the GoDocs on [`configs.ServiceConfig`](https://godoc.org/github.com/square/quotaservice/configs#ServiceConfig) for more details.
+See the GoDocs on [`configs.ServiceConfig`](https://godoc.org/github.com/square/quotaservice/protos/config#ServiceConfig) for more details.
 
 ## Service-level objectives
 
