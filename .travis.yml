@@ -11,10 +11,11 @@ matrix:
   include:
     # Default: go test ./...
     - go: 1.9.7
-    - go: 1.10.3
+    - go: 1.10.5
+    - go: 1.11.2
 
     # Runs tests for admin UI
-    - go: 1.10.3
+    - go: 1.11.2
       env: TEST=UI
 
 install:
