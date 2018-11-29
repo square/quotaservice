@@ -48,7 +48,7 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 
 	args := []interface{}{currentTimeNanos, a.nanosBetweenTokens, a.maxTokensToAccumulate,
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
-		a.maxIdleTimeMillis, a.maxDebtNanos}
+		a.maxIdleTimeMillis, a.maxDebtNanos, strconv.Itoa(a.factory.keyTTL)}
 
 	var waitTime time.Duration
 	var err error

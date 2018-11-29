@@ -51,10 +51,11 @@ type bucketFactory struct {
 	connectionRetries         int
 	connectionNeedsResolution bool
 	numTimesConnResolved      int // For testing and debugging purposes
+	keyTTL                    int
 }
 
 // NewBucketFactory creates a new bucketFactory instance.
-func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaservice.BucketFactory {
+func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, keyTTL int) quotaservice.BucketFactory {
 	if connectionRetries < 1 {
 		connectionRetries = 1
 	}
@@ -65,7 +66,9 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int) quotaserv
 		sharedAttributes:          make(map[string]*configAttributes),
 		refcounts:                 make(map[string]int),
 		connectionNeedsResolution: false,
-		numTimesConnResolved:      0}
+		numTimesConnResolved:      0,
+		keyTTL:                    keyTTL,
+	}
 }
 
 // Init initializes a bucketFactory for use, implementing Init() on the quotaservice.BucketFactory interface
@@ -303,7 +306,7 @@ func loadScript(c *redis.Client) (sha string) {
 		end
 	end
 
-	local ttl = 600
+	local ttl = ARGV[8]
 	redis.call("EXPIRE", KEYS[1], ttl)
 	redis.call("EXPIRE", KEYS[2], ttl)
 
