@@ -23,7 +23,6 @@ import (
 const (
 	tokensNextAvblNanosSuffix = "TNA"
 	accumulatedTokensSuffix   = "AT"
-	flushedAtVersionKey       = "FlushedAtVersion"
 )
 
 // defaultBucket is a "const"
@@ -50,20 +49,22 @@ type bucketFactory struct {
 	redisOpts                 *redis.Options
 	scriptSHA                 string
 	connectionRetries         int
-	flushdbCommand            string
 	connectionNeedsResolution bool
 	numTimesConnResolved      int // For testing and debugging purposes
+
+	// keyMaxIdleTime will be set as the Redis key TTL unless it is overridden by the per bucket
+	// config MaxIdleMillis
+	keyMaxIdleTime time.Duration
 }
 
 // NewBucketFactory creates a new bucketFactory instance.
-// flushdbCommand specifies the name of the Flushdb command. "flushdb"
-// is used if it's empty.
-func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, flushdbCommand string) quotaservice.BucketFactory {
+func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, keyMaxIdleTime time.Duration) quotaservice.BucketFactory {
 	if connectionRetries < 1 {
 		connectionRetries = 1
 	}
-	if flushdbCommand == "" {
-		flushdbCommand = "flushdb"
+
+	if keyMaxIdleTime == 0 {
+		keyMaxIdleTime = 24 * time.Hour
 	}
 
 	return &bucketFactory{
@@ -71,13 +72,15 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, flushdbCo
 		connectionRetries:         connectionRetries,
 		sharedAttributes:          make(map[string]*configAttributes),
 		refcounts:                 make(map[string]int),
-		flushdbCommand:            flushdbCommand,
 		connectionNeedsResolution: false,
-		numTimesConnResolved:      0}
+		numTimesConnResolved:      0,
+		keyMaxIdleTime:            keyMaxIdleTime,
+	}
 }
 
 // Init initializes a bucketFactory for use, implementing Init() on the quotaservice.BucketFactory interface
 func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
+	start := time.Now()
 	logging.Printf("Initializing redis.bucketFactory for config version %v", cfg.Version)
 	bf.Lock()
 	defer bf.Unlock()
@@ -85,59 +88,12 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	bf.cfg = cfg
 
 	if bf.client == nil {
-		start := time.Now()
+		connStart := time.Now()
 		bf.connectToRedisLocked()
-		logging.Printf("Re-established Redis connections in %v", time.Since(start))
+		logging.Printf("Re-established Redis connections in %v", time.Since(connStart))
 	}
 
-	// Validate contents in Redis
-	start := time.Now()
-	// Check if Redis has been flushed when loading the current version of the configuration by a different node in
-	// the cluster. If so, this node doesn't have to.
-	val := bf.client.Get(flushedAtVersionKey)
-	version, err := val.Int64()
-	if err != nil {
-		if err.Error() != "redis: nil" {
-			// An actual problem; not just a missing flushedAtVersion.
-			logging.Fatalf("Error response from Redis: %v", err)
-		}
-
-		// No flushedAtVersion has been established.
-		logging.Print("flushedAtVersion not set")
-		bf.flush(cfg.Version)
-
-	} else {
-		logging.Printf("flushedAtVersion is %v", version)
-		if int32(version) < cfg.Version {
-			bf.flush(cfg.Version)
-		} else {
-			logging.Printf("No need to flush since Redis has already been flushedAtVersion %v", version)
-		}
-	}
-	logging.Printf("Verified Redis (including any flushes, if necessary) in %v", time.Since(start))
-}
-
-// flush flushes unused entries stored in Redis
-func (bf *bucketFactory) flush(version int32) {
-	start := time.Now()
-	// Store flushedAtVersion to prevent multiple nodes flushing Redis unnecessarily, while the flush is in
-	// progress. This may be racy, but it's a minor optimization. At worst case, we have > 1 flushes (from > 1
-	// nodes in the cluster), which, while wasteful, isn't dangerous.
-	if _, err := bf.client.Set(flushedAtVersionKey, version, 0).Result(); err != nil {
-		logging.Printf("Failed to set flushedAtVersionKey: %v", err)
-	}
-
-	// We could consider a batched SCAN + DELETE if the FLUSHDB operation is slow. But for the most part, this is
-	// "fast enough" - to the order of a few 100s of µs.
-	if err := bf.client.Process(redis.NewStatusCmd(bf.flushdbCommand)); err != nil {
-		logging.Printf("Failed to flushdb: %v", err)
-	}
-
-	// Re-set flushedAtVersion, since previous entry would have been removed with the flush.
-	if _, err := bf.client.Set(flushedAtVersionKey, version, 0).Result(); err != nil {
-		logging.Printf("Failed to set flushedAtVersionKey: %v", err)
-	}
-	logging.Printf("Flushed Redis in %v", time.Since(start))
+	logging.Printf("Initialized redis.BucketFactory in %v", time.Since(start))
 }
 
 func (bf *bucketFactory) connectToRedisLocked() {
@@ -249,8 +205,8 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.B
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
 	}
 
-	keys := []string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix),
-		toRedisKey(namespace, bucketName, accumulatedTokensSuffix)}
+	keys := []string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix, bf.cfg.Version),
+		toRedisKey(namespace, bucketName, accumulatedTokensSuffix, bf.cfg.Version)}
 
 	if dyn {
 		var exists bool
@@ -294,8 +250,8 @@ func newConfigAttributes(cfg *pbconfig.BucketConfig, idle string, dyn bool) *con
 		defaultBucket}
 }
 
-func toRedisKey(namespace, bucketName, suffix string) string {
-	return namespace + ":" + bucketName + ":" + suffix
+func toRedisKey(namespace, bucketName, suffix string, version int32) string {
+	return namespace + ":" + bucketName + ":" + suffix + ":" + strconv.Itoa(int(version))
 }
 
 func unknownCloseError(err error) bool {
