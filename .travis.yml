@@ -17,7 +17,8 @@ matrix:
       env: TEST=UI
 
 install:
-  - 'if [ "$TEST" == "UI" ]; then nvm install 6; fi'
+  - go get golang.org/x/tools/cmd/cover && go get github.com/mattn/goveralls
+  - 'if [ "$TEST" == "UI" ]; then nvm install 10; fi'
 
 script: test/script.sh
 
