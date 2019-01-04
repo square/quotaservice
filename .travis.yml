@@ -20,7 +20,6 @@ matrix:
 
 install:
   - go get golang.org/x/tools/cmd/cover && go get github.com/mattn/goveralls
-  # - if [ "$TEST" == "UI" ]; then nvm install 10; fi
 
 script:
   - test/script.sh && goveralls -service=travis-ci -package github.com/square/quotaservice
