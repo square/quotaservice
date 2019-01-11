@@ -2,6 +2,7 @@
 
 
 [[projects]]
+  digest = "1:62a5b2a0407f1d3baf60f55b15d3733ebcacd11d67a82f423de6afa19b2f4a4a"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
@@ -9,45 +10,57 @@
     "internal",
     "internal/atomiccache",
     "internal/fields",
-    "internal/version"
+    "internal/version",
   ]
+  pruneopts = "UT"
   revision = "7bcba8ac93ae2c1b8b040f2e53f363cf8e659173"
 
 [[projects]]
+  digest = "1:03666a52875323b41f84782234fc8a5b28067305e96ab190f5147397cc6a40f9"
   name = "github.com/alecthomas/template"
   packages = [
     ".",
-    "parse"
+    "parse",
   ]
+  pruneopts = "UT"
   revision = "b867cc6ab45cece8143cfcc6fc9c77cf3f2c23c0"
 
 [[projects]]
+  digest = "1:c198fdc381e898e8fb62b8eb62758195091c313ad18e52a3067366e1dda2fb3c"
   name = "github.com/alecthomas/units"
   packages = ["."]
+  pruneopts = "UT"
   revision = "6b4e7dc5e3143b85ea77909c72caf89416fc2915"
 
 [[projects]]
+  digest = "1:d7adfb1ecf213ed859a6bd63a3f8f3756ee76b71fb785dd3ec94908d69d37510"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
     "protoc-gen-go/descriptor",
     "ptypes/struct",
     "ptypes/timestamp",
-    "ptypes/wrappers"
+    "ptypes/wrappers",
   ]
+  pruneopts = "UT"
   revision = "c9c7427a2a70d2eb3bafa0ab2dc163e45f143317"
 
 [[projects]]
+  digest = "1:f563d30b80e12b1f1236fec90954d82cc6708d7a16b5923706d9fb055739293c"
   name = "github.com/googleapis/gax-go"
   packages = ["."]
+  pruneopts = "UT"
   revision = "8c5154c0fe5bf18cf649634d4c6df50897a32751"
 
 [[projects]]
+  digest = "1:142520cf3c9bb85449dd0000f820b8c604531587ee654793c54909be7dabadac"
   name = "github.com/samuel/go-zookeeper"
   packages = ["zk"]
+  pruneopts = "UT"
   revision = "1d7be4effb13d2d908342d349d71a284a7542693"
 
 [[projects]]
+  digest = "1:62e47ed25e2f63dd087bf8f7de2ac59710115b9ecbcba9f0088a0fea0e1f09d7"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -57,33 +70,39 @@
     "idna",
     "internal/timeseries",
     "lex/httplex",
-    "trace"
+    "trace",
   ]
+  pruneopts = "UT"
   revision = "a6577fac2d73be281a500b310739095313165611"
 
 [[projects]]
+  digest = "1:e6f7db41305b5bf4f05328fc01e1459724b5fedd12dfbde5691bfa1162113cae"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "google",
     "internal",
     "jws",
-    "jwt"
+    "jwt",
   ]
+  pruneopts = "UT"
   revision = "efb10a30610e617dbb17fc243f4cc61a8cfa2903"
 
 [[projects]]
+  digest = "1:e509ac2d43b7139e3df09f2c667c25e1de17563b229872c34f866f42f69d3f9c"
   name = "google.golang.org/api"
   packages = [
     "googleapi/transport",
     "internal",
     "iterator",
     "option",
-    "transport"
+    "transport",
   ]
+  pruneopts = "UT"
   revision = "f093df3d954a6024843c4a47c4410a2cb7af85aa"
 
 [[projects]]
+  digest = "1:3aed0ef9f09da309b563842e8535d4f4be9610cdf2b561a2f0dc38500ba5e0f2"
   name = "google.golang.org/appengine"
   packages = [
     ".",
@@ -97,21 +116,25 @@
     "internal/socket",
     "internal/urlfetch",
     "socket",
-    "urlfetch"
+    "urlfetch",
   ]
+  pruneopts = "UT"
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:478d5959e7394364f3616d986e4f9e7a9d8950c5cb2244fbfe268405a1e9c8ae"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api/annotations",
     "googleapis/datastore/v1",
-    "googleapis/type/latlng"
+    "googleapis/type/latlng",
   ]
+  pruneopts = "UT"
   revision = "1e95789587db7d93ebbaa5eb65da17d3dbf8ab64"
 
 [[projects]]
+  digest = "1:75e2a334b917e70c309f0e0d1e8a125e993db49926668924a304221c0d0394bc"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -126,17 +149,21 @@
     "peer",
     "stats",
     "tap",
-    "transport"
+    "transport",
   ]
+  pruneopts = "UT"
   revision = "4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4"
 
 [[projects]]
+  digest = "1:8111626b65f4cb9cbf3b19ec0ae57b7ce658dc24b52fcb0799f80e43fe6a18a3"
   name = "gopkg.in/alecthomas/kingpin.v2"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e9044be3ab2a8e11d4e1f418d12f0790d57e8d70"
   version = "v2.2.3"
 
 [[projects]]
+  digest = "1:4df8964ef68ed4e9e6a0bd91c96b133cfad4d2dd0a9e7f2f9d9c395aa3c1f786"
   name = "gopkg.in/redis.v5"
   packages = [
     ".",
@@ -144,19 +171,33 @@
     "internal/consistenthash",
     "internal/hashtag",
     "internal/pool",
-    "internal/proto"
+    "internal/proto",
   ]
+  pruneopts = "UT"
   revision = "cbad034630445e15fbcaa7e9904064dd67bce69b"
   version = "v5.2.7"
 
 [[projects]]
+  digest = "1:cacb98d52c60c337c2ce95a7af83ba0313a93ce5e73fa9e99a96aff70776b9d3"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
+  pruneopts = "UT"
   revision = "a5b47d31c556af34a302ce5d659e6fea44d90de0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e240debcc80872027e3def7a73f0a8ff805ac95d1c3cc8350347f60fca26aeb1"
+  input-imports = [
+    "cloud.google.com/go/datastore",
+    "github.com/golang/protobuf/proto",
+    "github.com/samuel/go-zookeeper/zk",
+    "golang.org/x/net/context",
+    "google.golang.org/api/option",
+    "google.golang.org/grpc",
+    "google.golang.org/grpc/grpclog",
+    "gopkg.in/alecthomas/kingpin.v2",
+    "gopkg.in/redis.v5",
+    "gopkg.in/yaml.v2",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
