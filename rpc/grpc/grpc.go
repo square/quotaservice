@@ -4,17 +4,16 @@
 package grpc
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strings"
-
 	"time"
 
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/lifecycle"
 	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 )

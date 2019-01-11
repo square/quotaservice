@@ -3,9 +3,9 @@ package client
 import (
 	"errors"
 	"time"
+	"context"
 
 	"github.com/square/quotaservice/protos"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 

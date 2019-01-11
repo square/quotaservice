@@ -6,9 +6,9 @@ package loadtest
 import (
 	"fmt"
 	"testing"
+	"context"
 
 	pb "github.com/square/quotaservice/protos"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 )

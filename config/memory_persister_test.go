@@ -4,9 +4,9 @@
 package config
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	pbconfig "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"
 )
@@ -48,7 +48,7 @@ func TestMemoryPersistence(t *testing.T) {
 	unmarshalled, e := persister.ReadPersistedConfig()
 	helpers.CheckError(t, e)
 
-	if !reflect.DeepEqual(s, unmarshalled) {
+	if !proto.Equal(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
 
@@ -59,7 +59,7 @@ func TestMemoryPersistence(t *testing.T) {
 		t.Fatalf("Historical configs is not correct! %+v", cfgs)
 	}
 
-	if !reflect.DeepEqual(s, cfgs[0]) {
+	if !proto.Equal(s, cfgs[0]) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, cfgs[0])
 	}
 }

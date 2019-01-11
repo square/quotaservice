@@ -33,6 +33,10 @@
   name = "gopkg.in/redis.v5"
   version = "5.2.7"
 
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  revision = "347cf4a86c1cb8d262994d8ef5924d4576c5b331"
+
 [prune]
   go-tests = true
   unused-packages = true

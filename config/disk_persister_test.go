@@ -4,9 +4,9 @@
 package config
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	pbconfig "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"
 )
@@ -49,7 +49,7 @@ func TestDiskPersistence(t *testing.T) {
 	unmarshalled, e := persister.ReadPersistedConfig()
 	helpers.CheckError(t, e)
 
-	if !reflect.DeepEqual(s, unmarshalled) {
+	if !proto.Equal(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
 
@@ -62,7 +62,7 @@ func TestDiskPersistence(t *testing.T) {
 
 	unmarshalled = cfgs[0]
 
-	if !reflect.DeepEqual(s, unmarshalled) {
+	if !proto.Equal(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
 }

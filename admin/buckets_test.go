@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/square/quotaservice/config"
 	pb "github.com/square/quotaservice/protos/config"
 )
@@ -48,7 +49,7 @@ func TestBucketsGet(t *testing.T) {
 	configResponse := &pb.BucketConfig{}
 	doBucketsRequest(t, a, configResponse, "GET", "/api/test/bucket", "")
 
-	if *bucket != *configResponse {
+	if !proto.Equal(bucket, configResponse ) {
 		t.Errorf("Received \"%+v\" but was expecting \"%+v\"", configResponse, bucket)
 	}
 }

@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"context"
 
 	"cloud.google.com/go/datastore"
 	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/logging"
-	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 	pb "github.com/square/quotaservice/protos/config"
 	"github.com/golang/protobuf/proto"
