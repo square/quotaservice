@@ -230,8 +230,7 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	// we're working out the "most recent" config below by iterating over all available configurations and sorting by
 	// the configuration's Version field. All we care about here is the channel watching the ZK path, to be notified of
 	// future changes.
-	// Placing this before the iteration could result in additional calls to this function, but it ensures we won't miss
-	// search
+	// Placing this before the iteration ensures we won't miss any watches that occur during the search
 	_, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
