@@ -220,6 +220,25 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		return nil, err
 	}
 
+	if z.initialized {
+		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
+	} else {
+		logging.Printf("Establishing zookeeper watch on %v", z.path)
+	}
+
+	// Ignoring the response to getting the contents of the watch. We don't care which node triggered the watch, since
+	// we're working out the "most recent" config below by iterating over all available configurations and sorting by
+	// the configuration's Version field. All we care about here is the channel watching the ZK path, to be notified of
+	// future changes.
+	// Placing this before the iteration could result in additional calls to this function, but it ensures we won't miss
+	// search
+	_, _, ch, err := z.conn.GetW(z.path)
+
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		return nil, err
+	}
+
 	configs := make(map[string]*pb.ServiceConfig)
 	latestHashVersion := int32(0)
 	var latestHash string
@@ -245,23 +264,6 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 			latestHashVersion = configs[hash].Version
 			latestHash = hash
 		}
-	}
-
-	if z.initialized {
-		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
-	} else {
-		logging.Printf("Establishing zookeeper watch on %v", z.path)
-	}
-
-	// Ignoring the response to getting the contents of the watch. We don't care which node triggered the watch, since
-	// we're working out the "most recent" config above by iterating over all available configurations and sorting by
-	// the configuration's Version field. All we care about here is the channel watching the ZK path, to be notified of
-	// future changes.
-	_, _, ch, err := z.conn.GetW(z.path)
-
-	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
-		return nil, err
 	}
 
 	z.Lock()

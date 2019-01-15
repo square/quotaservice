@@ -213,7 +213,7 @@ func TestReadingStaleVersions(t *testing.T) {
 	helpers.CheckError(t, err)
 
 	if latest.Version != 202 {
-		t.Fatalf("Expected latest version = 200, got %v", latest.Version)
+		t.Fatalf("Expected latest version = 202, got %v", latest.Version)
 	}
 }
 
