@@ -213,12 +213,6 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	} else {
 		logging.Print("Reading configs from zookeeper for the first time")
 	}
-	children, _, err := z.conn.Children(z.path)
-
-	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
-		return nil, err
-	}
 
 	if z.initialized {
 		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
@@ -230,11 +224,19 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	// we're working out the "most recent" config below by iterating over all available configurations and sorting by
 	// the configuration's Version field. All we care about here is the channel watching the ZK path, to be notified of
 	// future changes.
-	// Placing this before the iteration ensures we won't miss any watches that occur during the search
+	// Placing this before the z.conn.Children() ensures we won't miss any new versions that are created during the
+	// search
 	_, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
 		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		return nil, err
+	}
+
+	children, _, err := z.conn.Children(z.path)
+
+	if err != nil {
+		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
 		return nil, err
 	}
 
