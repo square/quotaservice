@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314 // indirect
 	github.com/golang/protobuf v0.0.0-20170307001533-c9c7427a2a70
 	github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b // indirect
+	github.com/opentracing/opentracing-go v1.0.2
 	github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
 	golang.org/x/net v0.0.0-20170308210134-a6577fac2d73
 	golang.org/x/oauth2 v0.0.0-20170302202304-efb10a30610e // indirect

@@ -3,7 +3,10 @@
 
 package quotaservice
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // QuotaService is the interface used by RPC subsystems when fielding remote requests for quotas.
 type QuotaService interface {
@@ -15,7 +18,7 @@ type QuotaService interface {
 	// is set. A returned waitTime of 0 means tokens can be used immediately. Errors indicate
 	// tokens could not be obtained, and will contain more context once cast to
 	// quotaservice.QoutaServiceError.
-	Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (waitTime time.Duration, dynamic bool, err error)
+	Allow(ctx context.Context, namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (waitTime time.Duration, dynamic bool, err error)
 }
 
 // RpcEndpoint defines a subsystem that listens on a network socket for external systems to
