@@ -4,6 +4,7 @@
 package quotaservice
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ type MockBucket struct {
 	cfg                   *pbconfig.BucketConfig
 }
 
-func (b *MockBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (b *MockBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	b.RLock()
 	defer b.RUnlock()
 
