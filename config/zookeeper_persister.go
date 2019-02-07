@@ -209,12 +209,6 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
 	if z.initialized {
-		logging.Print("Refreshing configs from zookeeper")
-	} else {
-		logging.Print("Reading configs from zookeeper for the first time")
-	}
-
-	if z.initialized {
 		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
 	} else {
 		logging.Printf("Establishing zookeeper watch on %v", z.path)
@@ -231,6 +225,12 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	if err != nil {
 		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
 		return nil, err
+	}
+
+	if z.initialized {
+		logging.Print("Refreshing configs from zookeeper")
+	} else {
+		logging.Print("Reading configs from zookeeper for the first time")
 	}
 
 	children, _, err := z.conn.Children(z.path)
