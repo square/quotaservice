@@ -9,6 +9,7 @@
 package memory
 
 import (
+	"context"
 	"time"
 
 	"github.com/square/quotaservice"
@@ -74,7 +75,7 @@ type waitTimeReq struct {
 	response                    chan int64
 }
 
-func (b *tokenBucket) Take(numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (b *tokenBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	rsp := make(chan int64, 1)
 	b.waitTimer <- &waitTimeReq{numTokens, maxWaitTime.Nanoseconds(), rsp}
 	waitTimeNanos := <-rsp

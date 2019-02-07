@@ -4,6 +4,7 @@
 package quotaservice
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sort"
@@ -92,7 +93,7 @@ func (s *server) Stop() (bool, error) {
 	return true, nil
 }
 
-func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, bool, error) {
+func (s *server) Allow(ctx context.Context, namespace, name string, tokensRequested int64, maxWaitMillisOverride int64, maxWaitTimeOverride bool) (time.Duration, bool, error) {
 	s.RLock()
 	b, e := s.bucketContainer.FindBucket(namespace, name)
 	s.RUnlock()
@@ -124,7 +125,7 @@ func (s *server) Allow(namespace, name string, tokensRequested int64, maxWaitMil
 		maxWaitTime *= time.Duration(b.Config().WaitTimeoutMillis)
 	}
 
-	w, success := b.Take(tokensRequested, maxWaitTime)
+	w, success := b.Take(ctx, tokensRequested, maxWaitTime)
 
 	if !success {
 		// Could not claim tokens within the given max wait time

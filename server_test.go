@@ -4,6 +4,7 @@
 package quotaservice
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -87,7 +88,7 @@ func TestTooManyTokensRequested(t *testing.T) {
 	helpers.CheckError(t, err)
 	defer stopServer(t, s)
 
-	w, _, e := s.Allow("dummy", "dummy", 1, 0, false)
+	w, _, e := s.Allow(context.Background(), "dummy", "dummy", 1, 0, false)
 	if e != nil {
 		t.Fatal("Wasn't expecting an error to s.Allow()", e)
 	}
@@ -96,7 +97,7 @@ func TestTooManyTokensRequested(t *testing.T) {
 		t.Fatalf("Wait time should be 0, not %v", w)
 	}
 
-	w, _, e = s.Allow("dummy", "dummy", 10, 0, false)
+	w, _, e = s.Allow(context.Background(), "dummy", "dummy", 10, 0, false)
 	if e == nil {
 		t.Fatal("Expecting an error to s.Allow()", e)
 	}

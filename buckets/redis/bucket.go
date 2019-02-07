@@ -6,14 +6,15 @@
 package redis
 
 import (
+	"context"
 	"strconv"
 	"time"
 
 	"gopkg.in/redis.v5"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/logging"
-
 	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
@@ -43,7 +44,7 @@ func (a *abstractBucket) Config() *pbconfig.BucketConfig {
 	return a.cfg
 }
 
-func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	maxIdleTimeMillis := a.maxIdleTimeMillis
@@ -59,7 +60,7 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 	var err error
 
 	client := a.factory.Client().(*redis.Client)
-	res := client.EvalSha(a.factory.scriptSHA, a.keys, args...)
+	res := a.takeFromRedis(ctx, client, args)
 	switch waitTimeNanos := res.Val().(type) {
 	case int64:
 		waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
@@ -69,7 +70,6 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 		if unknownCloseError(err) {
 			logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 				waitTimeNanos, waitTimeNanos, res)
-
 		}
 		// Handle connection failure
 		a.factory.handleConnectionFailure(client)
@@ -82,6 +82,12 @@ func (a *abstractBucket) Take(requested int64, maxWaitTime time.Duration) (time.
 	}
 
 	return waitTime, true
+}
+
+func (a *abstractBucket) takeFromRedis(ctx context.Context, client *redis.Client, args []interface{}) *redis.Cmd {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "EvalSha")
+	defer span.Finish()
+	return client.EvalSha(a.factory.scriptSHA, a.keys, args...)
 }
 
 // staticBucket is an implementation of a redisBucket for use with static, named buckets.

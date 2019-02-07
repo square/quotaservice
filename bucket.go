@@ -5,6 +5,7 @@ package quotaservice
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -49,7 +50,7 @@ type Bucket interface {
 	// the number of tokens becomes available. A return value of 0 would mean no waiting is
 	// necessary. Success is true if tokens can be obtained, false if cannot be obtained within
 	// the specified maximum wait time.
-	Take(numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration, success bool)
+	Take(ctx context.Context, numTokens int64, maxWaitTime time.Duration) (waitTime time.Duration, success bool)
 	Config() *pbconfig.BucketConfig
 	// Dynamic indicates whether a bucket is a dynamic one, or one that is statically defined in
 	// configuration.

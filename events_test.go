@@ -4,6 +4,7 @@
 package quotaservice
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -71,14 +72,14 @@ func setUp() {
 }
 
 func TestTokens(t *testing.T) {
-	if _, _, e := qs.Allow("nodyn", "b", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "nodyn", "b", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 0, <-eventsChan, t)
 }
 
 func TestTooManyTokens(t *testing.T) {
-	if _, _, e := qs.Allow("nodyn", "b", 100, 0, false); e == nil {
+	if _, _, e := qs.Allow(context.Background(), "nodyn", "b", 100, 0, false); e == nil {
 		t.Fatal("Expecting error \"Too many tokens requested.\"")
 	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOO_MANY_TOKENS_REQUESTED, 100, 0, <-eventsChan, t)
@@ -86,7 +87,7 @@ func TestTooManyTokens(t *testing.T) {
 
 func TestTimeout(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Minute)
-	if _, _, e := qs.Allow("nodyn", "b", 1, 1, false); e == nil {
+	if _, _, e := qs.Allow(context.Background(), "nodyn", "b", 1, 1, false); e == nil {
 		t.Fatal("Expecting error \"Timed out waiting\"")
 	}
 	checkEvent("nodyn", "b", false, events.EVENT_TIMEOUT_SERVING_TOKENS, 1, 0, <-eventsChan, t)
@@ -95,7 +96,7 @@ func TestTimeout(t *testing.T) {
 
 func TestWithWait(t *testing.T) {
 	mbf.SetWaitTime("nodyn", "b", 2*time.Nanosecond)
-	if _, _, e := qs.Allow("nodyn", "b", 1, 10, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "nodyn", "b", 1, 10, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
 	checkEvent("nodyn", "b", false, events.EVENT_TOKENS_SERVED, 1, 2*time.Nanosecond, <-eventsChan, t)
@@ -103,14 +104,14 @@ func TestWithWait(t *testing.T) {
 }
 
 func TestNoSuchBucket(t *testing.T) {
-	if _, _, e := qs.Allow("nodyn", "x", 1, 0, false); e == nil {
+	if _, _, e := qs.Allow(context.Background(), "nodyn", "x", 1, 0, false); e == nil {
 		t.Fatal("Expecting error \"No such bucket\"")
 	}
 	checkEvent("nodyn", "x", false, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestNewDynBucket(t *testing.T) {
-	if _, _, e := qs.Allow("dyn", "b", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn", "b", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
 	checkEvent("dyn", "b", true, events.EVENT_BUCKET_CREATED, 0, 0, <-eventsChan, t)
@@ -119,28 +120,28 @@ func TestNewDynBucket(t *testing.T) {
 
 func TestTooManyDynBuckets(t *testing.T) {
 	n := clearBuckets("dyn")
-	if _, _, e := qs.Allow("dyn", "c", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn", "c", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
-	if _, _, e := qs.Allow("dyn", "d", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn", "d", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
 	clearEvents(4 + n)
 
-	if _, _, e := qs.Allow("dyn", "e", 1, 0, false); e == nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn", "e", 1, 0, false); e == nil {
 		t.Fatal("Expecting error \"Cannot create dynamic bucket\"")
 	}
 	checkEvent("dyn", "e", true, events.EVENT_BUCKET_MISS, 0, 0, <-eventsChan, t)
 }
 
 func TestBucketRemoval(t *testing.T) {
-	if _, _, e := qs.Allow("dyn_gc", "b", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn_gc", "b", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
-	if _, _, e := qs.Allow("dyn_gc", "c", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn_gc", "c", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
-	if _, _, e := qs.Allow("dyn_gc", "d", 1, 0, false); e != nil {
+	if _, _, e := qs.Allow(context.Background(), "dyn_gc", "d", 1, 0, false); e != nil {
 		t.Fatalf("Not expecting error %+v", e)
 	}
 	clearEvents(6)
