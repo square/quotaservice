@@ -1,0 +1,85 @@
+# cloud.google.com/go v0.0.0-20170309001835-7bcba8ac93ae
+cloud.google.com/go/datastore
+cloud.google.com/go/internal/fields
+cloud.google.com/go/internal/version
+cloud.google.com/go/internal/atomiccache
+cloud.google.com/go/compute/metadata
+cloud.google.com/go/internal
+# github.com/alecthomas/template v0.0.0-20150530000104-b867cc6ab45c
+github.com/alecthomas/template
+github.com/alecthomas/template/parse
+# github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314
+github.com/alecthomas/units
+# github.com/golang/protobuf v0.0.0-20170307001533-c9c7427a2a70
+github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes/timestamp
+github.com/golang/protobuf/ptypes/wrappers
+github.com/golang/protobuf/ptypes/struct
+github.com/golang/protobuf/protoc-gen-go/descriptor
+# github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b
+github.com/googleapis/gax-go
+# github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
+github.com/samuel/go-zookeeper/zk
+# golang.org/x/net v0.0.0-20170308210134-a6577fac2d73
+golang.org/x/net/context
+golang.org/x/net/http2
+golang.org/x/net/trace
+golang.org/x/net/http2/hpack
+golang.org/x/net/idna
+golang.org/x/net/lex/httplex
+golang.org/x/net/internal/timeseries
+golang.org/x/net/context/ctxhttp
+# golang.org/x/oauth2 v0.0.0-20170302202304-efb10a30610e
+golang.org/x/oauth2
+golang.org/x/oauth2/google
+golang.org/x/oauth2/internal
+golang.org/x/oauth2/jws
+golang.org/x/oauth2/jwt
+# google.golang.org/api v0.0.0-20170308235209-f093df3d954a
+google.golang.org/api/option
+google.golang.org/api/iterator
+google.golang.org/api/transport
+google.golang.org/api/internal
+google.golang.org/api/googleapi/transport
+# google.golang.org/appengine v1.0.0
+google.golang.org/appengine/socket
+google.golang.org/appengine/urlfetch
+google.golang.org/appengine
+google.golang.org/appengine/internal
+google.golang.org/appengine/internal/socket
+google.golang.org/appengine/internal/urlfetch
+google.golang.org/appengine/internal/app_identity
+google.golang.org/appengine/internal/modules
+google.golang.org/appengine/internal/base
+google.golang.org/appengine/internal/datastore
+google.golang.org/appengine/internal/log
+google.golang.org/appengine/internal/remote_api
+# google.golang.org/genproto v0.0.0-20170303204730-1e95789587db
+google.golang.org/genproto/googleapis/datastore/v1
+google.golang.org/genproto/googleapis/type/latlng
+google.golang.org/genproto/googleapis/api/annotations
+# google.golang.org/grpc v0.0.0-20170307005400-4eaacfed9779
+google.golang.org/grpc
+google.golang.org/grpc/grpclog
+google.golang.org/grpc/codes
+google.golang.org/grpc/credentials
+google.golang.org/grpc/internal
+google.golang.org/grpc/keepalive
+google.golang.org/grpc/metadata
+google.golang.org/grpc/naming
+google.golang.org/grpc/peer
+google.golang.org/grpc/stats
+google.golang.org/grpc/tap
+google.golang.org/grpc/transport
+google.golang.org/grpc/credentials/oauth
+# gopkg.in/alecthomas/kingpin.v2 v2.2.3
+gopkg.in/alecthomas/kingpin.v2
+# gopkg.in/redis.v5 v5.2.7
+gopkg.in/redis.v5
+gopkg.in/redis.v5/internal
+gopkg.in/redis.v5/internal/consistenthash
+gopkg.in/redis.v5/internal/hashtag
+gopkg.in/redis.v5/internal/pool
+gopkg.in/redis.v5/internal/proto
+# gopkg.in/yaml.v2 v2.0.0-20160928153709-a5b47d31c556
+gopkg.in/yaml.v2
