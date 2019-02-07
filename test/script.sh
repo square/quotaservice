@@ -7,6 +7,7 @@ case "$TEST" in
     cd admin/public/
     node --version
     npm rebuild node-sass
+    npm install eslint
     npm run lint
     npm run clean-dist
     npm run test
