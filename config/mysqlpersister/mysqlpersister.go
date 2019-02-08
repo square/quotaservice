@@ -54,9 +54,9 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.Confi
 }
 
 func newWithConn(db *sqlx.DB) (config.ConfigPersister, error) {
-	_, err := db.Query("SELECT 1 FROM quotaserviceconfigs LIMIT 1")
+	_, err := db.Query("SELECT 1 FROM quotaservice LIMIT 1")
 	if err != nil {
-		return nil, errors.New("table quotaserviceconfigs does not exist")
+		return nil, errors.New("table quotaservice does not exist")
 	}
 
 	mp := &mysqlPersister{
@@ -93,7 +93,7 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	mp.m.RUnlock()
 
 	var rows []*configRow
-	err := mp.db.Select(&rows, "SELECT * FROM quotaserviceconfigs WHERE Version > ? ORDER BY Version ASC", v)
+	err := mp.db.Select(&rows, "SELECT * FROM quotaservice WHERE Version > ? ORDER BY Version ASC", v)
 	if err != nil {
 		logging.Printf("Received error from zookeeper executing listener: %s", err)
 		return false
@@ -133,7 +133,7 @@ func (mp *mysqlPersister) notifyWatcher() {
 // PersistAndNotify persists a marshalled configuration passed in.
 func (mp *mysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
 	b, err := proto.Marshal(c)
-	_, err = mp.db.Query("INSERT INTO quotaserviceconfigs (Version, config) VALUES (?, ?)", c.GetVersion(), string(b))
+	_, err = mp.db.Query("INSERT INTO quotaservice (Version, Config) VALUES (?, ?)", c.GetVersion(), string(b))
 	if err != nil {
 		return err
 	}
