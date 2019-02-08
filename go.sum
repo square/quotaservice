@@ -8,6 +8,8 @@ github.com/golang/protobuf v0.0.0-20170307001533-c9c7427a2a70 h1:WKo1/VPcI3cbJwn
 github.com/golang/protobuf v0.0.0-20170307001533-c9c7427a2a70/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b h1:v7wZg6KtYZHQ7eicIx8/6l03MCxqC3y1iGE5Qy39aQY=
 github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b/go.mod h1:SFVmujtThgffbyetf+mdk2eWhX2bMyUtNHzFKcPA9HY=
+github.com/opentracing/opentracing-go v1.0.2 h1:3jA2P6O1F9UOrWVpwrIo17pu01KWvNWg4X946/Y5Zwg=
+github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13 h1:4AQBn5RJY4WH8t8TLEMZUsWeXHAUcoao42TCAfpEJJE=
 github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
 golang.org/x/net v0.0.0-20170308210134-a6577fac2d73 h1:5kGFsglTK4KqaHYb/WCmYmj+Gm1+dzbilbtzruHj6dw=

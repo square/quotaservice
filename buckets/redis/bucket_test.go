@@ -3,6 +3,7 @@
 package redis
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -53,7 +54,7 @@ func TestScriptLoaded(t *testing.T) {
 }
 
 func TestFailingRedisConn(t *testing.T) {
-	w, s := bucket.Take(1, 0)
+	w, s := bucket.Take(context.Background(), 1, 0)
 
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
@@ -68,7 +69,7 @@ func TestFailingRedisConn(t *testing.T) {
 	}
 
 	// Client should fail to Take(). This should start the reconnect handler
-	w, s = bucket.Take(1, 0)
+	w, s = bucket.Take(context.Background(), 1, 0)
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
 	}
@@ -81,7 +82,7 @@ func TestFailingRedisConn(t *testing.T) {
 	}
 
 	// Client should reconnect
-	w, s = bucket.Take(1, 0)
+	w, s = bucket.Take(context.Background(), 1, 0)
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
 	}

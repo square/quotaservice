@@ -18,6 +18,9 @@ github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/protoc-gen-go/descriptor
 # github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b
 github.com/googleapis/gax-go
+# github.com/opentracing/opentracing-go v1.0.2
+github.com/opentracing/opentracing-go
+github.com/opentracing/opentracing-go/log
 # github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
 github.com/samuel/go-zookeeper/zk
 # golang.org/x/net v0.0.0-20170308210134-a6577fac2d73
