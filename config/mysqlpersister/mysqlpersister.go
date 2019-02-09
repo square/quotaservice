@@ -21,8 +21,8 @@ const (
 
 type mysqlPersister struct {
 	latestVersion int
-	db *sqlx.DB
-	m *sync.RWMutex
+	db            *sqlx.DB
+	m             *sync.RWMutex
 
 	watcher  chan struct{}
 	shutdown chan struct{}
@@ -33,13 +33,13 @@ type mysqlPersister struct {
 }
 
 type configRow struct {
-	Version int
-	config string
+	Version int    `db:"Version"`
+	Config  string `db:"Config"`
 }
 
 func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.ConfigPersister, error) {
 	db, err := sqlx.Open("mysql",
-		fmt.Sprintf("%s:%s@mysql+tcp(%s:%v)/%s",
+		fmt.Sprintf("%s:%s@(%s:%v)/%s",
 			dbUser,
 			dbPass,
 			dbHost,
@@ -50,11 +50,7 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.Confi
 		return nil, err
 	}
 
-	return newWithConn(db)
-}
-
-func newWithConn(db *sqlx.DB) (config.ConfigPersister, error) {
-	_, err := db.Query("SELECT 1 FROM quotaservice LIMIT 1")
+	_, err = db.Query("SELECT 1 FROM quotaservice LIMIT 1")
 	if err != nil {
 		return nil, errors.New("table quotaservice does not exist")
 	}
@@ -63,6 +59,10 @@ func newWithConn(db *sqlx.DB) (config.ConfigPersister, error) {
 		db:             db,
 		configs:        make(map[int]*qsc.ServiceConfig),
 		activeFetchers: &sync.WaitGroup{},
+		m:              &sync.RWMutex{},
+		watcher:        make(chan struct{}),
+		shutdown:       make(chan struct{}),
+		latestVersion:  -1,
 	}
 
 	mp.activeFetchers.Add(1)
@@ -76,12 +76,13 @@ func (mp *mysqlPersister) configFetcher() {
 
 	for {
 		select {
-		case <- time.After(pollingInterval):
+		case <-time.After(pollingInterval):
 			if mp.pullConfigs() {
 				mp.notifyWatcher()
 			}
-		case <- mp.shutdown:
+		case <-mp.shutdown:
 			logging.Print("Received shutdown signal, shutting down mysql watcher")
+			return
 		}
 	}
 }
@@ -93,9 +94,9 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	mp.m.RUnlock()
 
 	var rows []*configRow
-	err := mp.db.Select(&rows, "SELECT * FROM quotaservice WHERE Version > ? ORDER BY Version ASC", v)
+	err := mp.db.Select(&rows, "SELECT Version, Config FROM quotaservice WHERE Version > ? ORDER BY Version ASC", v)
 	if err != nil {
-		logging.Printf("Received error from zookeeper executing listener: %s", err)
+		logging.Printf("Received error from mysql executing listener: %s", err)
 		return false
 	}
 
@@ -107,9 +108,10 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	maxVersion := -1
 	for _, r := range rows {
 		var c qsc.ServiceConfig
-		err := proto.Unmarshal([]byte(r.config), &c)
+		err := proto.Unmarshal([]byte(r.Config), &c)
 		if err != nil {
 			logging.Printf("Could not unmarshal config version %v, error: %s", r.Version, err)
+			continue
 		}
 
 		mp.m.Lock()

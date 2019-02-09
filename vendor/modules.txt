@@ -5,14 +5,31 @@ cloud.google.com/go/internal/version
 cloud.google.com/go/internal/atomiccache
 cloud.google.com/go/compute/metadata
 cloud.google.com/go/internal
+# github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+github.com/Azure/go-ansiterm/winterm
+github.com/Azure/go-ansiterm
+# github.com/Microsoft/go-winio v0.4.11
+github.com/Microsoft/go-winio
+# github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
+github.com/Nvveen/Gotty
 # github.com/alecthomas/template v0.0.0-20150530000104-b867cc6ab45c
 github.com/alecthomas/template
 github.com/alecthomas/template/parse
 # github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314
 github.com/alecthomas/units
+# github.com/cenkalti/backoff v2.1.1+incompatible
+github.com/cenkalti/backoff
+# github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
+github.com/containerd/continuity/pathdriver
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/docker/go-connections v0.4.0
+github.com/docker/go-connections/nat
+# github.com/docker/go-units v0.3.3
+github.com/docker/go-units
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
-# github.com/golang/protobuf v0.0.0-20170307001533-c9c7427a2a70
+# github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
@@ -23,18 +40,64 @@ github.com/googleapis/gax-go
 # github.com/jmoiron/sqlx v1.2.0
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/opencontainers/go-digest v1.0.0-rc1
+github.com/opencontainers/go-digest
+# github.com/opencontainers/image-spec v1.0.1
+github.com/opencontainers/image-spec/specs-go/v1
+github.com/opencontainers/image-spec/specs-go
+# github.com/opencontainers/runc v0.1.1
+github.com/opencontainers/runc/libcontainer/user
 # github.com/opentracing/opentracing-go v1.0.2
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/log
+# github.com/ory/dockertest v3.3.4+incompatible
+github.com/ory/dockertest
+github.com/ory/dockertest/docker
+github.com/ory/dockertest/docker/opts
+github.com/ory/dockertest/docker/pkg/archive
+github.com/ory/dockertest/docker/pkg/fileutils
+github.com/ory/dockertest/docker/pkg/homedir
+github.com/ory/dockertest/docker/pkg/jsonmessage
+github.com/ory/dockertest/docker/pkg/stdcopy
+github.com/ory/dockertest/docker/types/registry
+github.com/ory/dockertest/docker/types
+github.com/ory/dockertest/docker/pkg/idtools
+github.com/ory/dockertest/docker/pkg/ioutils
+github.com/ory/dockertest/docker/pkg/longpath
+github.com/ory/dockertest/docker/pkg/pools
+github.com/ory/dockertest/docker/pkg/system
+github.com/ory/dockertest/docker/pkg/term
+github.com/ory/dockertest/docker/types/container
+github.com/ory/dockertest/docker/types/filters
+github.com/ory/dockertest/docker/types/mount
+github.com/ory/dockertest/docker/types/network
+github.com/ory/dockertest/docker/pkg/mount
+github.com/ory/dockertest/docker/pkg/term/windows
+github.com/ory/dockertest/docker/types/blkiodev
+github.com/ory/dockertest/docker/types/strslice
+github.com/ory/dockertest/docker/types/versions
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
 github.com/samuel/go-zookeeper/zk
-# golang.org/x/net v0.0.0-20170308210134-a6577fac2d73
+# github.com/sirupsen/logrus v1.3.0
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.3.0
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 golang.org/x/net/context
 golang.org/x/net/http2
 golang.org/x/net/trace
+golang.org/x/net/http/httpguts
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-golang.org/x/net/lex/httplex
 golang.org/x/net/internal/timeseries
 golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20170302202304-efb10a30610e
@@ -43,6 +106,14 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
+# golang.org/x/sys v0.0.0-20190204203706-41f3e6584952
+golang.org/x/sys/windows
+golang.org/x/sys/unix
+# golang.org/x/text v0.3.0
+golang.org/x/text/secure/bidirule
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+golang.org/x/text/transform
 # google.golang.org/api v0.0.0-20170308235209-f093df3d954a
 google.golang.org/api/option
 google.golang.org/api/iterator
@@ -90,5 +161,5 @@ gopkg.in/redis.v5/internal/consistenthash
 gopkg.in/redis.v5/internal/hashtag
 gopkg.in/redis.v5/internal/pool
 gopkg.in/redis.v5/internal/proto
-# gopkg.in/yaml.v2 v2.0.0-20160928153709-a5b47d31c556
+# gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2
