@@ -86,7 +86,7 @@ func TestReadPersistedConfig(t *testing.T) {
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
-	defer p.(*mysqlPersister).Close()
+	defer p.Close()
 
 	c1234 := &qsc.ServiceConfig{
 		Version: 1234,
@@ -138,7 +138,7 @@ func TestFirstConfigVersion(t *testing.T) {
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
-	defer p.(*mysqlPersister).Close()
+	defer p.Close()
 
 	u := "I'm a test!"
 	cTest := &qsc.ServiceConfig{
@@ -169,7 +169,7 @@ func TestReadHistoricalConfig(t *testing.T) {
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
-	defer p.(*mysqlPersister).Close()
+	defer p.Close()
 
 	c1233 := &qsc.ServiceConfig{
 		Version: 1233,
@@ -242,7 +242,7 @@ func TestFetchConfigsAtBoot(t *testing.T) {
 
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
-	defer p.(*mysqlPersister).Close()
+	defer p.Close()
 
 	cPersisted, err := p.ReadPersistedConfig()
 	require.NoError(err)

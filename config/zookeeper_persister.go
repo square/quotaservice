@@ -52,7 +52,7 @@ type ZkConfigPersister struct {
 // Mirrors go-zookeeper's connOption
 type connOption func(c *zk.Conn)
 
-func NewZkConfigPersisterWithConnection(path string, conn *zk.Conn) (ConfigPersister, error) {
+func NewZkConfigPersisterWithConnection(path string, conn *zk.Conn) (*ZkConfigPersister, error) {
 	err := createPath(conn, path)
 
 	if err != nil {
@@ -78,7 +78,7 @@ func NewZkConfigPersisterWithConnection(path string, conn *zk.Conn) (ConfigPersi
 	return persister, nil
 }
 
-func NewZkConfigPersister(path string, servers []string, options ...connOption) (ConfigPersister, error) {
+func NewZkConfigPersister(path string, servers []string, options ...connOption) (*ZkConfigPersister, error) {
 	conn, _, err := zk.Connect(servers, sessionTimeout, func(c *zk.Conn) {
 		c.SetLogger(logging.CurrentLogger())
 

@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	pb "github.com/square/quotaservice/protos/config"
+
 	"github.com/golang/protobuf/proto"
+	pb "github.com/square/quotaservice/protos/config"
 )
 
 // DiskConfigPersister is a ConfigPersister that saves configs to the local filesystem.
@@ -18,7 +19,7 @@ type DiskConfigPersister struct {
 }
 
 // NewDiskConfigPersister creates a new DiskConfigPersister
-func NewDiskConfigPersister(location string) (ConfigPersister, error) {
+func NewDiskConfigPersister(location string) (*DiskConfigPersister, error) {
 	_, e := os.Stat(location)
 	// This will catch nonexistent paths, as well as passing in a directory instead of a file.
 	// Nonexistent files in an existing path, however, is allowed.

@@ -17,7 +17,7 @@ import (
 	qsc "github.com/square/quotaservice/protos/config"
 )
 
-type mysqlPersister struct {
+type MysqlPersister struct {
 	latestVersion int
 	db            *sqlx.DB
 	m             *sync.RWMutex
@@ -35,7 +35,7 @@ type configRow struct {
 	Config  string `db:"Config"`
 }
 
-func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterval time.Duration) (config.ConfigPersister, error) {
+func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterval time.Duration) (*MysqlPersister, error) {
 	db, err := sqlx.Open("mysql",
 		fmt.Sprintf("%s:%s@(%s:%v)/%s",
 			dbUser,
@@ -53,7 +53,7 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 		return nil, errors.New("table quotaservice does not exist")
 	}
 
-	mp := &mysqlPersister{
+	mp := &MysqlPersister{
 		db:             db,
 		configs:        make(map[int]*qsc.ServiceConfig),
 		activeFetchers: &sync.WaitGroup{},
@@ -71,7 +71,7 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 	return mp, nil
 }
 
-func (mp *mysqlPersister) configFetcher(pollingInterval time.Duration) {
+func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
 	defer mp.activeFetchers.Done()
 
 	for {
@@ -88,7 +88,7 @@ func (mp *mysqlPersister) configFetcher(pollingInterval time.Duration) {
 }
 
 // pullConfigs checks the database for new configs and returns true if there is a new config
-func (mp *mysqlPersister) pullConfigs() bool {
+func (mp *MysqlPersister) pullConfigs() bool {
 	mp.m.RLock()
 	v := mp.latestVersion
 	mp.m.RUnlock()
@@ -138,12 +138,12 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	return true
 }
 
-func (mp *mysqlPersister) notifyWatcher() {
+func (mp *MysqlPersister) notifyWatcher() {
 	mp.watcher <- struct{}{}
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
-func (mp *mysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
+func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
 	b, err := proto.Marshal(c)
 	q, args, err := sq.Insert("quotaservice").Columns("Version", "Config").Values(c.GetVersion(), string(b)).ToSql()
 	if err != nil {
@@ -159,12 +159,12 @@ func (mp *mysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever a new config is available.
-func (mp *mysqlPersister) ConfigChangedWatcher() <-chan struct{} {
+func (mp *MysqlPersister) ConfigChangedWatcher() <-chan struct{} {
 	return mp.watcher
 }
 
 // ReadHistoricalConfigs returns an array of previously persisted configs
-func (mp *mysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
+func (mp *MysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	mp.m.RLock()
 	defer mp.m.RUnlock()
 	c := mp.configs[mp.latestVersion]
@@ -176,7 +176,7 @@ func (mp *mysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	return c, nil
 }
 
-func (mp *mysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) {
+func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) {
 	var configs []*qsc.ServiceConfig
 
 	mp.m.RLock()
@@ -196,7 +196,7 @@ func (mp *mysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 	return configs, nil
 }
 
-func (mp *mysqlPersister) Close() {
+func (mp *MysqlPersister) Close() {
 	close(mp.shutdown)
 	mp.activeFetchers.Wait()
 
