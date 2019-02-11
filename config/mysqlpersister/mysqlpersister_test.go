@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest"
-	a "github.com/stretchr/testify/assert"
 	r "github.com/stretchr/testify/require"
 
 	qsc "github.com/square/quotaservice/protos/config"
@@ -79,66 +79,64 @@ func setup(require *r.Assertions, db *sqlx.DB) {
 }
 
 func TestReadPersistedConfig(t *testing.T) {
-	assert := a.New(t)
 	require := r.New(t)
 
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
-	assert.NoError(err)
+	require.NoError(err)
+	defer p.(*mysqlPersister).Close()
 
 	c1234 := &qsc.ServiceConfig{
 		Version: 1234,
 	}
 
-	assert.NoError(p.PersistAndNotify("", c1234))
+	require.NoError(p.PersistAndNotify("", c1234))
 
 	cPersisted, err := p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Nil(cPersisted)
+	require.Error(err)
+	require.Nil(cPersisted)
 
 	select {
 	case <-time.After(2 * pollingInterval):
-		assert.Fail("No notification received for new config")
+		require.Fail("No notification received for new config")
 	case <-p.ConfigChangedWatcher():
 	}
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1234, cPersisted)
+	require.NoError(err)
+	require.Equal(c1234, cPersisted)
 
 	c1233 := &qsc.ServiceConfig{
 		Version: 1233,
 	}
 
-	assert.NoError(p.PersistAndNotify("", c1233))
+	require.NoError(p.PersistAndNotify("", c1233))
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1234, cPersisted)
+	require.NoError(err)
+	require.Equal(c1234, cPersisted)
 
 	select {
 	case <-time.After(2 * pollingInterval):
 		// Do nothing
 	case <-p.ConfigChangedWatcher():
-		assert.Fail("Watcher was notified when an old config was persisted")
+		require.Fail("Watcher was notified when an old config was persisted")
 	}
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1234, cPersisted)
+	require.NoError(err)
+	require.Equal(c1234, cPersisted)
 
-	assert.Error(p.PersistAndNotify("", c1234))
-
-	p.(*mysqlPersister).Close()
+	require.Error(p.PersistAndNotify("", c1234))
 }
 
 func TestFirstConfigVersion(t *testing.T) {
-	assert := a.New(t)
 	require := r.New(t)
 
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
-	assert.NoError(err)
+	require.NoError(err)
+	defer p.(*mysqlPersister).Close()
 
 	u := "I'm a test!"
 	cTest := &qsc.ServiceConfig{
@@ -146,32 +144,30 @@ func TestFirstConfigVersion(t *testing.T) {
 		User:    u,
 	}
 
-	assert.NoError(p.PersistAndNotify("", cTest))
+	require.NoError(p.PersistAndNotify("", cTest))
 
 	cPersisted, err := p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Nil(cPersisted)
+	require.Error(err)
+	require.Nil(cPersisted)
 
 	select {
 	case <-time.After(2 * pollingInterval):
-		assert.Fail("No notification received for new config")
+		require.Fail("No notification received for new config")
 	case <-p.ConfigChangedWatcher():
 	}
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(cTest, cPersisted)
-
-	p.(*mysqlPersister).Close()
+	require.NoError(err)
+	require.Equal(cTest, cPersisted)
 }
 
 func TestReadHistoricalConfig(t *testing.T) {
-	assert := a.New(t)
 	require := r.New(t)
 
 	setup(require, db)
 	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
-	assert.NoError(err)
+	require.NoError(err)
+	defer p.(*mysqlPersister).Close()
 
 	c1233 := &qsc.ServiceConfig{
 		Version: 1233,
@@ -185,46 +181,68 @@ func TestReadHistoricalConfig(t *testing.T) {
 		Version: 1235,
 	}
 
-	assert.NoError(p.PersistAndNotify("", c1233))
+	require.NoError(p.PersistAndNotify("", c1233))
 
 	cPersisted, err := p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Nil(cPersisted)
+	require.Error(err)
+	require.Nil(cPersisted)
 
 	select {
 	case <-time.After(2 * pollingInterval):
-		assert.Fail("No notification received for new config")
+		require.Fail("No notification received for new config")
 	case <-p.ConfigChangedWatcher():
 	}
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1233, cPersisted)
+	require.NoError(err)
+	require.Equal(c1233, cPersisted)
 
 	cHistorical, err := p.ReadHistoricalConfigs()
-	assert.NoError(err)
-	assert.Equal([]*qsc.ServiceConfig{c1233}, cHistorical)
+	require.NoError(err)
+	require.Equal([]*qsc.ServiceConfig{c1233}, cHistorical)
 
-	assert.NoError(p.PersistAndNotify("", c1234))
-	assert.NoError(p.PersistAndNotify("", c1235))
+	require.NoError(p.PersistAndNotify("", c1234))
+	require.NoError(p.PersistAndNotify("", c1235))
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1233, cPersisted)
+	require.NoError(err)
+	require.Equal(c1233, cPersisted)
 
 	select {
 	case <-time.After(2 * pollingInterval):
-		assert.Fail("No notification received for new config")
+		require.Fail("No notification received for new config")
 	case <-p.ConfigChangedWatcher():
 	}
 
 	cPersisted, err = p.ReadPersistedConfig()
-	assert.NoError(err)
-	assert.Equal(c1235, cPersisted)
+	require.NoError(err)
+	require.Equal(c1235, cPersisted)
 
 	cHistorical, err = p.ReadHistoricalConfigs()
-	assert.NoError(err)
-	assert.Equal([]*qsc.ServiceConfig{c1233, c1234, c1235}, cHistorical)
+	require.NoError(err)
+	require.Equal([]*qsc.ServiceConfig{c1233, c1234, c1235}, cHistorical)
+}
 
-	p.(*mysqlPersister).Close()
+func TestFetchConfigsAtBoot(t *testing.T) {
+	require := r.New(t)
+
+	setup(require, db)
+
+	firstConfig := &qsc.ServiceConfig{
+		Version: 123,
+	}
+
+	b, err := proto.Marshal(firstConfig)
+	require.NoError(err)
+
+	_, err = db.Query("INSERT INTO quotaservice.quotaservice (Version, Config) VALUES (?, ?)", 123, string(b))
+	require.NoError(err)
+
+	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
+	require.NoError(err)
+	defer p.(*mysqlPersister).Close()
+
+	cPersisted, err := p.ReadPersistedConfig()
+	require.NoError(err)
+	require.Equal(firstConfig, cPersisted)
 }
