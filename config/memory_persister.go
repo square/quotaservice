@@ -16,7 +16,7 @@ type MemoryConfigPersister struct {
 	*sync.RWMutex
 }
 
-func NewMemoryConfigPersister() MemoryConfigPersister {
+func NewMemoryConfigPersister() *MemoryConfigPersister {
 	p := &MemoryConfigPersister{
 		configs:  make(map[string]*pb.ServiceConfig),
 		Notifier: NewNotifier(),
