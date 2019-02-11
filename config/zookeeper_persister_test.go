@@ -37,7 +37,7 @@ func TestNewPathError(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/LOCAL/quotaservice", conn)
 
 	if err == nil {
-		defer p.(*ZkConfigPersister).Close()
+		defer p.Close()
 		t.Error("Should have received error on new because path does not exit")
 	}
 }
@@ -48,7 +48,7 @@ func TestNew(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/quotaservice", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -71,7 +71,7 @@ func TestNewExisting(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -94,7 +94,7 @@ func TestSetExisting(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	select {
 	case <-p.ConfigChangedWatcher():
@@ -114,7 +114,7 @@ func TestSetAndNotify(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/existing", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	<-p.ConfigChangedWatcher()
 
@@ -161,7 +161,7 @@ func TestHistoricalConfigs(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/historic", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	waitOrTimeout(p.ConfigChangedWatcher(), time.Minute)
 
@@ -183,7 +183,7 @@ func TestReadingStaleVersions(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/conflicting", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	origCfg := NewDefaultServiceConfig()
 	origCfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")
@@ -225,7 +225,7 @@ func TestConcurrentUpdate(t *testing.T) {
 	p, err := NewZkConfigPersisterWithConnection("/lost_changes", conn)
 	helpers.CheckError(t, err)
 
-	defer p.(*ZkConfigPersister).Close()
+	defer p.Close()
 
 	origCfg := NewDefaultServiceConfig()
 	origCfg.Namespaces["test"] = NewDefaultNamespaceConfig("test")

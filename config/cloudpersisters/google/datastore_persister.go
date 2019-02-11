@@ -25,12 +25,13 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/square/quotaservice/config"
-	"github.com/square/quotaservice/logging"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
+
+	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos/config"
-	"github.com/golang/protobuf/proto"
 )
 
 // storedEntity stores the configuration as a serialized protobuf, and some metadata about the configuration.
