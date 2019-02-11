@@ -22,10 +22,9 @@ type MysqlPersister struct {
 	db            *sqlx.DB
 	m             *sync.RWMutex
 
-	watcher  chan struct{}
-	shutdown chan struct{}
-
-	activeFetchers *sync.WaitGroup
+	watcher         chan struct{}
+	shutdown        chan struct{}
+	fetcherShutdown chan struct{}
 
 	configs map[int]*qsc.ServiceConfig
 }
@@ -53,25 +52,26 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 	}
 
 	mp := &MysqlPersister{
-		db:             db,
-		configs:        make(map[int]*qsc.ServiceConfig),
-		activeFetchers: &sync.WaitGroup{},
-		m:              &sync.RWMutex{},
-		watcher:        make(chan struct{}),
-		shutdown:       make(chan struct{}),
-		latestVersion:  -1,
+		db:              db,
+		configs:         make(map[int]*qsc.ServiceConfig),
+		m:               &sync.RWMutex{},
+		watcher:         make(chan struct{}),
+		shutdown:        make(chan struct{}),
+		fetcherShutdown: make(chan struct{}),
+		latestVersion:   -1,
 	}
 
 	mp.pullConfigs()
 
-	mp.activeFetchers.Add(1)
 	go mp.configFetcher(pollingInterval)
 
 	return mp, nil
 }
 
 func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
-	defer mp.activeFetchers.Done()
+	defer func() {
+		close(mp.fetcherShutdown)
+	}()
 
 	for {
 		select {
@@ -197,7 +197,7 @@ func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 
 func (mp *MysqlPersister) Close() {
 	close(mp.shutdown)
-	mp.activeFetchers.Wait()
+	<-mp.fetcherShutdown
 
 	close(mp.watcher)
 	err := mp.db.Close()
