@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"sort"
 	"sync"
 	"time"
 
@@ -65,6 +66,8 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.Confi
 		latestVersion:  -1,
 	}
 
+	mp.pullConfigs()
+
 	mp.activeFetchers.Add(1)
 	go mp.configFetcher()
 
@@ -96,7 +99,7 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	var rows []*configRow
 	err := mp.db.Select(&rows, "SELECT Version, Config FROM quotaservice WHERE Version > ? ORDER BY Version ASC", v)
 	if err != nil {
-		logging.Printf("Received error from mysql executing listener: %s", err)
+		logging.Printf("Received error from querying mysql for the latest configs mysql: %s", err)
 		return false
 	}
 
@@ -151,8 +154,12 @@ func (mp *mysqlPersister) ConfigChangedWatcher() <-chan struct{} {
 // ReadHistoricalConfigs returns an array of previously persisted configs
 func (mp *mysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	mp.m.RLock()
+	defer mp.m.RUnlock()
 	c := mp.configs[mp.latestVersion]
-	mp.m.RUnlock()
+	if c == nil {
+		return nil, errors.New("persister has a nil config")
+	}
+	c = config.CloneConfig(c)
 
 	return c, nil
 }
@@ -163,8 +170,15 @@ func (mp *mysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 	mp.m.RLock()
 	defer mp.m.RUnlock()
 
-	for _, c := range mp.configs {
-		configs = append(configs, c)
+	var versions []int
+	for k := range mp.configs {
+		versions = append(versions, k)
+	}
+
+	sort.Ints(versions)
+
+	for _, v := range versions {
+		configs = append(configs, config.CloneConfig(mp.configs[v]))
 	}
 
 	return configs, nil
