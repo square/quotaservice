@@ -21,7 +21,7 @@ var port int64
 
 const (
 	databaseCreateStatement = "CREATE DATABASE quotaservice CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-	tableCreateStatement    = "CREATE TABLE quotaservice.quotaservice (ID BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, Version INT UNIQUE, Config BLOB);"
+	tableCreateStatement    = "CREATE TABLE quotaservice.quotaservice (ID BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, Version INT UNIQUE, Config BLOB, INDEX version_index (Version));"
 )
 
 func TestMain(m *testing.M) {
