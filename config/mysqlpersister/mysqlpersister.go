@@ -43,7 +43,6 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 			dbHost,
 			dbPort,
 			dbName))
-
 	if err != nil {
 		return nil, err
 	}
