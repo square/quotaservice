@@ -3,6 +3,7 @@ module github.com/square/quotaservice
 require (
 	cloud.google.com/go v0.0.0-20170309001835-7bcba8ac93ae
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
+	github.com/Masterminds/squirrel v1.1.0
 	github.com/Microsoft/go-winio v0.4.11 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect

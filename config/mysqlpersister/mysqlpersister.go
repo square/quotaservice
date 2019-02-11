@@ -3,12 +3,13 @@ package mysqlpersister
 import (
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"sort"
 	"sync"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/square/quotaservice/config"
@@ -92,8 +93,18 @@ func (mp *mysqlPersister) pullConfigs() bool {
 	v := mp.latestVersion
 	mp.m.RUnlock()
 
+	q, args, err := sq.
+		Select("Version", "Config").
+		From("quotaservice").
+		Where("Version > ?", v).
+		OrderBy("Version ASC").ToSql()
+	if err != nil {
+		logging.Printf("Could not generate query to fetch config updates: %s", err)
+		return false
+	}
+
 	var rows []*configRow
-	err := mp.db.Select(&rows, "SELECT Version, Config FROM quotaservice WHERE Version > ? ORDER BY Version ASC", v)
+	err = mp.db.Select(&rows, q, args...)
 	if err != nil {
 		logging.Printf("Received error from querying mysql for the latest configs mysql: %s", err)
 		return false
@@ -134,7 +145,12 @@ func (mp *mysqlPersister) notifyWatcher() {
 // PersistAndNotify persists a marshalled configuration passed in.
 func (mp *mysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
 	b, err := proto.Marshal(c)
-	_, err = mp.db.Query("INSERT INTO quotaservice (Version, Config) VALUES (?, ?)", c.GetVersion(), string(b))
+	q, args, err := sq.Insert("quotaservice").Columns("Version", "Config").Values(c.GetVersion(), string(b)).ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = mp.db.Query(q, args...)
 	if err != nil {
 		return err
 	}
