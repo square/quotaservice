@@ -16,10 +16,6 @@ import (
 	qsc "github.com/square/quotaservice/protos/config"
 )
 
-const (
-	pollingInterval = 1 * time.Second
-)
-
 type mysqlPersister struct {
 	latestVersion int
 	db            *sqlx.DB
@@ -38,7 +34,7 @@ type configRow struct {
 	Config  string `db:"Config"`
 }
 
-func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.ConfigPersister, error) {
+func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterval time.Duration) (config.ConfigPersister, error) {
 	db, err := sqlx.Open("mysql",
 		fmt.Sprintf("%s:%s@(%s:%v)/%s",
 			dbUser,
@@ -69,12 +65,12 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string) (config.Confi
 	mp.pullConfigs()
 
 	mp.activeFetchers.Add(1)
-	go mp.configFetcher()
+	go mp.configFetcher(pollingInterval)
 
 	return mp, nil
 }
 
-func (mp *mysqlPersister) configFetcher() {
+func (mp *mysqlPersister) configFetcher(pollingInterval time.Duration) {
 	defer mp.activeFetchers.Done()
 
 	for {

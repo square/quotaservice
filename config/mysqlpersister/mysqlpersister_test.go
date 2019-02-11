@@ -22,6 +22,8 @@ var port int64
 const (
 	databaseCreateStatement = "CREATE DATABASE quotaservice CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 	tableCreateStatement    = "CREATE TABLE quotaservice.quotaservice (ID BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, Version INT UNIQUE, Config BLOB, INDEX version_index (Version));"
+
+	pollingInterval = 1 * time.Second
 )
 
 func TestMain(m *testing.M) {
@@ -82,7 +84,7 @@ func TestReadPersistedConfig(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
+	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
 	defer p.(*mysqlPersister).Close()
 
@@ -134,7 +136,7 @@ func TestFirstConfigVersion(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
+	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
 	defer p.(*mysqlPersister).Close()
 
@@ -165,7 +167,7 @@ func TestReadHistoricalConfig(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
+	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
 	defer p.(*mysqlPersister).Close()
 
@@ -238,7 +240,7 @@ func TestFetchConfigsAtBoot(t *testing.T) {
 	_, err = db.Query("INSERT INTO quotaservice.quotaservice (Version, Config) VALUES (?, ?)", 123, string(b))
 	require.NoError(err)
 
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice")
+	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
 	require.NoError(err)
 	defer p.(*mysqlPersister).Close()
 
