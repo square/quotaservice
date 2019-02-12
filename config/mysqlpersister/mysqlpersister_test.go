@@ -1,6 +1,7 @@
 package mysqlpersister
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -9,14 +10,13 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest"
 	r "github.com/stretchr/testify/require"
 
 	qsc "github.com/square/quotaservice/protos/config"
 )
 
-var db *sqlx.DB
+var db *sql.DB
 var port int64
 
 const (
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	if err := pool.Retry(func() error {
 		var err error
-		db, err = sqlx.Open("mysql", fmt.Sprintf("root:secret@(localhost:%s)/mysql", resource.GetPort("3306/tcp")))
+		db, err = sql.Open("mysql", fmt.Sprintf("root:secret@(localhost:%s)/mysql", resource.GetPort("3306/tcp")))
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func setup(require *r.Assertions, db *sqlx.DB) {
+func setup(require *r.Assertions, db *sql.DB) {
 	_, err := db.Query("TRUNCATE TABLE quotaservice.quotaservice;")
 	require.NoError(err)
 }

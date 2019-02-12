@@ -1,9 +1,8 @@
 package mysqlpersister
 
 import (
+	"database/sql"
 	"fmt"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type UnsafeConnector struct {
@@ -24,8 +23,8 @@ func NewUnsafeConnector(dbUser, dbPass, dbHost string, dbPort int, dbName string
 	}
 }
 
-func (c *UnsafeConnector) Connect() (*sqlx.DB, error) {
-	return sqlx.Open("mysql",
+func (c *UnsafeConnector) Connect() (*sql.DB, error) {
+	return sql.Open("mysql",
 		fmt.Sprintf("%s:%s@(%s:%v)/%s",
 			c.dbUser,
 			c.dbPass,
