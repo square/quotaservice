@@ -46,7 +46,7 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 		return nil, err
 	}
 
-	_, err = db.Query("SELECT 1 FROM quotaservice LIMIT 1")
+	_, err = db.Exec("SELECT 1 FROM quotaservice LIMIT 1")
 	if err != nil {
 		return nil, errors.New("table quotaservice does not exist")
 	}
@@ -61,7 +61,9 @@ func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterv
 		latestVersion:   -1,
 	}
 
-	mp.pullConfigs()
+	if _, err := mp.pullConfigs(); err != nil {
+		return nil, err
+	}
 
 	go mp.configFetcher(pollingInterval)
 
@@ -76,7 +78,9 @@ func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
 	for {
 		select {
 		case <-time.After(pollingInterval):
-			if mp.pullConfigs() {
+			if newConf, err := mp.pullConfigs(); err != nil {
+				logging.Printf("Received an error trying to fetch config updates: %s", err)
+			} else if newConf {
 				mp.notifyWatcher()
 			}
 		case <-mp.shutdown:
@@ -87,7 +91,7 @@ func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
 }
 
 // pullConfigs checks the database for new configs and returns true if there is a new config
-func (mp *MysqlPersister) pullConfigs() bool {
+func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	mp.m.RLock()
 	v := mp.latestVersion
 	mp.m.RUnlock()
@@ -98,20 +102,18 @@ func (mp *MysqlPersister) pullConfigs() bool {
 		Where("Version > ?", v).
 		OrderBy("Version ASC").ToSql()
 	if err != nil {
-		logging.Printf("Could not generate query to fetch config updates: %s", err)
-		return false
+		return false, err
 	}
 
 	var rows []*configRow
 	err = mp.db.Select(&rows, q, args...)
 	if err != nil {
-		logging.Printf("Received error from querying mysql for the latest configs mysql: %s", err)
-		return false
+		return false, err
 	}
 
 	// No new configs, exit
 	if len(rows) == 0 {
-		return false
+		return false, nil
 	}
 
 	maxVersion := -1
@@ -134,7 +136,7 @@ func (mp *MysqlPersister) pullConfigs() bool {
 	mp.latestVersion = maxVersion
 	mp.m.Unlock()
 
-	return true
+	return true, nil
 }
 
 func (mp *MysqlPersister) notifyWatcher() {
@@ -149,7 +151,7 @@ func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error
 		return err
 	}
 
-	_, err = mp.db.Query(q, args...)
+	_, err = mp.db.Exec(q, args...)
 	if err != nil {
 		return err
 	}
