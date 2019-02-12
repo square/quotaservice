@@ -2,7 +2,6 @@ package mysqlpersister
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -34,14 +33,12 @@ type configRow struct {
 	Config  string `db:"Config"`
 }
 
-func New(dbUser, dbPass, dbHost string, dbPort int, dbName string, pollingInterval time.Duration) (*MysqlPersister, error) {
-	db, err := sqlx.Open("mysql",
-		fmt.Sprintf("%s:%s@(%s:%v)/%s",
-			dbUser,
-			dbPass,
-			dbHost,
-			dbPort,
-			dbName))
+type Connector interface {
+	Connect() (*sqlx.DB, error)
+}
+
+func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
+	db, err := c.Connect()
 	if err != nil {
 		return nil, err
 	}

@@ -84,7 +84,7 @@ func TestReadPersistedConfig(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
+	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
 	defer p.Close()
 
@@ -136,7 +136,7 @@ func TestFirstConfigVersion(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
+	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
 	defer p.Close()
 
@@ -167,7 +167,7 @@ func TestReadHistoricalConfig(t *testing.T) {
 	require := r.New(t)
 
 	setup(require, db)
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
+	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
 	defer p.Close()
 
@@ -240,7 +240,7 @@ func TestFetchConfigsAtBoot(t *testing.T) {
 	_, err = db.Query("INSERT INTO quotaservice.quotaservice (Version, Config) VALUES (?, ?)", 123, string(b))
 	require.NoError(err)
 
-	p, err := New("root", "secret", "localhost", int(port), "quotaservice", pollingInterval)
+	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
 	defer p.Close()
 
