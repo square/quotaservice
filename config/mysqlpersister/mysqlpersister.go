@@ -1,6 +1,7 @@
 package mysqlpersister
 
 import (
+	"database/sql"
 	"errors"
 	"sort"
 	"sync"
@@ -9,7 +10,6 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/protobuf/proto"
-	"github.com/jmoiron/sqlx"
 
 	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/logging"
@@ -18,7 +18,7 @@ import (
 
 type MysqlPersister struct {
 	latestVersion int
-	db            *sqlx.DB
+	db            *sql.DB
 	m             *sync.RWMutex
 
 	watcher         chan struct{}
@@ -34,7 +34,7 @@ type configRow struct {
 }
 
 type Connector interface {
-	Connect() (*sqlx.DB, error)
+	Connect() (*sql.DB, error)
 }
 
 func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
@@ -102,21 +102,24 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 		return false, err
 	}
 
-	var rows []*configRow
-	err = mp.db.Select(&rows, q, args...)
+	rows, err := mp.db.Query(q, args...)
 	if err != nil {
 		return false, err
 	}
 
-	// No new configs, exit
-	if len(rows) == 0 {
-		return false, nil
-	}
-
+	rowCount := 0
 	maxVersion := -1
-	for _, r := range rows {
+	for rows.Next() {
+		rowCount++
+
+		var r configRow
+		err := rows.Scan(&r.Version, &r.Config)
+		if err != nil {
+			return false, err
+		}
+
 		var c qsc.ServiceConfig
-		err := proto.Unmarshal([]byte(r.Config), &c)
+		err = proto.Unmarshal([]byte(r.Config), &c)
 		if err != nil {
 			logging.Printf("Could not unmarshal config version %v, error: %s", r.Version, err)
 			continue
@@ -127,6 +130,10 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 		mp.m.Unlock()
 
 		maxVersion = r.Version
+	}
+
+	if rowCount == 0 {
+		return false, nil
 	}
 
 	mp.m.Lock()

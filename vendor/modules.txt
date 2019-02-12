@@ -39,9 +39,6 @@ github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/protoc-gen-go/descriptor
 # github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b
 github.com/googleapis/gax-go
-# github.com/jmoiron/sqlx v1.2.0
-github.com/jmoiron/sqlx
-github.com/jmoiron/sqlx/reflectx
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
