@@ -264,3 +264,21 @@ func TestDuplicateConfig(t *testing.T) {
 	require.NoError(p.PersistAndNotify("", config))
 	require.Equal(ErrDuplicateConfig, p.PersistAndNotify("", config))
 }
+
+func TestNoTable(t *testing.T) {
+	require := r.New(t)
+
+	_, err := db.Exec("DROP TABLE quotaservice.quotaservice")
+	require.NoError(err)
+
+	defer func() {
+		_, err = db.Query(tableCreateStatement)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	_, err = New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
+	require.Error(err)
+
+}

@@ -46,7 +46,12 @@ func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec("SELECT 1 FROM quotaservice LIMIT 1")
+	q, args, err := sq.Select("1").From("quotaservice").Limit(1).ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = db.Exec(q, args...)
 	if err != nil {
 		return nil, errors.New("table quotaservice does not exist")
 	}
@@ -174,7 +179,7 @@ func (mp *MysqlPersister) ConfigChangedWatcher() <-chan struct{} {
 	return mp.watcher
 }
 
-// ReadPersistedConfig returns the latest version cached by the persister
+// ReadPersistedConfig provides a config previously persisted.
 func (mp *MysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	mp.m.RLock()
 	defer mp.m.RUnlock()
