@@ -3,13 +3,12 @@ package mysqlpersister
 import (
 	"database/sql"
 	"errors"
-	"github.com/go-sql-driver/mysql"
 	"sort"
 	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/golang/protobuf/proto"
 
 	"github.com/square/quotaservice/config"
