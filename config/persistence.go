@@ -13,15 +13,15 @@ import (
 
 // ConfigPersister is an interface that persists configs and notifies a channel of changes.
 type ConfigPersister interface {
-	// PersistAndNotify persists a marshalled configuration passed in.
+	// PersistAndNotify persists a configuration passed in.
 	PersistAndNotify(oldHash string, newConfig *pb.ServiceConfig) error
 	// ConfigChangedWatcher returns a channel that is notified whenever configuration changes are
 	// detected. Changes are coalesced so that a single notification may be emitted for multiple
 	// changes.
 	ConfigChangedWatcher() <-chan struct{}
-	// ReadPersistedConfig provides a reader to a marshalled config previously persisted.
+	// ReadPersistedConfig provides a config previously persisted.
 	ReadPersistedConfig() (*pb.ServiceConfig, error)
-	// Returns an array of readers of historical configurations, used to display a history for admin consoles.
+	// Returns an array of historical configurations, used to display a history for admin consoles.
 	ReadHistoricalConfigs() ([]*pb.ServiceConfig, error)
 }
 
