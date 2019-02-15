@@ -248,3 +248,19 @@ func TestFetchConfigsAtBoot(t *testing.T) {
 	require.NoError(err)
 	require.Equal(firstConfig, cPersisted)
 }
+
+func TestDuplicateConfig(t *testing.T) {
+	require := r.New(t)
+
+	setup(require, db)
+
+	config := &qsc.ServiceConfig{
+		Version: 123,
+	}
+
+	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
+	require.NoError(err)
+
+	require.NoError(p.PersistAndNotify("", config))
+	require.Equal(ErrDuplicateConfig, p.PersistAndNotify("", config))
+}

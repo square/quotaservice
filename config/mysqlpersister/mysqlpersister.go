@@ -3,6 +3,7 @@ package mysqlpersister
 import (
 	"database/sql"
 	"errors"
+	"github.com/go-sql-driver/mysql"
 	"sort"
 	"sync"
 	"time"
@@ -15,6 +16,8 @@ import (
 	"github.com/square/quotaservice/logging"
 	qsc "github.com/square/quotaservice/protos/config"
 )
+
+var ErrDuplicateConfig = errors.New("config with provided version number already exists")
 
 type MysqlPersister struct {
 	latestVersion int
@@ -157,10 +160,13 @@ func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error
 
 	_, err = mp.db.Exec(q, args...)
 	if err != nil {
-		return err
+		mysqlErr, ok := err.(*mysql.MySQLError)
+		if ok && mysqlErr.Number == 1062 {
+			return ErrDuplicateConfig
+		}
 	}
 
-	return nil
+	return err
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever a new config is available.
