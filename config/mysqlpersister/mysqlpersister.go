@@ -174,7 +174,7 @@ func (mp *MysqlPersister) ConfigChangedWatcher() <-chan struct{} {
 	return mp.watcher
 }
 
-// ReadHistoricalConfigs returns an array of previously persisted configs
+// ReadPersistedConfig returns the latest version cached by the persister
 func (mp *MysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	mp.m.RLock()
 	defer mp.m.RUnlock()
@@ -187,6 +187,7 @@ func (mp *MysqlPersister) ReadPersistedConfig() (*qsc.ServiceConfig, error) {
 	return c, nil
 }
 
+// ReadHistoricalConfigs returns an array of previously persisted configs
 func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) {
 	var configs []*qsc.ServiceConfig
 
