@@ -23,7 +23,7 @@ const (
 	databaseCreateStatement = "CREATE DATABASE quotaservice CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 	tableCreateStatement    = "CREATE TABLE quotaservice.quotaservice (ID BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, Version INT UNIQUE, Config BLOB, INDEX version_index (Version));"
 
-	pollingInterval = 1 * time.Second
+	pollingInterval = 100 * time.Millisecond
 )
 
 func TestMain(m *testing.M) {
@@ -88,6 +88,9 @@ func TestReadPersistedConfig(t *testing.T) {
 	require.NoError(err)
 	defer p.Close()
 
+	// Clear the notify that's sent when the persister starts
+	<-p.ConfigChangedWatcher()
+
 	c1234 := &qsc.ServiceConfig{
 		Version: 1234,
 	}
@@ -140,6 +143,9 @@ func TestFirstConfigVersion(t *testing.T) {
 	require.NoError(err)
 	defer p.Close()
 
+	// Clear the notify that's sent when the persister starts
+	<-p.ConfigChangedWatcher()
+
 	u := "I'm a test!"
 	cTest := &qsc.ServiceConfig{
 		Version: 0,
@@ -170,6 +176,9 @@ func TestReadHistoricalConfig(t *testing.T) {
 	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
 	defer p.Close()
+
+	// Clear the notify that's sent when the persister starts
+	<-p.ConfigChangedWatcher()
 
 	c1233 := &qsc.ServiceConfig{
 		Version: 1233,
@@ -244,6 +253,9 @@ func TestFetchConfigsAtBoot(t *testing.T) {
 	require.NoError(err)
 	defer p.Close()
 
+	// Clear the notify that's sent when the persister starts
+	<-p.ConfigChangedWatcher()
+
 	cPersisted, err := p.ReadPersistedConfig()
 	require.NoError(err)
 	require.Equal(firstConfig, cPersisted)
@@ -260,6 +272,10 @@ func TestDuplicateConfig(t *testing.T) {
 
 	p, err := New(NewUnsafeConnector("root", "secret", "localhost", int(port), "quotaservice"), pollingInterval)
 	require.NoError(err)
+	defer p.Close()
+
+	// Clear the notify that's sent when the persister starts
+	<-p.ConfigChangedWatcher()
 
 	require.NoError(p.PersistAndNotify("", config))
 	require.Equal(ErrDuplicateConfig, p.PersistAndNotify("", config))

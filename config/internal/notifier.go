@@ -1,4 +1,4 @@
-package config
+package internal
 
 type Notifier struct {
 	Watcher chan struct{}
