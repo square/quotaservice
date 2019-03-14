@@ -9,13 +9,14 @@ import (
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/square/quotaservice/config/internal"
 	pb "github.com/square/quotaservice/protos/config"
 )
 
 // DiskConfigPersister is a ConfigPersister that saves configs to the local filesystem.
 type DiskConfigPersister struct {
 	location string
-	*Notifier
+	*internal.Notifier
 }
 
 // NewDiskConfigPersister creates a new DiskConfigPersister
@@ -27,7 +28,7 @@ func NewDiskConfigPersister(location string) (*DiskConfigPersister, error) {
 		return nil, e
 	}
 
-	d := &DiskConfigPersister{location, NewNotifier()}
+	d := &DiskConfigPersister{location, internal.NewNotifier()}
 
 	// Notify that we're available for reading
 	d.Notify()

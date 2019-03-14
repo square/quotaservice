@@ -30,6 +30,7 @@ import (
 	"google.golang.org/api/option"
 
 	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/config/internal"
 	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos/config"
 )
@@ -51,7 +52,7 @@ type DatastoreConfigPersister struct {
 	namespace string
 	entity    string
 	client    *datastore.Client
-	*config.Notifier
+	*internal.Notifier
 	version     int
 	newVersions chan int
 }
@@ -213,7 +214,7 @@ func New(projectId, credentialsFile, namespace, entity string, pollingDuration t
 		namespace:   namespace,
 		entity:      entity,
 		client:      client,
-		Notifier:    config.NewNotifier(),
+		Notifier:    internal.NewNotifier(),
 		newVersions: make(chan int)}
 
 	go p.poll(pollingDuration)

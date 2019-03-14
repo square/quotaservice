@@ -6,20 +6,21 @@ package config
 import (
 	"sync"
 
+	"github.com/square/quotaservice/config/internal"
 	pb "github.com/square/quotaservice/protos/config"
 )
 
 type MemoryConfigPersister struct {
 	config  string
 	configs map[string]*pb.ServiceConfig
-	*Notifier
+	*internal.Notifier
 	*sync.RWMutex
 }
 
 func NewMemoryConfigPersister() *MemoryConfigPersister {
 	p := &MemoryConfigPersister{
 		configs:  make(map[string]*pb.ServiceConfig),
-		Notifier: NewNotifier(),
+		Notifier: internal.NewNotifier(),
 		RWMutex:  &sync.RWMutex{}}
 
 	p.Notify()

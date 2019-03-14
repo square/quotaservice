@@ -62,16 +62,27 @@ func (s *server) Start() (bool, error) {
 		}
 	}, bufSize)
 
+	logging.Printf("Creating bucket container")
 	s.createBucketContainer()
+	logging.Printf("Creating bucket container: OK")
+
+	logging.Printf("Waiting for persister to start")
 	<-s.persister.ConfigChangedWatcher()
+	logging.Printf("Waiting for persister to start: OK")
+
+	logging.Printf("Reading latest config")
 	s.readUpdatedConfig(0)
+	logging.Printf("Reading latest config: OK")
+
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
+	logging.Printf("Starting RPC servers")
 	for _, rpcServer := range s.rpcEndpoints {
 		rpcServer.Init(s)
 		rpcServer.Start()
 	}
+	logging.Printf("Starting RPC servers: OK")
 
 	s.currentStatus = lifecycle.Started
 	return true, nil

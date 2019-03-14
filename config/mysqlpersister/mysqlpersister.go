@@ -3,6 +3,7 @@ package mysqlpersister
 import (
 	"database/sql"
 	"errors"
+	"github.com/square/quotaservice/config/internal"
 	"sort"
 	"sync"
 	"time"
@@ -18,12 +19,16 @@ import (
 
 var ErrDuplicateConfig = errors.New("config with provided version number already exists")
 
+const (
+	mysqlErrDuplicateEntry = 1062
+)
+
 type MysqlPersister struct {
 	latestVersion int
 	db            *sql.DB
 	m             *sync.RWMutex
 
-	watcher         chan struct{}
+	notifier        *internal.Notifier
 	shutdown        chan struct{}
 	fetcherShutdown chan struct{}
 
@@ -40,11 +45,14 @@ type Connector interface {
 }
 
 func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
+	logging.Print("Connecting to MySQL")
 	db, err := c.Connect()
 	if err != nil {
 		return nil, err
 	}
+	logging.Print("Connecting to MySQL: OK")
 
+	logging.Print("Verifying table exists")
 	q, args, err := sq.Select("1").From("quotaservice").Limit(1).ToSql()
 	if err != nil {
 		return nil, err
@@ -54,20 +62,29 @@ func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
 	if err != nil {
 		return nil, errors.New("table quotaservice does not exist")
 	}
+	logging.Print("Verifying table exists: OK")
 
 	mp := &MysqlPersister{
 		db:              db,
 		configs:         make(map[int]*qsc.ServiceConfig),
 		m:               &sync.RWMutex{},
-		watcher:         make(chan struct{}),
+		notifier:        internal.NewNotifier(),
 		shutdown:        make(chan struct{}),
 		fetcherShutdown: make(chan struct{}),
 		latestVersion:   -1,
 	}
 
+	logging.Print("Pulling configs from MySQL")
 	if _, err := mp.pullConfigs(); err != nil {
 		return nil, err
 	}
+
+	mp.m.RLock()
+	v := mp.latestVersion
+	mp.m.RUnlock()
+	logging.Printf("Pulling configs from MySQL: OK; Latest Version: %v", v)
+
+	mp.notifyWatcher()
 
 	go mp.configFetcher(pollingInterval)
 
@@ -85,6 +102,7 @@ func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
 			if newConf, err := mp.pullConfigs(); err != nil {
 				logging.Printf("Received an error trying to fetch config updates: %s", err)
 			} else if newConf {
+				logging.Print("New config(s) found in MySQL")
 				mp.notifyWatcher()
 			}
 		case <-mp.shutdown:
@@ -100,6 +118,7 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	v := mp.latestVersion
 	mp.m.RUnlock()
 
+	logging.Printf("Fetching configs later than %v", v)
 	q, args, err := sq.
 		Select("Version", "Config").
 		From("quotaservice").
@@ -113,6 +132,7 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	logging.Printf("Fetching configs later than %v: OK", v)
 
 	rowCount := 0
 	maxVersion := -1
@@ -140,8 +160,11 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	}
 
 	if rowCount == 0 {
+		logging.Printf("No versions later than %v found", v)
 		return false, nil
 	}
+
+	logging.Printf("Upgrading from version %v to %v", v, maxVersion)
 
 	mp.m.Lock()
 	mp.latestVersion = maxVersion
@@ -151,11 +174,13 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 }
 
 func (mp *MysqlPersister) notifyWatcher() {
-	mp.watcher <- struct{}{}
+	logging.Print("Notifying config watcher")
+	mp.notifier.Notify()
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
+	logging.Printf("Persisting version %v", c.GetVersion())
 	b, err := proto.Marshal(c)
 	q, args, err := sq.Insert("quotaservice").Columns("Version", "Config").Values(c.GetVersion(), string(b)).ToSql()
 	if err != nil {
@@ -164,18 +189,20 @@ func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error
 
 	_, err = mp.db.Exec(q, args...)
 	if err != nil {
-		mysqlErr, ok := err.(*mysql.MySQLError)
-		if ok && mysqlErr.Number == 1062 {
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == mysqlErrDuplicateEntry {
 			return ErrDuplicateConfig
 		}
+
+		return err
 	}
 
-	return err
+	logging.Printf("Persisting version %v: OK", c.GetVersion())
+	return nil
 }
 
 // ConfigChangedWatcher returns a channel that is notified whenever a new config is available.
 func (mp *MysqlPersister) ConfigChangedWatcher() <-chan struct{} {
-	return mp.watcher
+	return mp.notifier.Watcher
 }
 
 // ReadPersistedConfig provides a config previously persisted.
@@ -213,14 +240,15 @@ func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 }
 
 func (mp *MysqlPersister) Close() {
+	logging.Print("Shutting down MySQL persister")
 	close(mp.shutdown)
 	<-mp.fetcherShutdown
 
-	close(mp.watcher)
+	close(mp.notifier.Watcher)
 	err := mp.db.Close()
 	if err != nil {
 		logging.Printf("Could not terminate mysql connection: %v", err)
 	} else {
-		logging.Printf("Mysql persister shut down")
+		logging.Printf("Shutting down MySQL persister: OK")
 	}
 }
