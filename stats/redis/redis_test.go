@@ -42,7 +42,7 @@ func randomNamespace() string {
 
 func setUp() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	listener = stats.NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"})
+	listener = stats.NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, 100*time.Millisecond)
 }
 
 func TestHandleNewHitBucket(t *testing.T) {
