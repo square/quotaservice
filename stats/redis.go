@@ -190,7 +190,7 @@ func (l *redisListener) batcher() {
 		}
 
 		batch := l.statsUpdates
-		l.statsUpdates = make([]*statsUpdate, l.batchSize)
+		l.statsUpdates = make([]*statsUpdate, 0, l.batchSize)
 
 		l.statsUpdatesLock.Unlock()
 

@@ -40,15 +40,21 @@ func randomNamespace() string {
 	return string(result)
 }
 
+const (
+	batchSubmitInterval = 2 * time.Millisecond
+	waitForBatchSubmit = 10 * batchSubmitInterval
+)
+
 func setUp() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	listener = stats.NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, 100*time.Millisecond)
+	listener = stats.NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, batchSubmitInterval)
 }
 
 func TestHandleNewHitBucket(t *testing.T) {
 	namespace = randomNamespace()
 	ev := events.NewTokensServedEvent(namespace, "new-hit-dyn", true, 1, 0)
 	listener.HandleEvent(ev)
+	time.Sleep(waitForBatchSubmit)
 	scores := listener.Get(namespace, "new-hit-dyn")
 
 	if scores.Hits != 1 || scores.Misses != 0 {
@@ -57,12 +63,14 @@ func TestHandleNewHitBucket(t *testing.T) {
 
 	ev = events.NewTokensServedEvent(namespace, "nondyn", false, 1, 0)
 	listener.HandleEvent(ev)
+	time.Sleep(waitForBatchSubmit)
 	scores = listener.Get(namespace, "nondyn")
 
 	if scores.Hits != 0 || scores.Misses != 0 {
 		t.Fatalf("Non-dynamic bucket score was not accurate: %+v != [Hits=0, Misses=0]", scores)
 	}
 
+	time.Sleep(waitForBatchSubmit)
 	scores = listener.Get(namespace, "nondyn")
 
 	if scores.Hits != 0 || scores.Misses != 0 {
@@ -73,6 +81,7 @@ func TestHandleNewHitBucket(t *testing.T) {
 func TestHandleNewMissBucket(t *testing.T) {
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "new-miss-dyn", true))
+	time.Sleep(waitForBatchSubmit)
 	scores := listener.Get(namespace, "new-miss-dyn")
 
 	if scores.Hits != 0 || scores.Misses != 1 {
@@ -80,6 +89,7 @@ func TestHandleNewMissBucket(t *testing.T) {
 	}
 
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "nondyn", false))
+	time.Sleep(waitForBatchSubmit)
 	scores = listener.Get(namespace, "nondyn")
 
 	if scores.Hits != 0 || scores.Misses != 0 {
@@ -92,6 +102,7 @@ func TestHandleIncrMissBucket(t *testing.T) {
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "incr-miss", true))
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "incr-miss", true))
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "incr-miss", true))
+	time.Sleep(waitForBatchSubmit)
 	scores := listener.Get(namespace, "incr-miss")
 
 	if scores.Hits != 0 || scores.Misses != 3 {
@@ -104,6 +115,7 @@ func TestHandleIncrHitBucket(t *testing.T) {
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "incr-hit", true, 1, 0))
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "incr-hit", true, 3, 0))
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "incr-hit", true, 1, 0))
+	time.Sleep(waitForBatchSubmit)
 	scores := listener.Get(namespace, "incr-hit")
 
 	if scores.Hits != 5 || scores.Misses != 0 {
@@ -114,6 +126,7 @@ func TestHandleIncrHitBucket(t *testing.T) {
 func TestHandleNonEvent(t *testing.T) {
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewTimedOutEvent(namespace, "nonevent", true, 1))
+	time.Sleep(waitForBatchSubmit)
 	scores := listener.Get(namespace, "nonevent")
 
 	if scores.Hits != 0 || scores.Misses != 0 {
@@ -127,6 +140,7 @@ func TestTop10Hits(t *testing.T) {
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "hits-dyn-2", true, 10, 0))
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "hits-dyn-3", true, 1, 0))
 
+	time.Sleep(waitForBatchSubmit)
 	hits := listener.TopHits(namespace)
 	correctHits := []*stats.BucketScore{
 		{Bucket: "hits-dyn-2", Score: 10},
@@ -149,6 +163,7 @@ func TestTop10Misses(t *testing.T) {
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-3", true))
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-3", true))
 
+	time.Sleep(waitForBatchSubmit)
 	misses := listener.TopMisses(namespace)
 	correctMisses := []*stats.BucketScore{
 		{Bucket: "misses-dyn-2", Score: 3},
