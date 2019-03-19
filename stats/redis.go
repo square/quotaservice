@@ -5,6 +5,7 @@ package stats
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"gopkg.in/redis.v5"
@@ -13,9 +14,23 @@ import (
 	"github.com/square/quotaservice/logging"
 )
 
-type redisListener struct {
-	client *redis.Client
+type statsUpdate struct {
+	namespace string
+	numTokens float64
+	bucket    string
 }
+
+type redisListener struct {
+	client           *redis.Client
+	statsUpdates     []*statsUpdate
+	statsUpdatesLock *sync.Mutex
+	notifyBatcher    chan struct{}
+}
+
+const (
+	batchSize           = 128
+	batchSubmitInterval = 100 * time.Millisecond
+)
 
 // NewRedisStatsListener creates a redis-backed stats
 // listener with the passed in redis.Options.
@@ -27,7 +42,16 @@ func NewRedisStatsListener(redisOpts *redis.Options) Listener {
 		logging.Fatalf("RedisStatsListener: cannot connect to Redis, %v", err)
 	}
 
-	return &redisListener{client}
+	l := &redisListener{
+		client:           client,
+		statsUpdates:     make([]*statsUpdate, 0, batchSize),
+		notifyBatcher:    make(chan struct{}, 1),
+		statsUpdatesLock: &sync.Mutex{},
+	}
+
+	go l.batcher()
+
+	return l
 }
 
 func (l *redisListener) redisTopList(key string) []*BucketScore {
@@ -117,28 +141,88 @@ func (l *redisListener) HandleEvent(event events.Event) {
 	namespace := statsNamespace(key, event.Namespace())
 	bucket := event.BucketName()
 
-	var incr *redis.FloatCmd
-	_, err := l.client.Pipelined(func(pipe *redis.Pipeline) error {
-		incr = pipe.ZIncrBy(namespace, float64(numTokens), bucket)
-		pipe.ExpireAt(namespace, nearestHour())
+	l.queueStatsUpdate(namespace, numTokens, bucket)
+}
+
+// queueStatsUpdate queues a statsUpdate to be sent to redis via the batcher
+func (l *redisListener) queueStatsUpdate(namespace string, numTokens int64, bucket string) {
+	l.statsUpdatesLock.Lock()
+
+	l.statsUpdates = append(l.statsUpdates, &statsUpdate{
+		namespace: namespace,
+		numTokens: float64(numTokens),
+		bucket:    bucket,
+	})
+
+	l.statsUpdatesLock.Unlock()
+
+	select {
+	case l.notifyBatcher <- struct{}{}:
+		// Done
+	default:
+		// There's already a pending notification
+	}
+}
+
+// batcher aggregates stats updates. Any stats that are aggregated are guaranteed
+// to be sent within batchSubmitInterval, or once batchSize stats updates are queued,
+// whichever happens first.
+func (l *redisListener) batcher() {
+	timeout := time.After(batchSubmitInterval)
+
+	for {
+		var buffer []*statsUpdate
+
+		select {
+		case <-timeout:
+			l.statsUpdatesLock.Lock()
+
+			if len(l.statsUpdates) == 0 {
+				l.statsUpdatesLock.Unlock()
+				timeout = time.After(batchSubmitInterval)
+				continue
+			}
+
+		case <-l.notifyBatcher:
+			l.statsUpdatesLock.Lock()
+
+			if len(l.statsUpdates) < batchSize {
+				l.statsUpdatesLock.Unlock()
+				continue
+			}
+		}
+
+		buffer = make([]*statsUpdate, len(l.statsUpdates))
+		copy(buffer, l.statsUpdates)
+
+		l.statsUpdatesLock.Unlock()
+
+		go l.submitBatch(buffer)
+		timeout = time.After(batchSubmitInterval)
+	}
+}
+
+// submitBatch sends the provided stats updates to redis in one pipelined query.
+func (l *redisListener) submitBatch(batch []*statsUpdate) {
+	cmds, err := l.client.Pipelined(func(pipe *redis.Pipeline) error {
+		for _, update := range batch {
+			pipe.ZIncrBy(update.namespace, update.numTokens, update.bucket)
+			pipe.ExpireAt(update.namespace, nearestHour())
+		}
 		return nil
 	})
 
-	if err != nil || incr.Err() != nil {
-		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
-			namespace, bucket, numTokens, err, incr.Err())
+	if err != nil {
+		logging.Printf("RedisStatsListener.HandleEvent pipeline error %v", err)
 	}
-	go func() {
-		var incr *redis.FloatCmd
-		_, err := l.client.Pipelined(func(pipe *redis.Pipeline) error {
-			incr = pipe.ZIncrBy(namespace, float64(numTokens), bucket)
-			pipe.ExpireAt(namespace, nearestHour())
-			return nil
-		})
 
-		if err != nil || incr.Err() != nil {
-			logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
-				namespace, bucket, numTokens, err, incr.Err())
+	for i, cmd := range cmds {
+		if cmd.Err() == nil {
+			continue
 		}
-	}()
+
+		update := batch[i]
+		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v",
+			update.namespace, update.bucket, update.numTokens, cmd.Err())
+	}
 }
