@@ -128,4 +128,17 @@ func (l *redisListener) HandleEvent(event events.Event) {
 		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
 			namespace, bucket, numTokens, err, incr.Err())
 	}
+	go func() {
+		var incr *redis.FloatCmd
+		_, err := l.client.Pipelined(func(pipe *redis.Pipeline) error {
+			incr = pipe.ZIncrBy(namespace, float64(numTokens), bucket)
+			pipe.ExpireAt(namespace, nearestHour())
+			return nil
+		})
+
+		if err != nil || incr.Err() != nil {
+			logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
+				namespace, bucket, numTokens, err, incr.Err())
+		}
+	}()
 }
