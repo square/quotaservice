@@ -170,8 +170,6 @@ func (l *redisListener) batcher() {
 	timeout := time.After(l.batchDeadline)
 
 	for {
-		var buffer []*statsUpdate
-
 		select {
 		case <-timeout:
 			l.statsUpdatesLock.Lock()
@@ -191,12 +189,12 @@ func (l *redisListener) batcher() {
 			}
 		}
 
-		buffer = make([]*statsUpdate, len(l.statsUpdates))
-		copy(buffer, l.statsUpdates)
+		batch := l.statsUpdates
+		l.statsUpdates = make([]*statsUpdate, l.batchSize)
 
 		l.statsUpdatesLock.Unlock()
 
-		go l.submitBatch(buffer)
+		go l.submitBatch(batch)
 		timeout = time.After(l.batchDeadline)
 	}
 }
