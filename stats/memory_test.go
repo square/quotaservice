@@ -1,20 +1,19 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
-package memory
+package stats
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/square/quotaservice/events"
-	"github.com/square/quotaservice/stats"
 )
 
-var listener stats.Listener
+var listener Listener
 
-func TestHandleNewHitBucket(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryHandleNewHitBucket(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	ev := events.NewTokensServedEvent("test", "dyn", true, 1, 0)
 	listener.HandleEvent(ev)
 	scores := listener.Get("test", "dyn")
@@ -38,8 +37,8 @@ func TestHandleNewHitBucket(t *testing.T) {
 	}
 }
 
-func TestHandleNewMissBucket(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryHandleNewMissBucket(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn", true))
 	scores := listener.Get("test", "dyn")
 
@@ -55,8 +54,8 @@ func TestHandleNewMissBucket(t *testing.T) {
 	}
 }
 
-func TestHandleIncrMissBucket(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryHandleIncrMissBucket(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn", true))
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn", true))
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn", true))
@@ -67,8 +66,8 @@ func TestHandleIncrMissBucket(t *testing.T) {
 	}
 }
 
-func TestHandleIncrHitBucket(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryHandleIncrHitBucket(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn", true, 1, 0))
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn", true, 3, 0))
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn", true, 1, 0))
@@ -79,8 +78,8 @@ func TestHandleIncrHitBucket(t *testing.T) {
 	}
 }
 
-func TestHandleNonEvent(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryHandleNonEvent(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	listener.HandleEvent(events.NewTimedOutEvent("test", "dyn", true, 1))
 	scores := listener.Get("test", "dyn")
 
@@ -89,14 +88,14 @@ func TestHandleNonEvent(t *testing.T) {
 	}
 }
 
-func TestTop10Hits(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryTop10Hits(t *testing.T) {
+	listener = NewMemoryStatsListener()
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn-1", true, 3, 0))
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn-2", true, 10, 0))
 	listener.HandleEvent(events.NewTokensServedEvent("test", "dyn-3", true, 1, 0))
 
 	hits := listener.TopHits("test")
-	correctHits := []*stats.BucketScore{
+	correctHits := []*BucketScore{
 		{Bucket: "dyn-2", Score: 10},
 		{Bucket: "dyn-1", Score: 3},
 		{Bucket: "dyn-3", Score: 1}}
@@ -106,8 +105,8 @@ func TestTop10Hits(t *testing.T) {
 	}
 }
 
-func TestTop10Misses(t *testing.T) {
-	listener = stats.NewMemoryStatsListener()
+func TestMemoryTop10Misses(t *testing.T) {
+	listener = NewMemoryStatsListener()
 
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn-1", true))
 
@@ -119,7 +118,7 @@ func TestTop10Misses(t *testing.T) {
 	listener.HandleEvent(events.NewBucketMissedEvent("test", "dyn-3", true))
 
 	misses := listener.TopMisses("test")
-	correctMisses := []*stats.BucketScore{
+	correctMisses := []*BucketScore{
 		{Bucket: "dyn-2", Score: 3},
 		{Bucket: "dyn-3", Score: 2},
 		{Bucket: "dyn-1", Score: 1}}

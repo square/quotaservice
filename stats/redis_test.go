@@ -1,11 +1,10 @@
 // Licensed under the Apache License, Version 2.0
 // Details: https://raw.githubusercontent.com/square/quotaservice/master/LICENSE
 
-package redis
+package stats
 
 import (
 	"math/rand"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,10 +12,8 @@ import (
 	"gopkg.in/redis.v5"
 
 	"github.com/square/quotaservice/events"
-	"github.com/square/quotaservice/stats"
 )
 
-var listener stats.Listener
 var namespace string
 
 const (
@@ -24,11 +21,6 @@ const (
 	characterListLen   = len(characterList)
 	randomNamespaceLen = 16
 )
-
-func TestMain(m *testing.M) {
-	setUp()
-	os.Exit(m.Run())
-}
 
 func randomNamespace() string {
 	result := make([]byte, randomNamespaceLen)
@@ -45,12 +37,18 @@ const (
 	waitForBatchSubmit = 10 * batchSubmitInterval
 )
 
-func setUp() {
+func setUp() Listener {
 	rand.Seed(time.Now().UTC().UnixNano())
-	listener = stats.NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, batchSubmitInterval)
+	return NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, batchSubmitInterval)
 }
 
-func TestHandleNewHitBucket(t *testing.T) {
+func teardown(listener Listener) {
+	listener.(*redisListener).client.FlushDb()
+}
+
+func TestRedisHandleNewHitBucket(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	ev := events.NewTokensServedEvent(namespace, "new-hit-dyn", true, 1, 0)
 	listener.HandleEvent(ev)
@@ -76,9 +74,13 @@ func TestHandleNewHitBucket(t *testing.T) {
 	if scores.Hits != 0 || scores.Misses != 0 {
 		t.Fatalf("Nonexisting namespace was not accurate: %+v != [Hits=0, Misses=0]", scores)
 	}
+
+	teardown(listener)
 }
 
-func TestHandleNewMissBucket(t *testing.T) {
+func TestRedisHandleNewMissBucket(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "new-miss-dyn", true))
 	time.Sleep(waitForBatchSubmit)
@@ -95,9 +97,13 @@ func TestHandleNewMissBucket(t *testing.T) {
 	if scores.Hits != 0 || scores.Misses != 0 {
 		t.Fatalf("Non-dynamic bucket score was not accurate: %+v != [Hits=0, Misses=0]", scores)
 	}
+
+	teardown(listener)
 }
 
-func TestHandleIncrMissBucket(t *testing.T) {
+func TestRedisHandleIncrMissBucket(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "incr-miss", true))
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "incr-miss", true))
@@ -108,9 +114,13 @@ func TestHandleIncrMissBucket(t *testing.T) {
 	if scores.Hits != 0 || scores.Misses != 3 {
 		t.Fatalf("Bucket score was not accurate: %+v != [Hits=0, Misses=3]", scores)
 	}
+
+	teardown(listener)
 }
 
-func TestHandleIncrHitBucket(t *testing.T) {
+func TestRedisHandleIncrHitBucket(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "incr-hit", true, 1, 0))
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "incr-hit", true, 3, 0))
@@ -121,9 +131,13 @@ func TestHandleIncrHitBucket(t *testing.T) {
 	if scores.Hits != 5 || scores.Misses != 0 {
 		t.Fatalf("Bucket score was not accurate: %+v != [Hits=5, Misses=0]", scores)
 	}
+
+	teardown(listener)
 }
 
-func TestHandleNonEvent(t *testing.T) {
+func TestRedisHandleNonEvent(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewTimedOutEvent(namespace, "nonevent", true, 1))
 	time.Sleep(waitForBatchSubmit)
@@ -132,9 +146,13 @@ func TestHandleNonEvent(t *testing.T) {
 	if scores.Hits != 0 || scores.Misses != 0 {
 		t.Fatalf("Bucket score was not accurate: %+v != [Hits=0, Misses=0]", scores)
 	}
+
+	teardown(listener)
 }
 
-func TestTop10Hits(t *testing.T) {
+func TestRedisTop10Hits(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "hits-dyn-1", true, 3, 0))
 	listener.HandleEvent(events.NewTokensServedEvent(namespace, "hits-dyn-2", true, 10, 0))
@@ -142,7 +160,7 @@ func TestTop10Hits(t *testing.T) {
 
 	time.Sleep(waitForBatchSubmit)
 	hits := listener.TopHits(namespace)
-	correctHits := []*stats.BucketScore{
+	correctHits := []*BucketScore{
 		{Bucket: "hits-dyn-2", Score: 10},
 		{Bucket: "hits-dyn-1", Score: 3},
 		{Bucket: "hits-dyn-3", Score: 1}}
@@ -150,9 +168,13 @@ func TestTop10Hits(t *testing.T) {
 	if !reflect.DeepEqual(hits, correctHits) {
 		t.Fatalf("Hits top10 is not correct %+v", hits)
 	}
+
+	teardown(listener)
 }
 
-func TestTop10Misses(t *testing.T) {
+func TestRedisTop10Misses(t *testing.T) {
+	listener := setUp()
+
 	namespace = randomNamespace()
 	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-1", true))
 
@@ -165,7 +187,7 @@ func TestTop10Misses(t *testing.T) {
 
 	time.Sleep(waitForBatchSubmit)
 	misses := listener.TopMisses(namespace)
-	correctMisses := []*stats.BucketScore{
+	correctMisses := []*BucketScore{
 		{Bucket: "misses-dyn-2", Score: 3},
 		{Bucket: "misses-dyn-3", Score: 2},
 		{Bucket: "misses-dyn-1", Score: 1}}
@@ -173,4 +195,31 @@ func TestTop10Misses(t *testing.T) {
 	if !reflect.DeepEqual(misses, correctMisses) {
 		t.Fatalf("Misses top10 is not correct %+v", misses)
 	}
+
+	teardown(listener)
+}
+
+func TestRedisBatching( t *testing.T) {
+	setUp()
+	listener := NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, 5 * time.Second)
+
+	for i := 0; i < 127; i++ {
+		listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-1", true))
+	}
+
+	misses := listener.TopMisses(namespace)
+	if !reflect.DeepEqual(misses, []*BucketScore{}) {
+		t.Fatalf("Misses top1 was not empty %+v", misses)
+	}
+
+	listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-1", true))
+	time.Sleep(waitForBatchSubmit)
+	misses = listener.TopMisses(namespace)
+	correctMisses := []*BucketScore{{Bucket: "misses-dyn-1", Score: 128}}
+
+	if !reflect.DeepEqual(misses, correctMisses) {
+		t.Fatalf("Misses top1 is not correct %+v", misses)
+	}
+
+	teardown(listener)
 }
