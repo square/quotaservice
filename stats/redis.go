@@ -25,16 +25,13 @@ type redisListener struct {
 	statsUpdates     []*statsUpdate
 	statsUpdatesLock *sync.Mutex
 	notifyBatcher    chan struct{}
+	batchSize        int
+	batchDeadline    time.Duration
 }
-
-const (
-	batchSize           = 128
-	batchSubmitInterval = 100 * time.Millisecond
-)
 
 // NewRedisStatsListener creates a redis-backed stats
 // listener with the passed in redis.Options.
-func NewRedisStatsListener(redisOpts *redis.Options) Listener {
+func NewRedisStatsListener(redisOpts *redis.Options, statsBatchSize int, statsBatchDeadline time.Duration) Listener {
 	client := redis.NewClient(redisOpts)
 	_, err := client.Ping().Result()
 
@@ -44,9 +41,11 @@ func NewRedisStatsListener(redisOpts *redis.Options) Listener {
 
 	l := &redisListener{
 		client:           client,
-		statsUpdates:     make([]*statsUpdate, 0, batchSize),
+		statsUpdates:     make([]*statsUpdate, 0, statsBatchSize),
 		notifyBatcher:    make(chan struct{}, 1),
 		statsUpdatesLock: &sync.Mutex{},
+		batchSize:        statsBatchSize,
+		batchDeadline:    statsBatchDeadline,
 	}
 
 	go l.batcher()
@@ -168,7 +167,7 @@ func (l *redisListener) queueStatsUpdate(namespace string, numTokens int64, buck
 // to be sent within batchSubmitInterval, or once batchSize stats updates are queued,
 // whichever happens first.
 func (l *redisListener) batcher() {
-	timeout := time.After(batchSubmitInterval)
+	timeout := time.After(l.batchDeadline)
 
 	for {
 		var buffer []*statsUpdate
@@ -179,14 +178,14 @@ func (l *redisListener) batcher() {
 
 			if len(l.statsUpdates) == 0 {
 				l.statsUpdatesLock.Unlock()
-				timeout = time.After(batchSubmitInterval)
+				timeout = time.After(l.batchDeadline)
 				continue
 			}
 
 		case <-l.notifyBatcher:
 			l.statsUpdatesLock.Lock()
 
-			if len(l.statsUpdates) < batchSize {
+			if len(l.statsUpdates) < l.batchSize {
 				l.statsUpdatesLock.Unlock()
 				continue
 			}
@@ -198,7 +197,7 @@ func (l *redisListener) batcher() {
 		l.statsUpdatesLock.Unlock()
 
 		go l.submitBatch(buffer)
-		timeout = time.After(batchSubmitInterval)
+		timeout = time.After(l.batchDeadline)
 	}
 }
 
