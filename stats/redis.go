@@ -219,7 +219,7 @@ func (l *redisListener) submitBatch(batch []*statsUpdate) {
 		}
 
 		update := batch[i]
-		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v",
+		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %v) %v",
 			update.namespace, update.bucket, update.numTokens, cmd.Err())
 	}
 }
