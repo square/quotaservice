@@ -99,7 +99,7 @@ func TestGC(t *testing.T, factory quotaservice.BucketFactory, impl string) {
 }
 
 func waitForGC(eventsChan <-chan events.Event, namespace string, buckets []string) {
-	logging.Println("Waiting for GC")
+	logging.Info("Waiting for GC")
 	bucketMap := make(map[string]bool)
 	for _, b := range buckets {
 		bucketMap[b] = true

@@ -241,7 +241,7 @@ func (bc *bucketContainer) createNewNamedBucket(namespace, bucketName string, ns
 	if bCfg == nil {
 		// Dynamic.
 		if ns.dynamicBucketCount >= ns.cfg.MaxDynamicBuckets && ns.cfg.MaxDynamicBuckets > 0 {
-			logging.Printf("Bucket %v:%v numDynamicBuckets=%v maxDynamicBuckets=%v. Not creating more dynamic buckets.",
+			logging.Infof("Bucket %v:%v numDynamicBuckets=%v maxDynamicBuckets=%v. Not creating more dynamic buckets.",
 				namespace, bucketName, ns.dynamicBucketCount, ns.cfg.MaxDynamicBuckets)
 			return nil
 		}

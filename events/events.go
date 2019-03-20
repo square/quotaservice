@@ -59,7 +59,7 @@ func (e *EventProducer) Emit(event Event) {
 	case e.c <- event:
 	// OK
 	default:
-		logging.Println("Event buffer full; dropping event.")
+		logging.Warn("Event buffer full; dropping event.")
 	}
 }
 

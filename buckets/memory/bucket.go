@@ -134,7 +134,7 @@ func (b *tokenBucket) waitTimeLoop() {
 		case req := <-b.waitTimer:
 			req.response <- b.calcWaitTime(req.requested, req.maxWaitTimeNanos)
 		case <-b.closer:
-			logging.Printf("Garbage collecting bucket %v", b.fullName)
+			logging.Trace("Garbage collecting bucket %v", b.fullName)
 			// TODO(manik) properly notify goroutines who are currently trying to write to waitTimer
 			return
 		}

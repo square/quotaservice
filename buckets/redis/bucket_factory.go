@@ -81,7 +81,7 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, keyMaxIdl
 // Init initializes a bucketFactory for use, implementing Init() on the quotaservice.BucketFactory interface
 func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	start := time.Now()
-	logging.Printf("Initializing redis.bucketFactory for config version %v", cfg.Version)
+	logging.Infof("Initializing redis.bucketFactory for config version %v", cfg.Version)
 	bf.Lock()
 	defer bf.Unlock()
 
@@ -90,10 +90,10 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 	if bf.client == nil {
 		connStart := time.Now()
 		bf.connectToRedisLocked()
-		logging.Printf("Re-established Redis connections in %v", time.Since(connStart))
+		logging.Debug("Re-established Redis connections in %v", time.Since(connStart))
 	}
 
-	logging.Printf("Initialized redis.BucketFactory in %v", time.Since(start))
+	logging.Infof("Initialized redis.BucketFactory in %v", time.Since(start))
 }
 
 func (bf *bucketFactory) connectToRedisLocked() {
@@ -102,9 +102,9 @@ func (bf *bucketFactory) connectToRedisLocked() {
 
 	t, err := bf.client.Time().Result()
 	if err != nil {
-		logging.Printf("Cannot connect to Redis. TIME returned %v", err)
+		logging.Errorf("Cannot connect to Redis. TIME returned %v", err)
 	} else {
-		logging.Printf("Connection established. Time on Redis server: %v", t)
+		logging.Debugf("Connection established. Time on Redis server: %v", t)
 	}
 
 	bf.scriptSHA = loadScript(bf.client)
@@ -116,7 +116,7 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 
 	// Always close connections on errors to prevent results leaking.
 	if err := bf.client.Close(); unknownCloseError(err) {
-		logging.Printf("Received error on Redis client close: %+v", err)
+		logging.Warnf("Received error on Redis client close: %+v", err)
 	}
 
 	if oldClient == bf.client {
@@ -129,7 +129,7 @@ func (bf *bucketFactory) handleConnectionFailure(oldClient *redis.Client) {
 	defer bf.Unlock()
 
 	if oldClient == bf.client && !bf.connectionNeedsResolution {
-		logging.Print("Attempting to establish new connection to redis")
+		logging.Debug("Attempting to establish new connection to redis")
 		bf.connectionNeedsResolution = true
 		go bf.establishNewConnectionToRedis(oldClient)
 	}
@@ -155,30 +155,30 @@ func (bf *bucketFactory) establishNewConnectionToRedis(oldClient *redis.Client) 
 				disconnected = false
 				break
 			}
-			logging.Print("Unable to reconnect to redis. Will retry again in 1s.")
+			logging.Trace("Unable to reconnect to redis. Will retry again in 1s.")
 			time.Sleep(1 * time.Second)
 		}
 
 		if disconnected {
-			logging.Printf("Attempted to reconnect %v times. Will sleep for %v seconds", bf.connectionRetries, exponentialDelay)
+			logging.Tracef("Attempted to reconnect %v times. Will sleep for %v seconds", bf.connectionRetries, exponentialDelay)
 			time.Sleep(exponentialDelay)
 			exponentialDelay *= 2
 
 			if exponentialDelay > exponentialDelayCeiling {
-				logging.Printf("Resetting exponential delay for sleep because it exceeds the ceiling value of %v seconds", exponentialDelayCeiling)
+				logging.Tracef("Resetting exponential delay for sleep because it exceeds the ceiling value of %v seconds", exponentialDelayCeiling)
 				exponentialDelay = 1 * time.Second
 			}
 		}
 
 	}
 
-	logging.Printf("Established connection after attempting %v times", numsTried)
+	logging.Debugf("Established connection after attempting %v times", numsTried)
 	bf.Lock()
 	defer bf.Unlock()
 	bf.connectionNeedsResolution = false
 	bf.numTimesConnResolved++
 	exponentialDelay = 1 * time.Second
-	logging.Printf("Handler has resolved %v connection(s) so far", bf.numTimesConnResolved)
+	logging.Debugf("Handler has resolved %v connection(s) so far", bf.numTimesConnResolved)
 }
 
 func (bf *bucketFactory) getNumTimesConnResolved() int {
@@ -317,11 +317,11 @@ func loadScript(c *redis.Client) (sha string) {
 	`
 	s := c.ScriptLoad(lua)
 	if s.Err() != nil {
-		logging.Printf("Unable to load LUA script into Redis; error=%v", s.Err())
+		logging.Errorf("Unable to load LUA script into Redis; error=%v", s.Err())
 		return
 	}
 
 	sha = s.Val()
-	logging.Printf("Loaded LUA script into Redis; script SHA %v", sha)
+	logging.Debugf("Loaded LUA script into Redis; script SHA %v", sha)
 	return
 }

@@ -121,19 +121,19 @@ func (z *ZkConfigPersister) waitForEvents(watch *zkWatch) {
 		select {
 		case event := <-watch.channel:
 			if event.Err != nil {
-				logging.Print("Received error from zookeeper", event)
+				logging.Warn("Received error from zookeeper", event)
 			} else {
-				logging.Printf("Received event %+v on zookeeper watch", event)
+				logging.Debugf("Received event %+v on zookeeper watch", event)
 			}
 		case <-watch.stopper:
-			logging.Print("Received stop signal; stopping zookeeper watcher goroutine")
+			logging.Info("Received stop signal; stopping zookeeper watcher goroutine")
 			return
 		}
 
 		channel, err := watch.listener()
 
 		if err != nil {
-			logging.Printf("Received error from zookeeper executing listener: %+v", err)
+			logging.Warnf("Received error from zookeeper executing listener: %+v", err)
 			continue
 		}
 
@@ -157,7 +157,7 @@ func createPath(conn *zk.Conn, path string) (err error) {
 			return nil
 		}
 
-		logging.Printf("Could not create zk path, sleeping for 100ms error=%s", err.Error())
+		logging.Debugf("Could not create zk path, sleeping for 100ms error=%s", err.Error())
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -186,7 +186,7 @@ func (z *ZkConfigPersister) PersistAndNotify(oldHash string, cfg *pb.ServiceConf
 	}
 
 	path := fmt.Sprintf("%s/%s", z.path, key)
-	logging.Printf("Storing config version %v in path %v", cfg.Version, path)
+	logging.Infof("Storing config version %v in path %v", cfg.Version, path)
 
 	if err := z.archiveConfig(path, b); err != nil {
 		return err
@@ -209,9 +209,9 @@ func (z *ZkConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 
 func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error) {
 	if z.initialized {
-		logging.Printf("Re-establishing zookeeper watch on %v", z.path)
+		logging.Debugf("Re-establishing zookeeper watch on %v", z.path)
 	} else {
-		logging.Printf("Establishing zookeeper watch on %v", z.path)
+		logging.Debugf("Establishing zookeeper watch on %v", z.path)
 	}
 
 	// Ignoring the response to getting the contents of the watch. We don't care which node triggered the watch, since
@@ -223,20 +223,20 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	_, _, ch, err := z.conn.GetW(z.path)
 
 	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching %s: %+v", z.path, err)
+		logging.Warnf("Received error from zookeeper when fetching %s: %+v", z.path, err)
 		return nil, err
 	}
 
 	if z.initialized {
-		logging.Print("Refreshing configs from zookeeper")
+		logging.Debug("Refreshing configs from zookeeper")
 	} else {
-		logging.Print("Reading configs from zookeeper for the first time")
+		logging.Debug("Reading configs from zookeeper for the first time")
 	}
 
 	children, _, err := z.conn.Children(z.path)
 
 	if err != nil {
-		logging.Printf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
+		logging.Warnf("Received error from zookeeper when fetching children of %s: %+v", z.path, err)
 		return nil, err
 	}
 
@@ -251,7 +251,7 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 		data, _, err := z.conn.Get(path)
 
 		if err != nil {
-			logging.Printf("Received error from zookeeper when fetching %s: %+v", path, err)
+			logging.Warnf("Received error from zookeeper when fetching %s: %+v", path, err)
 			return nil, err
 		}
 
@@ -273,7 +273,7 @@ func (z *ZkConfigPersister) currentConfigEventListener() (<-chan zk.Event, error
 	z.configs = configs
 	z.config = latestHash
 
-	logging.Printf("Setting latest config hash to %v (version %v)", z.config, latestHashVersion)
+	logging.Infof("Setting latest config hash to %v (version %v)", z.config, latestHashVersion)
 
 	select {
 	case z.watcher <- struct{}{}:

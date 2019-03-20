@@ -47,14 +47,14 @@ func ServeAdminConsole(a Administrable, mux *http.ServeMux, assetsDirectory stri
 			msg += " (in development mode)"
 		}
 
-		logging.Printf(msg, assetsDirectory)
+		logging.Info(msg, assetsDirectory)
 
 		mux.Handle("/", loggingHandler(http.RedirectHandler("/admin/", 301)))
 		mux.Handle("/admin/", loggingHandler(newUIHandler(a, assetsDirectory, development)))
 		mux.Handle("/js/", loggingHandler(http.FileServer(http.Dir(assetsDirectory))))
 		mux.Handle("/favicon.ico", http.NotFoundHandler())
 	} else {
-		logging.Print("Not serving admin web UI.")
+		logging.Info("Not serving admin web UI.")
 		mux.Handle("/", loggingHandler(http.NotFoundHandler()))
 	}
 
@@ -100,7 +100,7 @@ func (r *responseWrapper) WriteHeader(status int) {
 func (r *responseWrapper) log() {
 	timeFormatted := r.time.Format("02/Jan/2006 03:04:05")
 	requestLine := fmt.Sprintf("%s %s %s", r.method, r.uri, r.protocol)
-	logging.Printf(logPattern,
+	logging.Debugf(logPattern,
 		r.ip, timeFormatted, requestLine, r.status, r.responseBytes,
 		r.elapsedTime.Seconds())
 }

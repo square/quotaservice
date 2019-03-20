@@ -89,7 +89,7 @@ func (p *DatastoreConfigPersister) PersistAndNotify(oldHash string, cfg *pb.Serv
 			}
 
 			// This version already exists. Do not overwrite.
-			logging.Printf("Version %v already exists; not clobbering.", cfg.Version)
+			logging.Debugf("Version %v already exists; not clobbering.", cfg.Version)
 			return nil
 		}
 
@@ -181,9 +181,9 @@ func (p *DatastoreConfigPersister) poll(pollingDuration time.Duration) {
 		case <-t.C:
 			k, _, e := p.getLatest(true)
 			if e != nil {
-				logging.Printf("Caught error %v when polling Google Datastore", e)
+				logging.Warnf("Caught error %v when polling Google Datastore", e)
 			} else {
-				logging.Printf("Latest version is %v", versionOf(k))
+				logging.Infof("Latest version is %v", versionOf(k))
 				if versionOf(k) > p.version {
 					p.Notify()
 				}
