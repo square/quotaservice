@@ -34,7 +34,7 @@ func (l *redisListener) redisTopList(key string) []*BucketScore {
 	results, err := l.client.ZRevRangeWithScores(key, 0, 10).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
-		logging.Printf("RedisStatsListener.TopList error (%s) %v", key, err)
+		logging.Warnf("RedisStatsListener.TopList error (%s) %v", key, err)
 		return emptyArr
 	}
 
@@ -74,7 +74,7 @@ func (l *redisListener) Get(namespace, bucket string) *BucketScores {
 	value, err := l.client.ZScore(statsNamespace("misses", namespace), bucket).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
-		logging.Printf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
+		logging.Warnf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
 	} else {
 		scores.Misses = int64(value)
 	}
@@ -82,7 +82,7 @@ func (l *redisListener) Get(namespace, bucket string) *BucketScores {
 	value, err = l.client.ZScore(statsNamespace("hits", namespace), bucket).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
-		logging.Printf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
+		logging.Warnf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
 	} else {
 		scores.Hits = int64(value)
 	}
@@ -125,7 +125,7 @@ func (l *redisListener) HandleEvent(event events.Event) {
 	})
 
 	if err != nil || incr.Err() != nil {
-		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
+		logging.Warnf("RedisStatsListener.HandleEvent error (%s, %s, %d) %v, %v",
 			namespace, bucket, numTokens, err, incr.Err())
 	}
 }

@@ -124,7 +124,7 @@ func (r *reaper) checkExpirations(bc *bucketContainer) time.Duration {
 			newSleep = w.maxIdle
 		}
 	}
-	logging.Printf("Reaped %d buckets due to inactivity", reaped)
+	logging.Infof("Reaped %d buckets due to inactivity", reaped)
 	return newSleep
 }
 
@@ -132,7 +132,7 @@ func (r *reaper) checkExpirations(bc *bucketContainer) time.Duration {
 // after a given duration.
 func (r *reaper) reapIdleBuckets(bc *bucketContainer, newWatchers <-chan *watcher) {
 	sleep := r.cfg.InitSleep
-	logging.Printf("reapIdleBuckets started. Initial sleep %v", sleep)
+	logging.Debugf("reapIdleBuckets started. Initial sleep %v", sleep)
 	ticker := time.NewTicker(sleep)
 
 	// Watch on a ticker, or a new watch being created.
@@ -152,7 +152,7 @@ func (r *reaper) reapIdleBuckets(bc *bucketContainer, newWatchers <-chan *watche
 			newSleep := r.checkExpirations(bc)
 
 			if newSleep != sleep {
-				logging.Printf("Adjusting ticker to run with duration %v", newSleep)
+				logging.Debugf("Adjusting ticker to run with duration %v", newSleep)
 				// We need a new ticker.
 				ticker.Stop()
 				ticker = time.NewTicker(newSleep)

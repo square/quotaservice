@@ -56,8 +56,8 @@ func (g *GrpcEndpoint) Start() {
 		}
 	}()
 	g.currentStatus = lifecycle.Started
-	logging.Printf("Starting server on %v", g.hostport)
-	logging.Printf("Server status: %v", g.currentStatus)
+	logging.Infof("Starting server on %v", g.hostport)
+	logging.Debugf("Server status: %v", g.currentStatus)
 }
 
 func (g *GrpcEndpoint) Stop() {
@@ -67,7 +67,7 @@ func (g *GrpcEndpoint) Stop() {
 func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.AllowResponse, error) {
 	rsp := new(pb.AllowResponse)
 	if invalid(req) {
-		logging.Printf("Invalid request %+v", req)
+		logging.Debugf("Invalid request %+v", req)
 		rsp.Status = pb.AllowResponse_REJECTED_INVALID_REQUEST
 		return rsp, nil
 	}
@@ -83,7 +83,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
 			rsp.Status = toPBStatus(qsErr)
 		} else {
-			logging.Printf("Caught error %v", err)
+			logging.Warnf("Caught error %v", err)
 			rsp.Status = pb.AllowResponse_REJECTED_SERVER_ERROR
 		}
 	} else {

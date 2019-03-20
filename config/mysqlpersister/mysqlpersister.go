@@ -45,14 +45,14 @@ type Connector interface {
 }
 
 func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
-	logging.Print("Connecting to MySQL")
+	logging.Trace("Connecting to MySQL")
 	db, err := c.Connect()
 	if err != nil {
 		return nil, err
 	}
-	logging.Print("Connecting to MySQL: OK")
+	logging.Trace("Connecting to MySQL: OK")
 
-	logging.Print("Verifying table exists")
+	logging.Trace("Verifying table exists")
 	q, args, err := sq.Select("1").From("quotaservice").Limit(1).ToSql()
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
 	if err != nil {
 		return nil, errors.New("table quotaservice does not exist")
 	}
-	logging.Print("Verifying table exists: OK")
+	logging.Trace("Verifying table exists: OK")
 
 	mp := &MysqlPersister{
 		db:              db,
@@ -74,7 +74,7 @@ func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
 		latestVersion:   -1,
 	}
 
-	logging.Print("Pulling configs from MySQL")
+	logging.Info("Pulling configs from MySQL")
 	if _, err := mp.pullConfigs(); err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func New(c Connector, pollingInterval time.Duration) (*MysqlPersister, error) {
 	mp.m.RLock()
 	v := mp.latestVersion
 	mp.m.RUnlock()
-	logging.Printf("Pulling configs from MySQL: OK; Latest Version: %v", v)
+	logging.Infof("Pulling configs from MySQL: OK; Latest Version: %v", v)
 
 	mp.notifyWatcher()
 
@@ -100,13 +100,13 @@ func (mp *MysqlPersister) configFetcher(pollingInterval time.Duration) {
 		select {
 		case <-time.After(pollingInterval):
 			if newConf, err := mp.pullConfigs(); err != nil {
-				logging.Printf("Received an error trying to fetch config updates: %s", err)
+				logging.Warnf("Received an error trying to fetch config updates: %s", err)
 			} else if newConf {
-				logging.Print("New config(s) found in MySQL")
+				logging.Debug("New config(s) found in MySQL")
 				mp.notifyWatcher()
 			}
 		case <-mp.shutdown:
-			logging.Print("Received shutdown signal, shutting down mysql watcher")
+			logging.Debug("Received shutdown signal, shutting down mysql watcher")
 			return
 		}
 	}
@@ -118,7 +118,7 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	v := mp.latestVersion
 	mp.m.RUnlock()
 
-	logging.Printf("Fetching configs later than %v", v)
+	logging.Tracef("Fetching configs later than %v", v)
 	q, args, err := sq.
 		Select("Version", "Config").
 		From("quotaservice").
@@ -132,7 +132,7 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	logging.Printf("Fetching configs later than %v: OK", v)
+	logging.Tracef("Fetching configs later than %v: OK", v)
 
 	rowCount := 0
 	maxVersion := -1
@@ -148,7 +148,7 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 		var c qsc.ServiceConfig
 		err = proto.Unmarshal([]byte(r.Config), &c)
 		if err != nil {
-			logging.Printf("Could not unmarshal config version %v, error: %s", r.Version, err)
+			logging.Warnf("Could not unmarshal config version %v, error: %s", r.Version, err)
 			continue
 		}
 
@@ -160,11 +160,11 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 	}
 
 	if rowCount == 0 {
-		logging.Printf("No versions later than %v found", v)
+		logging.Debug("No versions later than %v found", v)
 		return false, nil
 	}
 
-	logging.Printf("Upgrading from version %v to %v", v, maxVersion)
+	logging.Info("Upgrading from version %v to %v", v, maxVersion)
 
 	mp.m.Lock()
 	mp.latestVersion = maxVersion
@@ -174,13 +174,13 @@ func (mp *MysqlPersister) pullConfigs() (bool, error) {
 }
 
 func (mp *MysqlPersister) notifyWatcher() {
-	logging.Print("Notifying config watcher")
+	logging.Trace("Notifying config watcher")
 	mp.notifier.Notify()
 }
 
 // PersistAndNotify persists a marshalled configuration passed in.
 func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error {
-	logging.Printf("Persisting version %v", c.GetVersion())
+	logging.Info("Persisting version %v", c.GetVersion())
 	b, err := proto.Marshal(c)
 	q, args, err := sq.Insert("quotaservice").Columns("Version", "Config").Values(c.GetVersion(), string(b)).ToSql()
 	if err != nil {
@@ -196,7 +196,7 @@ func (mp *MysqlPersister) PersistAndNotify(_ string, c *qsc.ServiceConfig) error
 		return err
 	}
 
-	logging.Printf("Persisting version %v: OK", c.GetVersion())
+	logging.Infof("Persisting version %v: OK", c.GetVersion())
 	return nil
 }
 
@@ -240,15 +240,15 @@ func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 }
 
 func (mp *MysqlPersister) Close() {
-	logging.Print("Shutting down MySQL persister")
+	logging.Debug("Shutting down MySQL persister")
 	close(mp.shutdown)
 	<-mp.fetcherShutdown
 
 	close(mp.notifier.Watcher)
 	err := mp.db.Close()
 	if err != nil {
-		logging.Printf("Could not terminate mysql connection: %v", err)
+		logging.Errorf("Could not terminate mysql connection: %v", err)
 	} else {
-		logging.Printf("Shutting down MySQL persister: OK")
+		logging.Debug("Shutting down MySQL persister: OK")
 	}
 }

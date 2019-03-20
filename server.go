@@ -62,27 +62,27 @@ func (s *server) Start() (bool, error) {
 		}
 	}, bufSize)
 
-	logging.Printf("Creating bucket container")
+	logging.Debug("Creating bucket container")
 	s.createBucketContainer()
-	logging.Printf("Creating bucket container: OK")
+	logging.Debug("Creating bucket container: OK")
 
-	logging.Printf("Waiting for persister to start")
+	logging.Debug("Waiting for persister to start")
 	<-s.persister.ConfigChangedWatcher()
-	logging.Printf("Waiting for persister to start: OK")
+	logging.Debug("Waiting for persister to start: OK")
 
-	logging.Printf("Reading latest config")
+	logging.Debug("Reading latest config")
 	s.readUpdatedConfig(0)
-	logging.Printf("Reading latest config: OK")
+	logging.Debug("Reading latest config: OK")
 
 	go s.configListener(s.persister.ConfigChangedWatcher())
 
 	// Start the RPC servers
-	logging.Printf("Starting RPC servers")
+	logging.Debug("Starting RPC servers")
 	for _, rpcServer := range s.rpcEndpoints {
 		rpcServer.Init(s)
 		rpcServer.Start()
 	}
-	logging.Printf("Starting RPC servers: OK")
+	logging.Debug("Starting RPC servers: OK")
 
 	s.currentStatus = lifecycle.Started
 	return true, nil
@@ -201,7 +201,7 @@ func (s *server) readUpdatedConfig(jitter time.Duration) {
 	newConfig, err := s.persister.ReadPersistedConfig()
 
 	if err != nil {
-		logging.Println("error reading persisted config", err)
+		logging.Error("error reading persisted config", err)
 		return
 	}
 
@@ -228,7 +228,7 @@ func (s *server) updateBucketContainer(newConfig *pb.ServiceConfig) {
 
 	// Guard against updating the existing config with a lower valued version number
 	if s.cfgs != nil && newConfig.Version <= s.cfgs.Version {
-		logging.Printf("Proposed config version %d is lower than existing config version %d. Ignoring.",
+		logging.Warnf("Proposed config version %d is lower than existing config version %d. Ignoring.",
 			newConfig.Version, s.cfgs.Version)
 		return
 	}

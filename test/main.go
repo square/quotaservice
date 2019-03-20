@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Serve Admin Console
-	logging.Printf("Starting admin server on %v\n", adminServer)
+	logging.Info("Starting admin server on %v\n", adminServer)
 	sm := http.NewServeMux()
 	server.ServeAdminConsole(sm, "admin/public", true)
 	go func() { _ = http.ListenAndServe(adminServer, sm) }()

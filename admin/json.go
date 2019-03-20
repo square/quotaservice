@@ -29,7 +29,7 @@ func writeJSONError(w http.ResponseWriter, err *httpError) {
 	response["error"] = http.StatusText(err.status)
 	response["description"] = err.message
 
-	logging.Printf("Response error: %+v", response)
+	logging.Debug("Response error: %+v", response)
 
 	w.WriteHeader(err.status)
 	writeJSON(w, response)
@@ -37,7 +37,7 @@ func writeJSONError(w http.ResponseWriter, err *httpError) {
 
 func writeJSONOk(w http.ResponseWriter) {
 	if _, e := w.Write(emptyJSONResponse); e != nil {
-		logging.Printf("Error writing JSON! %+v", e)
+		logging.Warnf("Error writing JSON! %+v", e)
 	}
 }
 
@@ -52,7 +52,7 @@ func writeJSON(w http.ResponseWriter, object interface{}) {
 	_, e = w.Write(b)
 
 	if e != nil {
-		logging.Printf("Error writing JSON! %+v", e)
+		logging.Warnf("Error writing JSON! %+v", e)
 	}
 }
 
