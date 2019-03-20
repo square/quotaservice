@@ -172,22 +172,30 @@ func (l *redisListener) batcher() {
 	for {
 		select {
 		case <-timeout:
+			// We've hit out deadline without submitting a batch, check if we have
+			// a batch to submit
 			l.statsUpdatesLock.Lock()
+			batchAvailable := len(l.statsUpdates) != 0
+			l.statsUpdatesLock.Unlock()
 
-			if len(l.statsUpdates) == 0 {
-				l.statsUpdatesLock.Unlock()
-				timeout = time.After(l.batchDeadline)
+			timeout = time.After(l.batchDeadline)
+
+			if !batchAvailable {
 				continue
 			}
-
 		case <-l.notifyBatcher:
+			// A new stats update has been submitted, check if we have enough to
+			// submit a batch
 			l.statsUpdatesLock.Lock()
+			batchReady := len(l.statsUpdates) >= l.batchSize
+			l.statsUpdatesLock.Unlock()
 
-			if len(l.statsUpdates) < l.batchSize {
-				l.statsUpdatesLock.Unlock()
+			if !batchReady {
 				continue
 			}
 		}
+
+		l.statsUpdatesLock.Lock()
 
 		batch := l.statsUpdates
 		l.statsUpdates = make([]*statsUpdate, 0, l.batchSize)
@@ -195,6 +203,7 @@ func (l *redisListener) batcher() {
 		l.statsUpdatesLock.Unlock()
 
 		go l.submitBatch(batch)
+
 		timeout = time.After(l.batchDeadline)
 	}
 }
