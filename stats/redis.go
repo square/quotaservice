@@ -14,15 +14,10 @@ import (
 	"github.com/square/quotaservice/logging"
 )
 
-type statsUpdate struct {
-	namespace string
-	numTokens float64
-	bucket    string
-}
-
 type redisListener struct {
 	client           *redis.Client
-	statsUpdates     []*statsUpdate
+	pipe             *redis.Pipeline
+	queuedUpdates    int
 	statsUpdatesLock *sync.Mutex
 	notifyBatcher    chan struct{}
 	batchSize        int
@@ -41,7 +36,8 @@ func NewRedisStatsListener(redisOpts *redis.Options, statsBatchSize int, statsBa
 
 	l := &redisListener{
 		client:           client,
-		statsUpdates:     make([]*statsUpdate, 0, statsBatchSize),
+		pipe:             client.Pipeline(),
+		queuedUpdates:    0,
 		notifyBatcher:    make(chan struct{}, 1),
 		statsUpdatesLock: &sync.Mutex{},
 		batchSize:        statsBatchSize,
@@ -147,11 +143,10 @@ func (l *redisListener) HandleEvent(event events.Event) {
 func (l *redisListener) queueStatsUpdate(namespace string, numTokens int64, bucket string) {
 	l.statsUpdatesLock.Lock()
 
-	l.statsUpdates = append(l.statsUpdates, &statsUpdate{
-		namespace: namespace,
-		numTokens: float64(numTokens),
-		bucket:    bucket,
-	})
+	l.pipe.ZIncrBy(namespace, float64(numTokens), bucket)
+	l.pipe.ExpireAt(namespace, nearestHour())
+
+	l.queuedUpdates++
 
 	l.statsUpdatesLock.Unlock()
 
@@ -175,7 +170,7 @@ func (l *redisListener) batcher() {
 			// We've hit out deadline without submitting a batch, check if we have
 			// a batch to submit
 			l.statsUpdatesLock.Lock()
-			batchAvailable := len(l.statsUpdates) != 0
+			batchAvailable := l.queuedUpdates != 0
 			l.statsUpdatesLock.Unlock()
 
 			timeout = time.After(l.batchDeadline)
@@ -187,7 +182,7 @@ func (l *redisListener) batcher() {
 			// A new stats update has been submitted, check if we have enough to
 			// submit a batch
 			l.statsUpdatesLock.Lock()
-			batchReady := len(l.statsUpdates) >= l.batchSize
+			batchReady := l.queuedUpdates >= l.batchSize
 			l.statsUpdatesLock.Unlock()
 
 			if !batchReady {
@@ -197,38 +192,30 @@ func (l *redisListener) batcher() {
 
 		l.statsUpdatesLock.Lock()
 
-		batch := l.statsUpdates
-		l.statsUpdates = make([]*statsUpdate, 0, l.batchSize)
+		pipe := l.pipe
+		l.pipe = l.client.Pipeline()
+		l.queuedUpdates = 0
 
 		l.statsUpdatesLock.Unlock()
 
-		go l.submitBatch(batch)
+		go l.submitBatch(pipe)
 
 		timeout = time.After(l.batchDeadline)
 	}
 }
 
-// submitBatch sends the provided stats updates to redis in one pipelined query.
-func (l *redisListener) submitBatch(batch []*statsUpdate) {
-	cmds, err := l.client.Pipelined(func(pipe *redis.Pipeline) error {
-		for _, update := range batch {
-			pipe.ZIncrBy(update.namespace, update.numTokens, update.bucket)
-			pipe.ExpireAt(update.namespace, nearestHour())
-		}
-		return nil
-	})
-
+// submitBatch executes the provided pipeline and checks for errors.
+func (l *redisListener) submitBatch(pipe *redis.Pipeline) {
+	cmds, err := pipe.Exec()
 	if err != nil {
 		logging.Printf("RedisStatsListener.HandleEvent pipeline error %v", err)
 	}
 
-	for i, cmd := range cmds {
+	for _, cmd := range cmds {
 		if cmd.Err() == nil {
 			continue
 		}
 
-		update := batch[i]
-		logging.Printf("RedisStatsListener.HandleEvent error (%s, %s, %v) %v",
-			update.namespace, update.bucket, update.numTokens, cmd.Err())
+		logging.Printf("RedisStatsListener.HandleEvent error (%s) %v", cmd.String(), cmd.Err())
 	}
 }
