@@ -38,7 +38,7 @@ func newUIHandler(admin Administrable, assetsDirectory string, development bool)
 func (h *uiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.development {
 		if err := h.loadTemplates(); err != nil {
-			logging.Errorf("Caught error %v reloading templates", err)
+			logging.Printf("Caught error %v reloading templates", err)
 		}
 	}
 
@@ -56,7 +56,7 @@ func (h *uiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := h.templates.ExecuteTemplate(w, tpl, h.a.Configs())
 
 	if err != nil {
-		logging.Errorf("Caught error %v serving URL %v", err, r.URL.Path)
+		logging.Printf("Caught error %v serving URL %v", err, r.URL.Path)
 		http.Error(w, "500 internal server error", http.StatusInternalServerError)
 	}
 }
