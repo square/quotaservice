@@ -68,7 +68,7 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 	default:
 		err = res.Err()
 		if unknownCloseError(err) {
-			logging.Warnf("Unknown response '%v' of type %T. Full result %+v",
+			logging.Printf("Unknown response '%v' of type %T. Full result %+v",
 				waitTimeNanos, waitTimeNanos, res)
 		}
 		// Handle connection failure

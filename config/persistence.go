@@ -35,13 +35,13 @@ func HashConfig(config *pb.ServiceConfig) string {
 	r, err := Marshal(config)
 
 	if err != nil {
-		logging.Errorf("Unable to marshal config %+v: %v", config, err)
+		logging.Printf("Unable to marshal config %+v: %v", config, err)
 		return ""
 	}
 
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		logging.Error("Unable to read bytes", err)
+		logging.Print("Unable to read bytes", err)
 		return ""
 	}
 
