@@ -212,10 +212,8 @@ func (l *redisListener) submitBatch(pipe *redis.Pipeline) {
 	}
 
 	for _, cmd := range cmds {
-		if cmd.Err() == nil {
-			continue
+		if cmd.Err() != nil {
+			logging.Printf("RedisStatsListener.HandleEvent error (%s) %v", cmd.String(), cmd.Err())
 		}
-
-		logging.Printf("RedisStatsListener.HandleEvent error (%s) %v", cmd.String(), cmd.Err())
 	}
 }
