@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis"
 
 	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/logging"
@@ -16,7 +16,7 @@ import (
 
 type redisListener struct {
 	client           *redis.Client
-	pipe             *redis.Pipeline
+	pipe             redis.Pipeliner
 	queuedUpdates    int
 	statsUpdatesLock *sync.Mutex
 	notifyBatcher    chan struct{}
@@ -205,7 +205,7 @@ func (l *redisListener) batcher() {
 }
 
 // submitBatch executes the provided pipeline and checks for errors.
-func (l *redisListener) submitBatch(pipe *redis.Pipeline) {
+func (l *redisListener) submitBatch(pipe redis.Pipeliner) {
 	cmds, err := pipe.Exec()
 	if err != nil {
 		logging.Printf("RedisStatsListener.HandleEvent pipeline error %v", err)
@@ -213,7 +213,7 @@ func (l *redisListener) submitBatch(pipe *redis.Pipeline) {
 
 	for _, cmd := range cmds {
 		if cmd.Err() != nil {
-			logging.Printf("RedisStatsListener.HandleEvent error (%s) %v", cmd.String(), cmd.Err())
+			logging.Printf("RedisStatsListener.HandleEvent error (%s, %#v) %v", cmd.Name(), cmd.Args(), cmd.Err())
 		}
 	}
 }

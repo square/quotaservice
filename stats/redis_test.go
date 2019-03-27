@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis"
 
 	"github.com/square/quotaservice/events"
 )
