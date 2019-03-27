@@ -52,6 +52,7 @@ In order of priority.
 * REST/HTTP endpoint.
 * Admin CLI to add services and quotas to the quota service to allow reconfiguration without redeployment.
 * Admin UI to add services and quotas to the quota service to allow reconfiguration without redeployment.
+* Sharded Redis back-end
 
 ![Status](https://img.shields.io/badge/status-WIP-blue.svg)
 * Naïve client(s) that integrate with gRPC.
@@ -59,7 +60,6 @@ In order of priority.
 ![Status](https://img.shields.io/badge/status-unscheduled-red.svg)
 * Smart client, with client-side buckets and asynchronous, bulk token updates from the quota service.
 * Allow for bursting (hard limits vs soft limits)
-* Sharded back-end
 
 # Use cases
 
@@ -337,7 +337,7 @@ Other implementations - including ones based on distributed consensus algorithms
 
 ### Sharding
 
-The shared data structure could be sharded, hashed on namespace, to provide greater concurrency and capacity if needed, though out of scope for this design. This is trivial to add at a later date, and libraries that perform sharded connection pool management exist.
+QuotaService supports sharding using Envoy.  It partitions based on the namespace and the bucket name (`namespace:bucket`).
 
 ## Logging
 

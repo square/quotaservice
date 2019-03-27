@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -80,9 +80,9 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 }
 
 func (a *abstractBucket) takeFromRedis(ctx context.Context, client *redis.Client, args []interface{}) *redis.Cmd {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "EvalSha")
+	span, ctx := opentracing.StartSpanFromContext(ctx, "script.Run")
 	defer span.Finish()
-	return client.EvalSha(a.factory.scriptSHA, a.keys, args...)
+	return a.factory.script.Run(client, a.keys, args...)
 }
 
 var _ quotaservice.Bucket = (*staticBucket)(nil)

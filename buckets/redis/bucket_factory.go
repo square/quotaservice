@@ -6,17 +6,68 @@
 package redis
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis"
 
 	"github.com/pkg/errors"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/logging"
 	pbconfig "github.com/square/quotaservice/protos/config"
 )
+
+const luaScript = `
+local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
+if not tokensNextAvailableNanos then
+	tokensNextAvailableNanos = 0
+end
+
+local maxTokensToAccumulate = tonumber(ARGV[3])
+
+local accumulatedTokens = redis.call("GET", KEYS[2])
+if not accumulatedTokens then
+	accumulatedTokens = maxTokensToAccumulate
+end
+
+local currentTimeNanos = tonumber(ARGV[1])
+local nanosBetweenTokens = tonumber(ARGV[2])
+local requested = tonumber(ARGV[4])
+local maxWaitTime = tonumber(ARGV[5])
+local lifespan = tonumber(ARGV[6])
+local maxDebtNanos = tonumber(ARGV[7])
+local freshTokens = 0
+
+if currentTimeNanos > tokensNextAvailableNanos then
+	freshTokens = math.floor((currentTimeNanos - tokensNextAvailableNanos) / nanosBetweenTokens)
+	accumulatedTokens = math.min(maxTokensToAccumulate, accumulatedTokens + freshTokens)
+	tokensNextAvailableNanos = currentTimeNanos
+end
+
+local waitTime = tokensNextAvailableNanos - currentTimeNanos
+local accumulatedTokensUsed = math.min(accumulatedTokens, requested)
+local tokensToWaitFor = requested - accumulatedTokensUsed
+local futureWaitNanos = tokensToWaitFor * nanosBetweenTokens
+
+tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
+accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
+
+if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime) then
+	waitTime = -1
+else
+	if lifespan > 0 then
+		redis.call("SET", KEYS[1], tokensNextAvailableNanos, "PX", lifespan)
+		redis.call("SET", KEYS[2], math.floor(accumulatedTokens), "PX", lifespan)
+	else
+		redis.call("SET", KEYS[1], tokensNextAvailableNanos)
+		redis.call("SET", KEYS[2], math.floor(accumulatedTokens))
+	end
+end
+
+return waitTime
+`
 
 // Suffixes for Redis keys
 const (
@@ -46,7 +97,7 @@ type bucketFactory struct {
 	cfg                       *pbconfig.ServiceConfig
 	client                    *redis.Client
 	redisOpts                 *redis.Options
-	scriptSHA                 string
+	script                    *redis.Script
 	connectionRetries         int
 	connectionNeedsResolution bool
 	numTimesConnResolved      int // For testing and debugging purposes
@@ -92,6 +143,8 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 		logging.Printf("Re-established Redis connections in %v", time.Since(connStart))
 	}
 
+	bf.script = redis.NewScript(luaScript)
+
 	logging.Printf("Initialized redis.BucketFactory in %v", time.Since(start))
 }
 
@@ -99,14 +152,12 @@ func (bf *bucketFactory) connectToRedisLocked() {
 	// Set up connection to Redis
 	bf.client = redis.NewClient(bf.redisOpts)
 
-	t, err := bf.client.Time().Result()
+	_, err := bf.client.Touch("areYouAlive?").Result()
 	if err != nil {
-		logging.Printf("Cannot connect to Redis. TIME returned %v", err)
+		logging.Printf("Cannot connect to Redis. TOUCH returned %v", err)
 	} else {
-		logging.Printf("Connection established. Time on Redis server: %v", t)
+		logging.Printf("Connection established")
 	}
-
-	bf.scriptSHA = loadScript(bf.client)
 }
 
 func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
@@ -114,7 +165,7 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	defer bf.Unlock()
 
 	// Always close connections on errors to prevent results leaking.
-	if err := bf.client.Close(); !isRedisClientClosedError(err) {
+	if err := bf.client.Close(); err != nil && !isRedisClientClosedError(err) {
 		logging.Printf("Received error on Redis client close: %+v", err)
 	}
 
@@ -204,17 +255,17 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.B
 		idle = strconv.FormatInt(int64(cfg.MaxIdleMillis), 10)
 	}
 
-	keys := []string{toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix, bf.cfg.Version),
-		toRedisKey(namespace, bucketName, accumulatedTokensSuffix, bf.cfg.Version)}
+	keys := []string{
+		toRedisKey(namespace, bucketName, tokensNextAvblNanosSuffix, bf.cfg.Version),
+		toRedisKey(namespace, bucketName, accumulatedTokensSuffix, bf.cfg.Version),
+	}
 
 	if dyn {
-		var exists bool
 		bf.Lock()
 		defer bf.Unlock()
 
-		var attribs *configAttributes
-
-		if attribs, exists = bf.sharedAttributes[namespace]; !exists {
+		attribs, exists := bf.sharedAttributes[namespace]
+		if !exists {
 			attribs = newConfigAttributes(cfg, idle, dyn)
 			bf.sharedAttributes[namespace] = attribs
 			bf.refcounts[namespace] = 0
@@ -223,19 +274,21 @@ func (bf *bucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.B
 
 		// Create a dynamicBucket with a reference to the appropriate shared configAttributes instance
 		return &dynamicBucket{
-			&abstractBucket{
-				attribs,
-				cfg,
-				bf,
-				keys}}
+			abstractBucket: &abstractBucket{
+				configAttributes: attribs,
+				cfg:              cfg,
+				factory:          bf,
+				keys:             keys,
+			}}
 	} else {
 		// Create a staticBucket with its own non-shared configAttributes
 		return &staticBucket{
-			&abstractBucket{
-				newConfigAttributes(cfg, idle, dyn),
-				cfg,
-				bf,
-				keys}}
+			abstractBucket: &abstractBucket{
+				configAttributes: newConfigAttributes(cfg, idle, dyn),
+				cfg:              cfg,
+				factory:          bf,
+				keys:             keys,
+			}}
 	}
 }
 
@@ -250,79 +303,11 @@ func newConfigAttributes(cfg *pbconfig.BucketConfig, idle string, dyn bool) *con
 }
 
 func toRedisKey(namespace, bucketName, suffix string, version int32) string {
-	return namespace + ":" + bucketName + ":" + suffix + ":" + strconv.Itoa(int(version))
+	return fmt.Sprintf("{%s:%s}:%s:%v", namespace, bucketName, suffix, version)
 }
 
 const redisClientClosedError = "redis: client is closed"
 
 func isRedisClientClosedError(err error) bool {
 	return err != nil && errors.Cause(err).Error() == redisClientClosedError
-}
-
-func checkScriptExists(c *redis.Client, sha string) bool {
-	r := c.ScriptExists(sha)
-	return r.Val()[0]
-}
-
-// loadScript loads the LUA script into Redis. The LUA script contains the token bucket algorithm
-// which is executed atomically in Redis. Once the script is loaded, it is invoked using its SHA.
-func loadScript(c *redis.Client) (sha string) {
-	lua := `
-	local tokensNextAvailableNanos = tonumber(redis.call("GET", KEYS[1]))
-	if not tokensNextAvailableNanos then
-		tokensNextAvailableNanos = 0
-	end
-
-	local maxTokensToAccumulate = tonumber(ARGV[3])
-
-	local accumulatedTokens = redis.call("GET", KEYS[2])
-	if not accumulatedTokens then
-		accumulatedTokens = maxTokensToAccumulate
-	end
-
-	local currentTimeNanos = tonumber(ARGV[1])
-	local nanosBetweenTokens = tonumber(ARGV[2])
-	local requested = tonumber(ARGV[4])
-	local maxWaitTime = tonumber(ARGV[5])
-	local lifespan = tonumber(ARGV[6])
-	local maxDebtNanos = tonumber(ARGV[7])
-	local freshTokens = 0
-
-	if currentTimeNanos > tokensNextAvailableNanos then
-		freshTokens = math.floor((currentTimeNanos - tokensNextAvailableNanos) / nanosBetweenTokens)
-		accumulatedTokens = math.min(maxTokensToAccumulate, accumulatedTokens + freshTokens)
-		tokensNextAvailableNanos = currentTimeNanos
-	end
-
-	local waitTime = tokensNextAvailableNanos - currentTimeNanos
-	local accumulatedTokensUsed = math.min(accumulatedTokens, requested)
-	local tokensToWaitFor = requested - accumulatedTokensUsed
-	local futureWaitNanos = tokensToWaitFor * nanosBetweenTokens
-
-	tokensNextAvailableNanos = tokensNextAvailableNanos + futureWaitNanos
-	accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
-
-	if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime) then
-    	waitTime = -1
-	else
-		if lifespan > 0 then
-			redis.call("SET", KEYS[1], tokensNextAvailableNanos, "PX", lifespan)
-			redis.call("SET", KEYS[2], math.floor(accumulatedTokens), "PX", lifespan)
-		else
-			redis.call("SET", KEYS[1], tokensNextAvailableNanos)
-			redis.call("SET", KEYS[2], math.floor(accumulatedTokens))
-		end
-	end
-
-	return waitTime
-	`
-	s := c.ScriptLoad(lua)
-	if s.Err() != nil {
-		logging.Printf("Unable to load LUA script into Redis; error=%v", s.Err())
-		return
-	}
-
-	sha = s.Val()
-	logging.Printf("Loaded LUA script into Redis; script SHA %v", sha)
-	return
 }

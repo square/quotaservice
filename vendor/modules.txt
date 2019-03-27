@@ -29,6 +29,14 @@ github.com/davecgh/go-spew/spew
 github.com/docker/go-connections/nat
 # github.com/docker/go-units v0.3.3
 github.com/docker/go-units
+# github.com/go-redis/redis v6.15.2+incompatible
+github.com/go-redis/redis
+github.com/go-redis/redis/internal
+github.com/go-redis/redis/internal/consistenthash
+github.com/go-redis/redis/internal/hashtag
+github.com/go-redis/redis/internal/pool
+github.com/go-redis/redis/internal/proto
+github.com/go-redis/redis/internal/util
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
 # github.com/golang/protobuf v1.2.0
@@ -157,12 +165,5 @@ google.golang.org/grpc/transport
 google.golang.org/grpc/credentials/oauth
 # gopkg.in/alecthomas/kingpin.v2 v2.2.3
 gopkg.in/alecthomas/kingpin.v2
-# gopkg.in/redis.v5 v5.2.7
-gopkg.in/redis.v5
-gopkg.in/redis.v5/internal
-gopkg.in/redis.v5/internal/consistenthash
-gopkg.in/redis.v5/internal/hashtag
-gopkg.in/redis.v5/internal/pool
-gopkg.in/redis.v5/internal/proto
 # gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2

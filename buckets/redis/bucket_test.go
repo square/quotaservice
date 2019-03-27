@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis"
 
 	"github.com/square/quotaservice/buckets"
 	"github.com/square/quotaservice/config"
@@ -46,8 +46,13 @@ func setUp() {
 }
 
 func TestScriptLoaded(t *testing.T) {
-	if !checkScriptExists(bucket.factory.client, bucket.factory.scriptSHA) {
-		t.Fatal("Script not loaded into Redis at start")
+	bucket.Take(context.Background(), 1, 50*time.Millisecond)
+
+	exists := bucket.factory.script.Exists(bucket.factory.client)
+	if err := exists.Err(); err != nil {
+		t.Fatal("Error checking if script was loaded into Redis: ", err)
+	} else if !exists.Val()[0] {
+		t.Fatal("Script not loaded into Redis")
 	}
 }
 
