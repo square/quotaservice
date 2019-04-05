@@ -17,7 +17,10 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	// Clear any stale state
 	bucket.Take(context.Background(), 1, 0)
 
-	wait, s := bucket.Take(context.Background(), 1, 0)
+	wait, s, err := bucket.Take(context.Background(), 1, 0)
+	if err != nil {
+		t.Fatalf("expected a nil error, got %s", err)
+	}
 	if wait != 0 {
 		t.Fatalf("Expecting 0 wait. Was %v", wait)
 	}
@@ -26,8 +29,10 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	}
 
 	// Consume all tokens. This should work too.
-	wait, s = bucket.Take(context.Background(), 100, 0)
-
+	wait, s, err = bucket.Take(context.Background(), 100, 0)
+	if err != nil {
+		t.Fatalf("expected a nil error, got %s", err)
+	}
 	if wait != 0 {
 		t.Fatalf("Expecting 0 wait. Was %v", wait)
 	}
@@ -36,7 +41,10 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	}
 
 	// Should have no more left. Should have to wait.
-	wait, s = bucket.Take(context.Background(), 10, 10*time.Second)
+	wait, s, err = bucket.Take(context.Background(), 10, 10*time.Second)
+	if err != nil {
+		t.Fatalf("expected a nil error, got %s", err)
+	}
 	if wait < 1 {
 		t.Fatalf("Expecting positive wait time. Was %v", wait)
 	}
@@ -45,7 +53,10 @@ func TestTokenAcquisition(t *testing.T, bucket quotaservice.Bucket) {
 	}
 
 	// If we don't want to wait...
-	wait, s = bucket.Take(context.Background(), 10, 0)
+	wait, s, err = bucket.Take(context.Background(), 10, 0)
+	if err != nil {
+		t.Fatalf("expected a nil error, got %s", err)
+	}
 	if wait != 0 {
 		t.Fatalf("Expecting 0 wait time. Was %v", wait)
 	}

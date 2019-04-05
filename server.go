@@ -6,21 +6,20 @@ package quotaservice
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"sort"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/square/quotaservice/admin"
+	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/lifecycle"
 	"github.com/square/quotaservice/logging"
-	"github.com/square/quotaservice/stats"
-
-	"math/rand"
-
-	"github.com/square/quotaservice/config"
 	pb "github.com/square/quotaservice/protos/config"
+	"github.com/square/quotaservice/stats"
 )
 
 // Implements the quotaservice.Server interface
@@ -135,7 +134,10 @@ func (s *server) Allow(ctx context.Context, namespace, name string, tokensReques
 		maxWaitTime *= time.Duration(b.Config().WaitTimeoutMillis)
 	}
 
-	w, success := b.Take(ctx, tokensRequested, maxWaitTime)
+	w, success, err := b.Take(ctx, tokensRequested, maxWaitTime)
+	if err != nil {
+		return 0, b.Dynamic(), errors.Wrap(err, "failed to take tokens")
+	}
 
 	if !success {
 		// Could not claim tokens within the given max wait time
@@ -143,7 +145,7 @@ func (s *server) Allow(ctx context.Context, namespace, name string, tokensReques
 		return 0, b.Dynamic(), newError(fmt.Sprintf("Timed out waiting on %v:%v", namespace, name), ER_TIMEOUT)
 	}
 
-	// The only positive result
+	// The only result that successfully claims tokens
 	s.Emit(events.NewTokensServedEvent(namespace, name, b.Dynamic(), tokensRequested, w))
 	return w, b.Dynamic(), nil
 }

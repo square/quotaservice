@@ -7,15 +7,14 @@ package redis
 
 import (
 	"strconv"
+	"sync"
 	"time"
 
 	"gopkg.in/redis.v5"
 
+	"github.com/pkg/errors"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/logging"
-
-	"sync"
-
 	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
@@ -115,7 +114,7 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	defer bf.Unlock()
 
 	// Always close connections on errors to prevent results leaking.
-	if err := bf.client.Close(); unknownCloseError(err) {
+	if err := bf.client.Close(); !isRedisClientClosedError(err) {
 		logging.Printf("Received error on Redis client close: %+v", err)
 	}
 
@@ -254,8 +253,10 @@ func toRedisKey(namespace, bucketName, suffix string, version int32) string {
 	return namespace + ":" + bucketName + ":" + suffix + ":" + strconv.Itoa(int(version))
 }
 
-func unknownCloseError(err error) bool {
-	return err != nil && err.Error() != "redis: client is closed"
+const redisClientClosedError = "redis: client is closed"
+
+func isRedisClientClosedError(err error) bool {
+	return err != nil && errors.Cause(err).Error() == redisClientClosedError
 }
 
 func checkScriptExists(c *redis.Client, sha string) bool {

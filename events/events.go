@@ -4,9 +4,8 @@
 package events
 
 import (
-	"time"
-
 	"fmt"
+	"time"
 
 	"github.com/square/quotaservice/logging"
 )
@@ -20,6 +19,7 @@ const (
 	EVENT_BUCKET_MISS
 	EVENT_BUCKET_CREATED
 	EVENT_BUCKET_REMOVED
+	EVENT_SERVER_ERROR
 )
 
 var eventNames = []string{
@@ -28,7 +28,9 @@ var eventNames = []string{
 	EVENT_TOO_MANY_TOKENS_REQUESTED: "EVENT_TOO_MANY_TOKENS_REQUESTED",
 	EVENT_BUCKET_MISS:               "EVENT_BUCKET_MISS",
 	EVENT_BUCKET_CREATED:            "EVENT_BUCKET_CREATED",
-	EVENT_BUCKET_REMOVED:            "EVENT_BUCKET_REMOVED"}
+	EVENT_BUCKET_REMOVED:            "EVENT_BUCKET_REMOVED",
+	EVENT_SERVER_ERROR:              "EVENT_SERVER_ERROR",
+}
 
 func (et EventType) String() string {
 	name := eventNames[et]
@@ -187,10 +189,19 @@ func NewBucketRemovedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_REMOVED)
 }
 
+// NewBucketRemovedEvent creates a new event with the type EVENT_BUCKET_REMOVED
+func NewServerErrorEvent(namespace, bucketName string, dynamic bool) Event {
+	return newNamedEvent(namespace, bucketName, dynamic, EVENT_SERVER_ERROR)
+}
+
 func newNamedEvent(namespace, bucketName string, dynamic bool, eventType EventType) *namedEvent {
 	return &namedEvent{
 		eventType:  eventType,
 		namespace:  namespace,
 		bucketName: bucketName,
 		dynamic:    dynamic}
+}
+
+func NewNilProducer() *EventProducer {
+	return RegisterListener(func(_ Event) {}, 0)
 }

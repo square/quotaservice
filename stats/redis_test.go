@@ -34,7 +34,7 @@ func randomNamespace() string {
 
 const (
 	batchSubmitInterval = 2 * time.Millisecond
-	waitForBatchSubmit = 10 * batchSubmitInterval
+	waitForBatchSubmit  = 10 * batchSubmitInterval
 )
 
 func setUp() Listener {
@@ -199,9 +199,9 @@ func TestRedisTop10Misses(t *testing.T) {
 	teardown(listener)
 }
 
-func TestRedisBatching( t *testing.T) {
+func TestRedisBatching(t *testing.T) {
 	setUp()
-	listener := NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, 5 * time.Second)
+	listener := NewRedisStatsListener(&redis.Options{Addr: "localhost:6379"}, 128, 5*time.Second)
 
 	for i := 0; i < 127; i++ {
 		listener.HandleEvent(events.NewBucketMissedEvent(namespace, "misses-dyn-1", true))

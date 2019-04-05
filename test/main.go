@@ -13,6 +13,7 @@ import (
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/buckets/memory"
 	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/logging"
 	"github.com/square/quotaservice/rpc/grpc"
 	"github.com/square/quotaservice/stats"
@@ -44,7 +45,7 @@ func main() {
 		config.NewMemoryConfig(cfg),
 		config.NewReaperConfig(),
 		0,
-		grpc.New(gRPCServer))
+		grpc.New(gRPCServer, events.NewNilProducer()))
 	server.SetStatsListener(stats.NewMemoryStatsListener())
 	if _, e := server.Start(); e != nil {
 		panic(e)
