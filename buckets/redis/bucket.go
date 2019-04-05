@@ -13,14 +13,11 @@ import (
 	"gopkg.in/redis.v5"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/logging"
 	pbconfig "github.com/square/quotaservice/protos/config"
 )
-
-// redisBucket is an interface that defines the two different bucket types used with Redis: static and dynamic buckets.
-type redisBucket interface {
-}
 
 // configAttributes represents certain values from a pbconfig.BucketConfig, represented as strings, for easy use as
 // parameters to a Redis call.
@@ -44,7 +41,7 @@ func (a *abstractBucket) Config() *pbconfig.BucketConfig {
 	return a.cfg
 }
 
-func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime time.Duration) (time.Duration, bool, error) {
 	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	maxIdleTimeMillis := a.maxIdleTimeMillis
@@ -56,32 +53,30 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		maxIdleTimeMillis, a.maxDebtNanos}
 
-	var waitTime time.Duration
-	var err error
-
 	client := a.factory.Client().(*redis.Client)
 	res := a.takeFromRedis(ctx, client, args)
-	switch waitTimeNanos := res.Val().(type) {
-	case int64:
-		waitTime = time.Nanosecond * time.Duration(waitTimeNanos)
-		break
-	default:
-		err = res.Err()
-		if unknownCloseError(err) {
-			logging.Printf("Unknown response '%v' of type %T. Full result %+v",
-				waitTimeNanos, waitTimeNanos, res)
+	if err := res.Err(); err != nil {
+		if isRedisClientClosedError(err) {
+			logging.Print("Failed to take token from redis because the client was closed, reconnecting")
+			a.factory.handleConnectionFailure(client)
 		}
-		// Handle connection failure
-		a.factory.handleConnectionFailure(client)
-		return 0, false
+		return 0, false, errors.Wrap(err, "failed to take token from redis bucket")
+	}
+
+	var waitTime time.Duration
+	switch val := res.Val().(type) {
+	case int64:
+		waitTime = time.Nanosecond * time.Duration(val)
+	default:
+		return 0, false, errors.Errorf("unknown response of type %[1]T: %[1]v", val)
 	}
 
 	if waitTime < 0 {
 		// Timed out
-		return 0, false
+		return 0, false, nil
 	}
 
-	return waitTime, true
+	return waitTime, true, nil
 }
 
 func (a *abstractBucket) takeFromRedis(ctx context.Context, client *redis.Client, args []interface{}) *redis.Cmd {
@@ -90,7 +85,9 @@ func (a *abstractBucket) takeFromRedis(ctx context.Context, client *redis.Client
 	return client.EvalSha(a.factory.scriptSHA, a.keys, args...)
 }
 
-// staticBucket is an implementation of a redisBucket for use with static, named buckets.
+var _ quotaservice.Bucket = (*staticBucket)(nil)
+
+// staticBucket is an implementation of quotaservice.Bucket for use with static, named buckets.
 type staticBucket struct {
 	*abstractBucket
 }
@@ -99,7 +96,9 @@ func (s *staticBucket) Dynamic() bool {
 	return false
 }
 
-// dynamicBucket is an implementation of a redisBucket for use with dynamic buckets created from a template.
+var _ quotaservice.Bucket = (*dynamicBucket)(nil)
+
+// dynamicBucket is an implementation of quotaservice.Bucket for use with dynamic buckets created from a template.
 type dynamicBucket struct {
 	*abstractBucket
 }

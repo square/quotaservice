@@ -51,6 +51,8 @@ func NewBucketFactory() quotaservice.BucketFactory {
 	return &bucketFactory{}
 }
 
+var _ quotaservice.Bucket = (*tokenBucket)(nil)
+
 // tokenBucket is a single-threaded implementation. A single goroutine updates the values of
 // tokensNextAvailable and accumulatedTokens. When requesting tokens, Take() puts a request on
 // the waitTimer channel, and listens on the response channel in the request for a result. The
@@ -75,17 +77,17 @@ type waitTimeReq struct {
 	response                    chan int64
 }
 
-func (b *tokenBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (b *tokenBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool, error) {
 	rsp := make(chan int64, 1)
 	b.waitTimer <- &waitTimeReq{numTokens, maxWaitTime.Nanoseconds(), rsp}
 	waitTimeNanos := <-rsp
 
 	if waitTimeNanos < 0 {
 		// Timed out
-		return 0, false
+		return 0, false, nil
 	}
 
-	return time.Duration(waitTimeNanos) * time.Nanosecond, true
+	return time.Duration(waitTimeNanos) * time.Nanosecond, true, nil
 }
 
 // calcWaitTime is designed to run in a single event loop and is not thread-safe.

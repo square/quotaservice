@@ -9,6 +9,7 @@ import (
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/buckets/memory"
 	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/events"
 	pb "github.com/square/quotaservice/protos"
 	qsgrpc "github.com/square/quotaservice/rpc/grpc"
 	"github.com/square/quotaservice/test/helpers"
@@ -42,7 +43,7 @@ func setUp() {
 		config.NewMemoryConfig(cfg),
 		quotaservice.NewReaperConfigForTests(),
 		0,
-		qsgrpc.New(target))
+		qsgrpc.New(target, events.NewNilProducer()))
 
 	if _, err := server.Start(); err != nil {
 		helpers.PanicError(err)

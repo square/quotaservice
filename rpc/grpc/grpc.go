@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/square/quotaservice"
+	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/lifecycle"
 	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos"
@@ -24,11 +25,16 @@ type GrpcEndpoint struct {
 	grpcServer    *grpc.Server
 	currentStatus lifecycle.Status
 	qs            quotaservice.QuotaService
+	producer      events.EventProducer
 }
 
 // New creates a new GrpcEndpoint, listening on hostport. Hostport is a string in the form
 // "host:port"
-func New(hostport string) *GrpcEndpoint {
+func New(hostport string, producer *events.EventProducer) *GrpcEndpoint {
+	if producer == nil {
+		panic("producer was nil")
+	}
+
 	if !strings.Contains(hostport, ":") {
 		panic(fmt.Sprintf("hostport should be in the format 'host:port', but is currently %v",
 			hostport))
@@ -77,7 +83,7 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 		tokensRequested = req.TokensRequested
 	}
 
-	wait, _, err := g.qs.Allow(ctx, req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride, req.MaxWaitTimeOverride)
+	wait, dynamic, err := g.qs.Allow(ctx, req.Namespace, req.BucketName, tokensRequested, req.MaxWaitMillisOverride, req.MaxWaitTimeOverride)
 
 	if err != nil {
 		if qsErr, ok := err.(quotaservice.QuotaServiceError); ok {
@@ -86,11 +92,18 @@ func (g *GrpcEndpoint) Allow(ctx context.Context, req *pb.AllowRequest) (*pb.All
 			logging.Printf("Caught error %v", err)
 			rsp.Status = pb.AllowResponse_REJECTED_SERVER_ERROR
 		}
-	} else {
-		rsp.Status = pb.AllowResponse_OK
-		rsp.TokensGranted = req.TokensRequested
-		rsp.WaitMillis = wait.Nanoseconds() / int64(time.Millisecond)
+
+		// If there's a server error, fail open. Otherwise, return the status as is
+		if rsp.Status != pb.AllowResponse_REJECTED_SERVER_ERROR {
+			return rsp, nil
+		}
+
+		g.producer.Emit(events.NewServerErrorEvent(req.Namespace, req.BucketName, dynamic))
 	}
+
+	rsp.Status = pb.AllowResponse_OK
+	rsp.TokensGranted = req.TokensRequested
+	rsp.WaitMillis = wait.Nanoseconds() / int64(time.Millisecond)
 
 	return rsp, nil
 }

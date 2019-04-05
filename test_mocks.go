@@ -15,6 +15,8 @@ import (
 	pbconfig "github.com/square/quotaservice/protos/config"
 )
 
+var _ Bucket = (*MockBucket)(nil)
+
 type MockBucket struct {
 	sync.RWMutex
 	DefaultBucket
@@ -24,15 +26,15 @@ type MockBucket struct {
 	cfg                   *pbconfig.BucketConfig
 }
 
-func (b *MockBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool) {
+func (b *MockBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool, error) {
 	b.RLock()
 	defer b.RUnlock()
 
 	if b.WaitTime > maxWaitTime {
-		return 0, false
+		return 0, false, nil
 	}
 
-	return b.WaitTime, true
+	return b.WaitTime, true, nil
 }
 func (b *MockBucket) Config() *pbconfig.BucketConfig {
 	return b.cfg

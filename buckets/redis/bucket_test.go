@@ -4,14 +4,12 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"gopkg.in/redis.v5"
-
-	"fmt"
-
-	"time"
 
 	"github.com/square/quotaservice/buckets"
 	"github.com/square/quotaservice/config"
@@ -54,8 +52,10 @@ func TestScriptLoaded(t *testing.T) {
 }
 
 func TestFailingRedisConn(t *testing.T) {
-	w, s := bucket.Take(context.Background(), 1, 0)
-
+	w, s, err := bucket.Take(context.Background(), 1, 0)
+	if err != nil {
+		t.Fatalf("Expected nil error, got: %v", err)
+	}
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
 	}
@@ -63,13 +63,16 @@ func TestFailingRedisConn(t *testing.T) {
 		t.Fatalf("Success should be true.")
 	}
 
-	err := bucket.factory.client.Close()
+	err = bucket.factory.client.Close()
 	if err != nil {
 		t.Fatal("Couldn't kill client.")
 	}
 
 	// Client should fail to Take(). This should start the reconnect handler
-	w, s = bucket.Take(context.Background(), 1, 0)
+	w, s, err = bucket.Take(context.Background(), 1, 0)
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
 	}
@@ -82,13 +85,16 @@ func TestFailingRedisConn(t *testing.T) {
 	}
 
 	// Client should reconnect
-	w, s = bucket.Take(context.Background(), 1, 0)
+	w, s, err = bucket.Take(context.Background(), 1, 0)
+	if err != nil {
+		t.Fatalf("Expected nil error, got: %v", err)
+	}
 	if w < 0 {
 		t.Fatalf("Should have not seen negative wait time. Saw %v", w)
 	}
-	//if !s {
-	//	t.Fatalf("Success should be true.")
-	//}
+	if !s {
+		t.Fatalf("Success should be true.")
+	}
 }
 
 func TestTokenAcquisition(t *testing.T) {
