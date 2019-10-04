@@ -218,7 +218,7 @@ Token buckets are stored in a map, allowing for constant time lookups. This map 
 
 ### Hierarchies and bucket search order
 
-The preference is to use a named bucket as possible. For example, given an `AllowRequest` for  `Pinky_TheBrain:UserService_getUser`,  the quota service would look for token buckets in the following order:
+The preference is to use a named bucket if possible. For example, given an `AllowRequest` for  `Pinky_TheBrain:UserService_getUser`,  the quota service would look for token buckets in the following order:
 
 1. `Pinky_TheBrain:UserService_getUser`
 
@@ -234,7 +234,7 @@ If a bucket doesn’t exist but the namespace is configured to allow dynamic buc
 
 #### Deleting buckets
 
-Buckets may be deleted to reclaim memory. A bucket can have a maximum idle time defined, after which it is removed. Accesses to buckets are recorded. If a bucket is removed and subsequently accessed, it is recreated. and filled.
+Buckets may be deleted to reclaim memory. A bucket can have a maximum idle time defined, after which it is removed. Accesses to buckets are recorded. If a bucket is removed and subsequently accessed, it is created anew.
 
 ### Default token buckets
 
