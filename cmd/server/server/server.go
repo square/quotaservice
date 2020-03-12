@@ -10,8 +10,10 @@ import (
 	"sync"
 	"syscall"
 
+	redis "github.com/go-redis/redis"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/buckets/memory"
+	qsredis "github.com/square/quotaservice/buckets/redis"
 	"github.com/square/quotaservice/config"
 	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/logging"
@@ -25,12 +27,25 @@ var (
 	app        = kingpin.New("quotaservice", "The quotaservice server.")
 	HTTPServer = app.Flag("http_server", "Admin server TCP endpoint").Default("localhost:8080").String()
 	gRPCServer = app.Flag("grpc_server", "gRPC server TCP endpoint").Default("localhost:10990").String()
+	backendURL = app.Flag("backend_url", "Volatile backend URL").Default("redis://localhost:6379").String()
 )
 
 func RunServer(cfg *pb.ServiceConfig, args []string) {
 	kingpin.MustParse(app.Parse(args))
 
-	server := quotaservice.New(memory.NewBucketFactory(),
+	var bucketFactory quotaservice.BucketFactory
+	if *backendURL == "memory://" {
+		bucketFactory = memory.NewBucketFactory()
+		logging.Printf("Using memory backend\n")
+	} else if redisOpts, err := redis.ParseURL(*backendURL); err == nil {
+		bucketFactory = qsredis.NewBucketFactory(redisOpts, 0, 0)
+		logging.Printf("Using Redis backend %s\n", *backendURL)
+	} else {
+		panic(err)
+	}
+
+	server := quotaservice.New(
+		bucketFactory,
 		config.NewMemoryConfig(cfg),
 		config.NewReaperConfig(),
 		0,

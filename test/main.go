@@ -25,5 +25,5 @@ func main() {
 	helpers.PanicError(config.AddBucket(ns, b))
 	helpers.PanicError(config.AddNamespace(cfg, ns))
 
-	server.RunServer(cfg, nil)
+	server.RunServer(cfg, []string{"--backend_url=memory://"})
 }
