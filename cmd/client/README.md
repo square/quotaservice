@@ -7,7 +7,7 @@ The CLI makes use of [gopkg.in/alecthomas/kingpin.v2](https://godoc.org/gopkg.in
 Building and running the CLI with no options will present usage information:
 
 ```
-$ cli
+$ quotaservice-cli
 usage: quotaservice-cli [<flags>] <command> [<args> ...]
 
 The quotaservice CLI tool.

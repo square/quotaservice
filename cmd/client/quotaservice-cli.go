@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/square/quotaservice/quotaservice-cli/client"
+	"github.com/square/quotaservice/cmd/client/client"
 )
 
 func main() {
