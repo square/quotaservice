@@ -50,3 +50,5 @@ require (
 	gopkg.in/yaml.v2 v2.2.1
 	gotest.tools v2.2.0+incompatible // indirect
 )
+
+go 1.13

@@ -4,11 +4,13 @@
 package main
 
 import (
-	"github.com/square/quotaservice/config"
+	"os"
+
 	"github.com/square/quotaservice/cmd/server/server"
+	"github.com/square/quotaservice/config"
 )
 
 func main() {
 	cfg := config.NewDefaultServiceConfig()
-	server.RunServer(cfg)
+	server.RunServer(cfg, os.Args[1:])
 }
