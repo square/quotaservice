@@ -26,7 +26,7 @@ import (
 var (
 	app        = kingpin.New("quotaservice", "The quotaservice server.")
 	HTTPServer = app.Flag("http_server", "Admin server TCP endpoint").Default("localhost:8080").String()
-	gRPCServer = app.Flag("grpc_server", "gRPC server TCP endpoint").Default("localhost:10990").String()
+	gRPCServer = app.Flag("grpc_server", "gRPC server TCP endpoint").Default(":10990").String()
 	backendURL = app.Flag("backend_url", "Volatile backend URL").Default("redis://localhost:6379").String()
 )
 
