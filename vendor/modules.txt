@@ -1,17 +1,18 @@
 # cloud.google.com/go v0.0.0-20170309001835-7bcba8ac93ae
+cloud.google.com/go/compute/metadata
 cloud.google.com/go/datastore
+cloud.google.com/go/internal
+cloud.google.com/go/internal/atomiccache
 cloud.google.com/go/internal/fields
 cloud.google.com/go/internal/version
-cloud.google.com/go/internal/atomiccache
-cloud.google.com/go/compute/metadata
-cloud.google.com/go/internal
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
-github.com/Azure/go-ansiterm/winterm
 github.com/Azure/go-ansiterm
+github.com/Azure/go-ansiterm/winterm
 # github.com/Masterminds/squirrel v1.1.0
 github.com/Masterminds/squirrel
-# github.com/Microsoft/go-winio v0.4.11
+# github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
+github.com/Microsoft/go-winio/pkg/guid
 # github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 github.com/Nvveen/Gotty
 # github.com/alecthomas/template v0.0.0-20150530000104-b867cc6ab45c
@@ -19,15 +20,15 @@ github.com/alecthomas/template
 github.com/alecthomas/template/parse
 # github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314
 github.com/alecthomas/units
-# github.com/cenkalti/backoff v2.1.1+incompatible
-github.com/cenkalti/backoff
-# github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
+# github.com/cenkalti/backoff/v3 v3.0.0
+github.com/cenkalti/backoff/v3
+# github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
 github.com/containerd/continuity/pathdriver
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/docker/go-connections v0.4.0
 github.com/docker/go-connections/nat
-# github.com/docker/go-units v0.3.3
+# github.com/docker/go-units v0.4.0
 github.com/docker/go-units
 # github.com/go-redis/redis v6.15.2+incompatible
 github.com/go-redis/redis
@@ -41,13 +42,13 @@ github.com/go-redis/redis/internal/util
 github.com/go-sql-driver/mysql
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/protoc-gen-go/descriptor
+github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-github.com/golang/protobuf/ptypes/struct
-github.com/golang/protobuf/protoc-gen-go/descriptor
 # github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b
 github.com/googleapis/gax-go
-# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
 github.com/lann/builder
@@ -56,104 +57,103 @@ github.com/lann/ps
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
-github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/image-spec/specs-go
-# github.com/opencontainers/runc v0.1.1
+github.com/opencontainers/image-spec/specs-go/v1
+# github.com/opencontainers/runc v1.0.0-rc9
 github.com/opencontainers/runc/libcontainer/user
 # github.com/opentracing/opentracing-go v1.0.2
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/log
-# github.com/ory/dockertest v3.3.4+incompatible
-github.com/ory/dockertest
-github.com/ory/dockertest/docker
-github.com/ory/dockertest/docker/opts
-github.com/ory/dockertest/docker/pkg/archive
-github.com/ory/dockertest/docker/pkg/fileutils
-github.com/ory/dockertest/docker/pkg/homedir
-github.com/ory/dockertest/docker/pkg/jsonmessage
-github.com/ory/dockertest/docker/pkg/stdcopy
-github.com/ory/dockertest/docker/types/registry
-github.com/ory/dockertest/docker/types
-github.com/ory/dockertest/docker/pkg/idtools
-github.com/ory/dockertest/docker/pkg/ioutils
-github.com/ory/dockertest/docker/pkg/longpath
-github.com/ory/dockertest/docker/pkg/pools
-github.com/ory/dockertest/docker/pkg/system
-github.com/ory/dockertest/docker/pkg/term
-github.com/ory/dockertest/docker/types/container
-github.com/ory/dockertest/docker/types/filters
-github.com/ory/dockertest/docker/types/mount
-github.com/ory/dockertest/docker/types/network
-github.com/ory/dockertest/docker/pkg/mount
-github.com/ory/dockertest/docker/pkg/term/windows
-github.com/ory/dockertest/docker/types/blkiodev
-github.com/ory/dockertest/docker/types/strslice
-github.com/ory/dockertest/docker/types/versions
+# github.com/ory/dockertest/v3 v3.6.0
+github.com/ory/dockertest/v3
+github.com/ory/dockertest/v3/docker
+github.com/ory/dockertest/v3/docker/opts
+github.com/ory/dockertest/v3/docker/pkg/archive
+github.com/ory/dockertest/v3/docker/pkg/fileutils
+github.com/ory/dockertest/v3/docker/pkg/homedir
+github.com/ory/dockertest/v3/docker/pkg/idtools
+github.com/ory/dockertest/v3/docker/pkg/ioutils
+github.com/ory/dockertest/v3/docker/pkg/jsonmessage
+github.com/ory/dockertest/v3/docker/pkg/longpath
+github.com/ory/dockertest/v3/docker/pkg/mount
+github.com/ory/dockertest/v3/docker/pkg/pools
+github.com/ory/dockertest/v3/docker/pkg/stdcopy
+github.com/ory/dockertest/v3/docker/pkg/system
+github.com/ory/dockertest/v3/docker/pkg/term
+github.com/ory/dockertest/v3/docker/pkg/term/windows
+github.com/ory/dockertest/v3/docker/types
+github.com/ory/dockertest/v3/docker/types/blkiodev
+github.com/ory/dockertest/v3/docker/types/container
+github.com/ory/dockertest/v3/docker/types/filters
+github.com/ory/dockertest/v3/docker/types/mount
+github.com/ory/dockertest/v3/docker/types/network
+github.com/ory/dockertest/v3/docker/types/registry
+github.com/ory/dockertest/v3/docker/types/strslice
+github.com/ory/dockertest/v3/docker/types/versions
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
 github.com/samuel/go-zookeeper/zk
-# github.com/sirupsen/logrus v1.3.0
+# github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/stretchr/testify v1.3.0
-github.com/stretchr/testify/require
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
-# golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
-golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+github.com/stretchr/testify/require
+# golang.org/x/net v0.0.0-20191003171128-d98b1b443823
 golang.org/x/net/context
-golang.org/x/net/http2
-golang.org/x/net/trace
+golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
+golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
-golang.org/x/net/context/ctxhttp
+golang.org/x/net/trace
 # golang.org/x/oauth2 v0.0.0-20170302202304-efb10a30610e
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20190204203706-41f3e6584952
-golang.org/x/sys/windows
+# golang.org/x/sys v0.0.0-20200121082415-34d275377bf9
 golang.org/x/sys/unix
+golang.org/x/sys/windows
 # golang.org/x/text v0.3.0
 golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-golang.org/x/text/transform
 # google.golang.org/api v0.0.0-20170308235209-f093df3d954a
-google.golang.org/api/option
-google.golang.org/api/iterator
-google.golang.org/api/transport
-google.golang.org/api/internal
 google.golang.org/api/googleapi/transport
+google.golang.org/api/internal
+google.golang.org/api/iterator
+google.golang.org/api/option
+google.golang.org/api/transport
 # google.golang.org/appengine v1.0.0
-google.golang.org/appengine/cloudsql
-google.golang.org/appengine/socket
-google.golang.org/appengine/urlfetch
 google.golang.org/appengine
+google.golang.org/appengine/cloudsql
 google.golang.org/appengine/internal
-google.golang.org/appengine/internal/socket
-google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/internal/app_identity
-google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
 google.golang.org/appengine/internal/log
+google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
+google.golang.org/appengine/internal/socket
+google.golang.org/appengine/internal/urlfetch
+google.golang.org/appengine/socket
+google.golang.org/appengine/urlfetch
 # google.golang.org/genproto v0.0.0-20170303204730-1e95789587db
+google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/datastore/v1
 google.golang.org/genproto/googleapis/type/latlng
-google.golang.org/genproto/googleapis/api/annotations
 # google.golang.org/grpc v0.0.0-20170307005400-4eaacfed9779
 google.golang.org/grpc
-google.golang.org/grpc/grpclog
 google.golang.org/grpc/codes
 google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/oauth
+google.golang.org/grpc/grpclog
 google.golang.org/grpc/internal
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
@@ -162,8 +162,7 @@ google.golang.org/grpc/peer
 google.golang.org/grpc/stats
 google.golang.org/grpc/tap
 google.golang.org/grpc/transport
-google.golang.org/grpc/credentials/oauth
 # gopkg.in/alecthomas/kingpin.v2 v2.2.3
 gopkg.in/alecthomas/kingpin.v2
-# gopkg.in/yaml.v2 v2.2.1
+# gopkg.in/yaml.v2 v2.2.7
 gopkg.in/yaml.v2

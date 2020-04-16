@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/ory/dockertest"
+	dockertest "github.com/ory/dockertest/v3"
 	r "github.com/stretchr/testify/require"
 
 	qsc "github.com/square/quotaservice/protos/config"
