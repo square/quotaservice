@@ -5,6 +5,7 @@ package quotaservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -24,9 +25,13 @@ type MockBucket struct {
 	namespace, bucketName string
 	dyn                   bool
 	cfg                   *pbconfig.BucketConfig
+	simulateFailure       bool
 }
 
 func (b *MockBucket) Take(_ context.Context, numTokens int64, maxWaitTime time.Duration) (time.Duration, bool, error) {
+	if b.simulateFailure {
+		return 0, false, errors.New("mock bucket had an error!")
+	}
 	b.RLock()
 	defer b.RUnlock()
 
@@ -44,7 +49,8 @@ func (b *MockBucket) Dynamic() bool {
 }
 
 type MockBucketFactory struct {
-	buckets map[string]*MockBucket
+	buckets         map[string]*MockBucket
+	SimulateFailure bool
 }
 
 func (bf *MockBucketFactory) SetWaitTime(namespace, name string, d time.Duration) {
@@ -68,11 +74,13 @@ func (bf *MockBucketFactory) Init(cfg *pbconfig.ServiceConfig) {}
 func (bf *MockBucketFactory) Client() interface{}              { return nil }
 func (bf *MockBucketFactory) NewBucket(namespace, bucketName string, cfg *pbconfig.BucketConfig, dyn bool) Bucket {
 	b := &MockBucket{
-		WaitTime:   0,
-		namespace:  namespace,
-		bucketName: bucketName,
-		dyn:        dyn,
-		cfg:        cfg}
+		WaitTime:        0,
+		namespace:       namespace,
+		bucketName:      bucketName,
+		dyn:             dyn,
+		cfg:             cfg,
+		simulateFailure: bf.SimulateFailure,
+	}
 
 	if bf.buckets == nil {
 		bf.buckets = make(map[string]*MockBucket)

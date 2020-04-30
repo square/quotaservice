@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/square/quotaservice/config"
+	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/test/helpers"
 )
 
@@ -117,6 +118,42 @@ func TestInitWithLowerVersionedConfig(t *testing.T) {
 
 	if s.cfgs.Version != 2 {
 		t.Fatal("Expected version 2 to not have been overwritten")
+	}
+}
+
+func TestBucketErrorEmitsEvent(t *testing.T) {
+	cfg := config.NewDefaultServiceConfig()
+	nsc := config.NewDefaultNamespaceConfig("dummy")
+	bc := config.NewDefaultBucketConfig("dummy")
+	helpers.CheckError(t, config.AddBucket(nsc, bc))
+	helpers.CheckError(t, config.AddNamespace(cfg, nsc))
+	bf := MockBucketFactory{
+		SimulateFailure: true,
+	}
+	s := New(&bf, config.NewMemoryConfig(cfg), NewReaperConfigForTests(), 0, &MockEndpoint{}).(*server)
+	eventsCh := make(chan events.Event)
+	s.SetListener(func(evt events.Event) {
+		eventsCh <- evt
+	}, 1000)
+	_, err := s.Start()
+	helpers.CheckError(t, err)
+	defer stopServer(t, s)
+
+	_, _, err = s.Allow(context.Background(), "dummy", "dummy", 1, 0, false)
+	if err == nil {
+		t.Fatal("Expected an Allow() error due to SimulateFailure=true on the mock bucket")
+	}
+
+	for {
+		select {
+		case evt := <-eventsCh:
+			if evt.EventType() == events.EVENT_BUCKET_ERROR {
+				// Success condition
+				return
+			}
+		case <-time.After(1 * time.Second):
+			t.Fatalf("did not get event with type %s within timeout", events.EVENT_BUCKET_ERROR)
+		}
 	}
 }
 
