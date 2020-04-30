@@ -20,6 +20,7 @@ const (
 	EVENT_BUCKET_CREATED
 	EVENT_BUCKET_REMOVED
 	EVENT_SERVER_ERROR
+	EVENT_BUCKET_ERROR
 )
 
 var eventNames = []string{
@@ -30,6 +31,7 @@ var eventNames = []string{
 	EVENT_BUCKET_CREATED:            "EVENT_BUCKET_CREATED",
 	EVENT_BUCKET_REMOVED:            "EVENT_BUCKET_REMOVED",
 	EVENT_SERVER_ERROR:              "EVENT_SERVER_ERROR",
+	EVENT_BUCKET_ERROR:              "EVENT_BUCKET_ERROR",
 }
 
 func (et EventType) String() string {
@@ -189,9 +191,16 @@ func NewBucketRemovedEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_REMOVED)
 }
 
-// NewBucketRemovedEvent creates a new event with the type EVENT_BUCKET_REMOVED
+// NewServerErrorEvent creates a new event with the type EVENT_SERVER_ERROR
 func NewServerErrorEvent(namespace, bucketName string, dynamic bool) Event {
 	return newNamedEvent(namespace, bucketName, dynamic, EVENT_SERVER_ERROR)
+}
+
+// NewBucketErrorEvent creates a new event with type EVENT_BUCKET_ERROR. It
+// indicates an error attempting to take tokens from a bucket, e.g. a redis
+// operation failure.
+func NewBucketErrorEvent(namespace, bucketName string, dynamic bool) Event {
+	return newNamedEvent(namespace, bucketName, dynamic, EVENT_BUCKET_ERROR)
 }
 
 func newNamedEvent(namespace, bucketName string, dynamic bool, eventType EventType) *namedEvent {
