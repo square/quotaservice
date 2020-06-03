@@ -42,14 +42,12 @@ func (a *abstractBucket) Config() *pbconfig.BucketConfig {
 }
 
 func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime time.Duration) (time.Duration, bool, error) {
-	currentTimeNanos := strconv.FormatInt(time.Now().UnixNano(), 10)
-
 	maxIdleTimeMillis := a.maxIdleTimeMillis
 	if a.maxIdleTimeMillis == "0" {
 		// bucket MaxIdleMillis was not set; fall back to factory setting
 		maxIdleTimeMillis = strconv.FormatInt(int64(a.factory.keyMaxIdleTime/time.Millisecond), 10)
 	}
-	args := []interface{}{currentTimeNanos, a.nanosBetweenTokens, a.maxTokensToAccumulate,
+	args := []interface{}{a.nanosBetweenTokens, a.maxTokensToAccumulate,
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		maxIdleTimeMillis, a.maxDebtNanos}
 

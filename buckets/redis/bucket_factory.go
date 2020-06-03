@@ -25,19 +25,22 @@ if not tokensNextAvailableNanos then
 	tokensNextAvailableNanos = 0
 end
 
-local maxTokensToAccumulate = tonumber(ARGV[3])
+local maxTokensToAccumulate = tonumber(ARGV[2])
 
 local accumulatedTokens = redis.call("GET", KEYS[2])
 if not accumulatedTokens then
 	accumulatedTokens = maxTokensToAccumulate
 end
 
-local currentTimeNanos = tonumber(ARGV[1])
-local nanosBetweenTokens = tonumber(ARGV[2])
-local requested = tonumber(ARGV[4])
-local maxWaitTime = tonumber(ARGV[5])
-local lifespan = tonumber(ARGV[6])
-local maxDebtNanos = tonumber(ARGV[7])
+local redisTime = redis.call("TIME")
+local second = redisTime[1]
+local microsecond = redisTime[2]
+local currentTimeNanos = tonumber(second .. microsecond) * 1000
+local nanosBetweenTokens = tonumber(ARGV[1])
+local requested = tonumber(ARGV[3])
+local maxWaitTime = tonumber(ARGV[4])
+local lifespan = tonumber(ARGV[5])
+local maxDebtNanos = tonumber(ARGV[6])
 local freshTokens = 0
 
 if currentTimeNanos > tokensNextAvailableNanos then
@@ -57,6 +60,8 @@ accumulatedTokens = accumulatedTokens - accumulatedTokensUsed
 if (tokensNextAvailableNanos - currentTimeNanos > maxDebtNanos) or (waitTime > 0 and waitTime > maxWaitTime) then
 	waitTime = -1
 else
+	-- Redis doesn't allow non-deterministic functions unless we use replicating commands instead of scripts
+	redis.replicate_commands()
 	if lifespan > 0 then
 		redis.call("SET", KEYS[1], tokensNextAvailableNanos, "PX", lifespan)
 		redis.call("SET", KEYS[2], math.floor(accumulatedTokens), "PX", lifespan)
