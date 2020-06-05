@@ -33,9 +33,9 @@ if not accumulatedTokens then
 end
 
 local redisTime = redis.call("TIME")
-local second = redisTime[1]
-local microsecond = redisTime[2]
-local currentTimeNanos = tonumber(second .. microsecond) * 1000
+local second = tonumber(redisTime[1])
+local microsecond = tonumber(redisTime[2])
+local currentTimeNanos = second * 1e+9 + microsecond * 1e+3
 local nanosBetweenTokens = tonumber(ARGV[1])
 local requested = tonumber(ARGV[3])
 local maxWaitTime = tonumber(ARGV[4])
