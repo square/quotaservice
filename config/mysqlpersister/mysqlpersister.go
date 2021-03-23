@@ -239,6 +239,7 @@ func (mp *MysqlPersister) ReadHistoricalConfigs() ([]*qsc.ServiceConfig, error) 
 	return configs, nil
 }
 
+// Close closes the notification channel and the connection to MySQL.
 func (mp *MysqlPersister) Close() {
 	logging.Print("Shutting down MySQL persister")
 	close(mp.shutdown)

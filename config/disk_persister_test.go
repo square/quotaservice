@@ -65,4 +65,13 @@ func TestDiskPersistence(t *testing.T) {
 	if !reflect.DeepEqual(s, unmarshalled) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, unmarshalled)
 	}
+
+	// Test close
+	persister.Close()
+	select {
+	case <-persister.ConfigChangedWatcher():
+		// This is good.
+	default:
+		t.Fatal("Config channel should be closed")
+	}
 }

@@ -62,4 +62,13 @@ func TestMemoryPersistence(t *testing.T) {
 	if !reflect.DeepEqual(s, cfgs[0]) {
 		t.Fatalf("Configs should be equal! %+v != %+v", s, cfgs[0])
 	}
+
+	// Test close
+	persister.Close()
+	select {
+	case <-persister.ConfigChangedWatcher():
+		// This is good.
+	default:
+		t.Fatal("Config channel should be closed")
+	}
 }

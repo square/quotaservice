@@ -23,6 +23,8 @@ type ConfigPersister interface {
 	ReadPersistedConfig() (*pb.ServiceConfig, error)
 	// Returns an array of historical configurations, used to display a history for admin consoles.
 	ReadHistoricalConfigs() ([]*pb.ServiceConfig, error)
+	// Close closes the ConfigPersister. It is not safe to use after it has been closed.
+	Close()
 }
 
 // HashConfigBytes returns the MD5 of a config byte array.

@@ -115,6 +115,11 @@ func (p *DatastoreConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return p.Notifier.Watcher
 }
 
+// Close closes the notification channel.
+func (p *DatastoreConfigPersister) Close() {
+	close(p.Notifier.Watcher)
+}
+
 func (p *DatastoreConfigPersister) ReadPersistedConfig() (*pb.ServiceConfig, error) {
 	_, s, e := p.getLatest(false)
 	if e != nil {
