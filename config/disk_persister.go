@@ -125,3 +125,8 @@ func (d *DiskConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, erro
 func (d *DiskConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return d.Notifier.Watcher
 }
+
+// Close closes the notification channel.
+func (d *DiskConfigPersister) Close() {
+	close(d.Notifier.Watcher)
+}

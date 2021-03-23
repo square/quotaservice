@@ -65,3 +65,8 @@ func (m *MemoryConfigPersister) ReadHistoricalConfigs() ([]*pb.ServiceConfig, er
 func (m *MemoryConfigPersister) ConfigChangedWatcher() <-chan struct{} {
 	return m.Notifier.Watcher
 }
+
+// Close closes the notification channel.
+func (m *MemoryConfigPersister) Close() {
+	close(m.Notifier.Watcher)
+}

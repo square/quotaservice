@@ -99,6 +99,7 @@ func (s *server) Stop() (bool, error) {
 	s.RLock()
 	defer s.RUnlock()
 	s.bucketContainer.Stop()
+	s.persister.Close()
 	return true, nil
 }
 
