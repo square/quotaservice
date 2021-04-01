@@ -43,7 +43,7 @@ func setUp() Listener {
 }
 
 func teardown(listener Listener) {
-	listener.(*redisListener).client.FlushDb()
+	listener.(*redisListener).client.FlushDB()
 }
 
 func TestRedisHandleNewHitBucket(t *testing.T) {

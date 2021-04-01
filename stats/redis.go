@@ -15,7 +15,7 @@ import (
 )
 
 type redisListener struct {
-	client           *redis.Client
+	client           redis.UniversalClient
 	pipe             redis.Pipeliner
 	queuedUpdates    int
 	statsUpdatesLock *sync.Mutex
@@ -24,10 +24,35 @@ type redisListener struct {
 	batchDeadline    time.Duration
 }
 
-// NewRedisStatsListener creates a redis-backed stats
-// listener with the passed in redis.Options.
+// NewRedisStatsListener creates a stats listener backed
+// by a standalone Redis instance.
 func NewRedisStatsListener(redisOpts *redis.Options, statsBatchSize int, statsBatchDeadline time.Duration) Listener {
 	client := redis.NewClient(redisOpts)
+	_, err := client.Ping().Result()
+
+	if err != nil {
+		logging.Fatalf("RedisStatsListener: cannot connect to Redis, %v", err)
+	}
+
+	l := &redisListener{
+		client:           client,
+		pipe:             client.Pipeline(),
+		queuedUpdates:    0,
+		notifyBatcher:    make(chan struct{}, 1),
+		statsUpdatesLock: &sync.Mutex{},
+		batchSize:        statsBatchSize,
+		batchDeadline:    statsBatchDeadline,
+	}
+
+	go l.batcher()
+
+	return l
+}
+
+// NewRedisClusterStatsListener creates a stats listener backed
+// by a Redis cluster.
+func NewRedisClusterStatsListener(redisClusterOpts *redis.ClusterOptions, statsBatchSize int, statsBatchDeadline time.Duration) Listener {
+	client := redis.NewClusterClient(redisClusterOpts)
 	_, err := client.Ping().Result()
 
 	if err != nil {

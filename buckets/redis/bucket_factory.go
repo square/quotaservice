@@ -99,9 +99,15 @@ type bucketFactory struct {
 	// the embedded mutex.
 	sharedAttributes map[string]*configAttributes
 
-	cfg                       *pbconfig.ServiceConfig
-	client                    *redis.Client
-	redisOpts                 *redis.Options
+	cfg    *pbconfig.ServiceConfig
+	client redis.UniversalClient
+
+	// Only one of redisOpts and redisClusterOpts should be set. If redisOpts is set, the bucket factory will
+	// be backed by a standalone Redis instance. If redisClusterOpts is set, the bucket factory will be backed
+	// by a Redis cluster.
+	redisOpts        *redis.Options
+	redisClusterOpts *redis.ClusterOptions
+
 	script                    *redis.Script
 	connectionRetries         int
 	connectionNeedsResolution bool
@@ -112,7 +118,7 @@ type bucketFactory struct {
 	keyMaxIdleTime time.Duration
 }
 
-// NewBucketFactory creates a new bucketFactory instance.
+// NewBucketFactory creates a new bucketFactory instance backed by a standalone Redis.
 func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, keyMaxIdleTime time.Duration) quotaservice.BucketFactory {
 	if connectionRetries < 1 {
 		connectionRetries = 1
@@ -124,6 +130,27 @@ func NewBucketFactory(redisOpts *redis.Options, connectionRetries int, keyMaxIdl
 
 	return &bucketFactory{
 		redisOpts:                 redisOpts,
+		connectionRetries:         connectionRetries,
+		sharedAttributes:          make(map[string]*configAttributes),
+		refcounts:                 make(map[string]int),
+		connectionNeedsResolution: false,
+		numTimesConnResolved:      0,
+		keyMaxIdleTime:            keyMaxIdleTime,
+	}
+}
+
+// NewClusterBucketFactory creates a new bucketFactory instance backed by a Redis cluster.
+func NewClusterBucketFactory(redisClusterOpts *redis.ClusterOptions, connectionRetries int, keyMaxIdleTime time.Duration) quotaservice.BucketFactory {
+	if connectionRetries < 1 {
+		connectionRetries = 1
+	}
+
+	if keyMaxIdleTime == 0 {
+		keyMaxIdleTime = 24 * time.Hour
+	}
+
+	return &bucketFactory{
+		redisClusterOpts:          redisClusterOpts,
 		connectionRetries:         connectionRetries,
 		sharedAttributes:          make(map[string]*configAttributes),
 		refcounts:                 make(map[string]int),
@@ -155,7 +182,13 @@ func (bf *bucketFactory) Init(cfg *pbconfig.ServiceConfig) {
 
 func (bf *bucketFactory) connectToRedisLocked() {
 	// Set up connection to Redis
-	bf.client = redis.NewClient(bf.redisOpts)
+	if bf.redisOpts != nil {
+		bf.client = redis.NewClient(bf.redisOpts)
+	} else if bf.redisClusterOpts != nil {
+		bf.client = redis.NewClusterClient(bf.redisClusterOpts)
+	} else {
+		logging.Fatal("Cannot connect to Redis because no connection options have been provided.")
+	}
 
 	_, err := bf.client.Touch("areYouAlive?").Result()
 	if err != nil {
@@ -165,7 +198,7 @@ func (bf *bucketFactory) connectToRedisLocked() {
 	}
 }
 
-func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
+func (bf *bucketFactory) reconnectToRedis(oldClient redis.UniversalClient) {
 	bf.Lock()
 	defer bf.Unlock()
 
@@ -179,7 +212,7 @@ func (bf *bucketFactory) reconnectToRedis(oldClient *redis.Client) {
 	}
 }
 
-func (bf *bucketFactory) handleConnectionFailure(oldClient *redis.Client) {
+func (bf *bucketFactory) handleConnectionFailure(oldClient redis.UniversalClient) {
 	bf.Lock()
 	defer bf.Unlock()
 
@@ -190,7 +223,7 @@ func (bf *bucketFactory) handleConnectionFailure(oldClient *redis.Client) {
 	}
 }
 
-func (bf *bucketFactory) establishNewConnectionToRedis(oldClient *redis.Client) {
+func (bf *bucketFactory) establishNewConnectionToRedis(oldClient redis.UniversalClient) {
 	client := oldClient
 	numsTried := 0
 	exponentialDelay := 1 * time.Second
@@ -204,7 +237,7 @@ func (bf *bucketFactory) establishNewConnectionToRedis(oldClient *redis.Client) 
 			numsTried++
 			bf.reconnectToRedis(client)
 
-			client = bf.Client().(*redis.Client)
+			client = bf.Client().(redis.UniversalClient)
 			_, err := client.Ping().Result()
 			if err == nil {
 				disconnected = false

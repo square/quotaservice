@@ -51,7 +51,7 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 		strconv.FormatInt(requested, 10), strconv.FormatInt(maxWaitTime.Nanoseconds(), 10),
 		maxIdleTimeMillis, a.maxDebtNanos}
 
-	client := a.factory.Client().(*redis.Client)
+	client := a.factory.Client().(redis.UniversalClient)
 	res := a.takeFromRedis(ctx, client, args)
 	if err := res.Err(); err != nil {
 		if isRedisClientClosedError(err) {
@@ -77,7 +77,7 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 	return waitTime, true, nil
 }
 
-func (a *abstractBucket) takeFromRedis(ctx context.Context, client *redis.Client, args []interface{}) *redis.Cmd {
+func (a *abstractBucket) takeFromRedis(ctx context.Context, client redis.UniversalClient, args []interface{}) *redis.Cmd {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "script.Run")
 	defer span.Finish()
 	return a.factory.script.Run(client, a.keys, args...)
