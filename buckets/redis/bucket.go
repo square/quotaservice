@@ -7,6 +7,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -80,6 +81,12 @@ func (a *abstractBucket) Take(ctx context.Context, requested int64, maxWaitTime 
 func (a *abstractBucket) takeFromRedis(ctx context.Context, client redis.UniversalClient, args []interface{}) *redis.Cmd {
 	span, ctx := opentracing.StartSpanFromContext(ctx, "script.Run")
 	defer span.Finish()
+
+	startTime := time.Now()
+	defer func() {
+		fmt.Printf("redis_call %d\n", time.Since(startTime).Milliseconds())
+	}()
+
 	return a.factory.script.Run(client, a.keys, args...)
 }
 
