@@ -7,12 +7,13 @@ package zkhelpers
 
 import (
 	"fmt"
-	"github.com/samuel/go-zookeeper/zk"
 	"strings"
+
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 const (
-	DefaultRoot                 = ""
+	DefaultRoot                 = "/"
 	internalZookeeperNode       = "/zookeeper"
 	internalZookeeperNodePrefix = "/zookeeper/"
 )
@@ -42,7 +43,12 @@ func ListSubtree(zkConn *zk.Conn, pathRoot string) ([]string, error) {
 		}
 
 		for _, child := range children {
-			childPath := fmt.Sprintf("%v/%v", node, child)
+			var childPath string
+			if node == "/" {
+				childPath = "/" + child
+			} else {
+				childPath = fmt.Sprintf("%v/%v", node, child)
+			}
 			queue = append(queue, childPath)
 			tree = append(tree, childPath)
 		}
