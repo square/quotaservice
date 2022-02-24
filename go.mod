@@ -1,6 +1,6 @@
 module github.com/square/quotaservice
 
-go 1.13
+go 1.16
 
 require (
 	cloud.google.com/go v0.0.0-20170309001835-7bcba8ac93ae
