@@ -16,12 +16,13 @@ import (
 	"github.com/square/quotaservice/config/zkhelpers"
 	pb "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"
+	"github.com/square/quotaservice/test/zktestserver"
 )
 
 var servers []string
 
 func TestMain(m *testing.M) {
-	t, err := zk.StartTestCluster(1, nil, nil)
+	t, err := zktestserver.StartTestCluster(1, nil, nil)
 	helpers.PanicError(err)
 
 	defer func() { _ = t.Stop() }()
