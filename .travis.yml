@@ -10,16 +10,15 @@ services:
 matrix:
   include:
     # Default: go test ./...
-    - go: 1.9.7
-    - go: 1.10.5
-    - go: 1.11.2
+    - go: 1.16.14
+    - go: 1.17.7
 
     # Runs tests for admin UI
-    - go: 1.11.2
+    - go: 1.17.7
       env: TEST=UI
 
 install:
-  - go get golang.org/x/tools/cmd/cover && go get github.com/mattn/goveralls
+  - go install golang.org/x/tools/cmd/cover@latest && go install github.com/mattn/goveralls@latest
 
 script:
   - test/script.sh && goveralls -service=travis-ci -package github.com/square/quotaservice
