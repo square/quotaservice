@@ -12,6 +12,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314 // indirect
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-zookeeper/zk v1.0.2
 	github.com/golang/protobuf v1.2.0
 	github.com/googleapis/gax-go v0.0.0-20170305230405-8c5154c0fe5b // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -23,7 +24,6 @@ require (
 	github.com/opentracing/opentracing-go v1.0.2
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/pkg/errors v0.8.1
-	github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/net v0.0.0-20191003171128-d98b1b443823
