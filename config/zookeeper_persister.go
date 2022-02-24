@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-zookeeper/zk"
 	"github.com/golang/protobuf/proto"
-	"github.com/samuel/go-zookeeper/zk"
 	"github.com/square/quotaservice/logging"
 	pb "github.com/square/quotaservice/protos/config"
 )

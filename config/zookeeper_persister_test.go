@@ -12,7 +12,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 	"github.com/square/quotaservice/config/zkhelpers"
 	pb "github.com/square/quotaservice/protos/config"
 	"github.com/square/quotaservice/test/helpers"

@@ -52,6 +52,9 @@ github.com/go-redis/redis/internal/util
 # github.com/go-sql-driver/mysql v1.4.1
 ## explicit
 github.com/go-sql-driver/mysql
+# github.com/go-zookeeper/zk v1.0.2
+## explicit
+github.com/go-zookeeper/zk
 # github.com/golang/protobuf v1.2.0
 ## explicit
 github.com/golang/protobuf/proto
@@ -123,9 +126,6 @@ github.com/ory/dockertest/v3/docker/types/versions
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/samuel/go-zookeeper v0.0.0-20161028232340-1d7be4effb13
-## explicit
-github.com/samuel/go-zookeeper/zk
 # github.com/sergi/go-diff v1.0.0
 ## explicit
 # github.com/sirupsen/logrus v1.4.2
