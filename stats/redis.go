@@ -4,11 +4,12 @@
 package stats
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/square/quotaservice/events"
 	"github.com/square/quotaservice/logging"
@@ -28,7 +29,7 @@ type redisListener struct {
 // by a standalone Redis instance.
 func NewRedisStatsListener(redisOpts *redis.Options, statsBatchSize int, statsBatchDeadline time.Duration) Listener {
 	client := redis.NewClient(redisOpts)
-	_, err := client.Ping().Result()
+	_, err := client.Ping(context.TODO()).Result()
 
 	if err != nil {
 		logging.Fatalf("RedisStatsListener: cannot connect to Redis, %v", err)
@@ -53,7 +54,7 @@ func NewRedisStatsListener(redisOpts *redis.Options, statsBatchSize int, statsBa
 // by a Redis cluster.
 func NewRedisClusterStatsListener(redisClusterOpts *redis.ClusterOptions, statsBatchSize int, statsBatchDeadline time.Duration) Listener {
 	client := redis.NewClusterClient(redisClusterOpts)
-	_, err := client.Ping().Result()
+	_, err := client.Ping(context.TODO()).Result()
 
 	if err != nil {
 		logging.Fatalf("RedisStatsListener: cannot connect to Redis, %v", err)
@@ -75,7 +76,7 @@ func NewRedisClusterStatsListener(redisClusterOpts *redis.ClusterOptions, statsB
 }
 
 func (l *redisListener) redisTopList(key string) []*BucketScore {
-	results, err := l.client.ZRevRangeWithScores(key, 0, 10).Result()
+	results, err := l.client.ZRevRangeWithScores(context.TODO(), key, 0, 10).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
 		logging.Printf("RedisStatsListener.TopList error (%s) %v", key, err)
@@ -115,7 +116,7 @@ func (l *redisListener) TopMisses(namespace string) []*BucketScore {
 func (l *redisListener) Get(namespace, bucket string) *BucketScores {
 	scores := &BucketScores{0, 0}
 
-	value, err := l.client.ZScore(statsNamespace("misses", namespace), bucket).Result()
+	value, err := l.client.ZScore(context.TODO(), statsNamespace("misses", namespace), bucket).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
 		logging.Printf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
@@ -123,7 +124,7 @@ func (l *redisListener) Get(namespace, bucket string) *BucketScores {
 		scores.Misses = int64(value)
 	}
 
-	value, err = l.client.ZScore(statsNamespace("hits", namespace), bucket).Result()
+	value, err = l.client.ZScore(context.TODO(), statsNamespace("hits", namespace), bucket).Result()
 
 	if err != nil && err.Error() != "redis: nil" {
 		logging.Printf("RedisStatsListener.Get error (%s, %s) %v", namespace, bucket, err)
@@ -168,8 +169,8 @@ func (l *redisListener) HandleEvent(event events.Event) {
 func (l *redisListener) queueStatsUpdate(namespace string, numTokens int64, bucket string) {
 	l.statsUpdatesLock.Lock()
 
-	l.pipe.ZIncrBy(namespace, float64(numTokens), bucket)
-	l.pipe.ExpireAt(namespace, nearestHour())
+	l.pipe.ZIncrBy(context.TODO(), namespace, float64(numTokens), bucket)
+	l.pipe.ExpireAt(context.TODO(), namespace, nearestHour())
 
 	l.queuedUpdates++
 
@@ -231,7 +232,7 @@ func (l *redisListener) batcher() {
 
 // submitBatch executes the provided pipeline and checks for errors.
 func (l *redisListener) submitBatch(pipe redis.Pipeliner) {
-	cmds, err := pipe.Exec()
+	cmds, err := pipe.Exec(context.TODO())
 	if err != nil {
 		logging.Printf("RedisStatsListener.HandleEvent pipeline error %v", err)
 	}

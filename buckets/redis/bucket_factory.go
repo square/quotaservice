@@ -6,12 +6,13 @@
 package redis
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/pkg/errors"
 	"github.com/square/quotaservice"
@@ -190,7 +191,7 @@ func (bf *bucketFactory) connectToRedisLocked() {
 		logging.Fatal("Cannot connect to Redis because no connection options have been provided.")
 	}
 
-	_, err := bf.client.Touch("areYouAlive?").Result()
+	_, err := bf.client.Touch(context.TODO(), "areYouAlive?").Result()
 	if err != nil {
 		logging.Printf("Cannot connect to Redis. TOUCH returned %v", err)
 	} else {
@@ -238,7 +239,7 @@ func (bf *bucketFactory) establishNewConnectionToRedis(oldClient redis.Universal
 			bf.reconnectToRedis(client)
 
 			client = bf.Client().(redis.UniversalClient)
-			_, err := client.Ping().Result()
+			_, err := client.Ping(context.TODO()).Result()
 			if err == nil {
 				disconnected = false
 				break
