@@ -4,12 +4,13 @@
 package stats
 
 import (
+	"context"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 
 	"github.com/square/quotaservice/events"
 )
@@ -43,7 +44,7 @@ func setUp() Listener {
 }
 
 func teardown(listener Listener) {
-	listener.(*redisListener).client.FlushDB()
+	listener.(*redisListener).client.FlushDB(context.TODO())
 }
 
 func TestRedisHandleNewHitBucket(t *testing.T) {
