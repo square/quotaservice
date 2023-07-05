@@ -1,4 +1,4 @@
-// Copyright 4 Google Inc. All Rights Reserved.
+// Copyright 2014 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+	"unicode/utf8"
 
+	"cloud.google.com/go/civil"
 	timepb "github.com/golang/protobuf/ptypes/timestamp"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 	llpb "google.golang.org/genproto/googleapis/type/latlng"
@@ -46,23 +48,34 @@ func saveEntity(key *Key, src interface{}) (*pb.Entity, error) {
 	return propertiesToProto(key, props)
 }
 
-// TODO(djd): Convert this and below to return ([]Property, error).
-func saveStructProperty(props *[]Property, name string, opts saveOpts, v reflect.Value) error {
-	p := Property{
-		Name:    name,
-		NoIndex: opts.noIndex,
-	}
-
-	if opts.omitEmpty && isEmptyValue(v) {
-		return nil
-	}
-
-	// Check if v implements PropertyLoadSaver.
-	pls, isPLS := v.Interface().(PropertyLoadSaver)
-
+// reflectFieldSave extracts the underlying value of v by reflection,
+// and tries to extract a Property that'll be appended to props.
+func reflectFieldSave(props *[]Property, p Property, name string, opts saveOpts, v reflect.Value) error {
 	switch x := v.Interface().(type) {
 	case *Key, time.Time, GeoPoint:
 		p.Value = x
+	case civil.Date:
+		p.Value = x.In(time.UTC)
+		*props = append(*props, p)
+		return nil
+	case civil.Time:
+		var format string
+		if x.Nanosecond == 0 {
+			format = "15:04:05"
+		} else {
+			format = "15:04:05.000000000"
+		}
+		val, err := time.Parse(format, x.String())
+		if err != nil {
+			return fmt.Errorf("datastore: error while parsing civil.Time: %w", err)
+		}
+		p.Value = val
+		*props = append(*props, p)
+		return nil
+	case civil.DateTime:
+		p.Value = x.In(time.UTC)
+		*props = append(*props, p)
+		return nil
 	default:
 		switch v.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -73,6 +86,19 @@ func saveStructProperty(props *[]Property, name string, opts saveOpts, v reflect
 			p.Value = v.String()
 		case reflect.Float32, reflect.Float64:
 			p.Value = v.Float()
+
+		case reflect.Interface:
+			// Extract the interface's underlying value and then retry the save.
+			// See issue https://github.com/googleapis/google-cloud-go/issues/1474.
+			if v.IsNil() {
+				// Nil interface becomes a nil property value (unless
+				// omitEmpty is true, which is handled by the caller).
+				p.Value = nil
+				*props = append(*props, p)
+				return nil
+			}
+			return reflectFieldSave(props, p, name, opts, v.Elem())
+
 		case reflect.Slice:
 			if v.Type().Elem().Kind() == reflect.Uint8 {
 				p.Value = v.Bytes()
@@ -80,28 +106,36 @@ func saveStructProperty(props *[]Property, name string, opts saveOpts, v reflect
 				return saveSliceProperty(props, name, opts, v)
 			}
 		case reflect.Ptr:
+			if isValidPointerType(v.Type().Elem()) {
+				if v.IsNil() {
+					// Nil pointer becomes a nil property value (unless
+					// omitEmpty is true, which is handled by the caller).
+					p.Value = nil
+					*props = append(*props, p)
+					return nil
+				}
+				// When we recurse on the derefenced pointer, omitempty no longer applies:
+				// we already know the pointer is not empty, it doesn't matter if its referent
+				// is empty or not.
+				opts.omitEmpty = false
+				return saveStructProperty(props, name, opts, v.Elem())
+			}
 			if v.Type().Elem().Kind() != reflect.Struct {
 				return fmt.Errorf("datastore: unsupported struct field type: %s", v.Type())
 			}
+			// Pointer to struct is a special case.
 			if v.IsNil() {
 				return nil
 			}
 			v = v.Elem()
 			fallthrough
 		case reflect.Struct:
-			if isPLS {
-				subProps, err := pls.Save()
-				if err != nil {
-					return err
-				}
-				p.Value = &Entity{Properties: subProps}
-				break
-			}
-
 			if !v.CanAddr() {
 				return fmt.Errorf("datastore: unsupported struct field: value is unaddressable")
 			}
-			sub, err := newStructPLS(v.Addr().Interface())
+			vi := v.Addr().Interface()
+
+			sub, err := newStructPLS(vi)
 			if err != nil {
 				return fmt.Errorf("datastore: unsupported struct field: %v", err)
 			}
@@ -126,11 +160,85 @@ func saveStructProperty(props *[]Property, name string, opts saveOpts, v reflect
 			}
 		}
 	}
+
+	if v.CanAddr() {
+		vi := v.Addr().Interface()
+		if pSaver, ok := vi.(PropertyLoadSaver); ok {
+			val, err := pSaver.Save()
+			if err != nil {
+				return fmt.Errorf("field save error: %w", err)
+			}
+			p.Value = val
+		}
+	}
+
 	if p.Value == nil {
 		return fmt.Errorf("datastore: unsupported struct field type: %v", v.Type())
 	}
 	*props = append(*props, p)
 	return nil
+}
+
+// TODO(djd): Convert this and below to return ([]Property, error).
+func saveStructProperty(props *[]Property, name string, opts saveOpts, v reflect.Value) error {
+	p := Property{
+		Name:    name,
+		NoIndex: opts.noIndex,
+	}
+
+	if opts.omitEmpty && isEmptyValue(v) {
+		return nil
+	}
+
+	// First check if field type implements PLS. If so, use PLS to
+	// save.
+	ok, err := plsFieldSave(props, p, name, opts, v)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+
+	return reflectFieldSave(props, p, name, opts, v)
+}
+
+// plsFieldSave first tries to converts v's value to a PLS, then v's addressed
+// value to a PLS. If neither succeeds, plsFieldSave returns false for first return
+// value.
+// If v is successfully converted to a PLS, plsFieldSave will then add the
+// Value to property p by way of the PLS's Save method, and append it to props.
+//
+// If the flatten option is present in opts, name must be prepended to each property's
+// name before it is appended to props. Eg. if name were "A" and a subproperty's name
+// were "B", the resultant name of the property to be appended to props would be "A.B".
+func plsFieldSave(props *[]Property, p Property, name string, opts saveOpts, v reflect.Value) (ok bool, err error) {
+	vpls, err := plsForSave(v)
+	if err != nil {
+		return false, err
+	}
+
+	if vpls == nil {
+		return false, nil
+	}
+
+	subProps, err := vpls.Save()
+	if err != nil {
+		return true, err
+	}
+
+	if opts.flatten {
+		for _, subp := range subProps {
+			subp.Name = name + "." + subp.Name
+			*props = append(*props, subp)
+		}
+		return true, nil
+	}
+
+	p.Value = &Entity{Properties: subProps}
+	*props = append(*props, p)
+
+	return true, nil
 }
 
 // key extracts the *Key struct field from struct v based on the structCodec of s.
@@ -257,7 +365,7 @@ func propertiesToProto(key *Key, props []Property) (*pb.Entity, error) {
 	}
 	indexedProps := 0
 	for _, p := range props {
-		// Do not send a Key value a a field to datastore.
+		// Do not send a Key value a field to datastore.
 		if p.Name == keyFieldName {
 			continue
 		}
@@ -290,33 +398,36 @@ func interfaceToProto(iv interface{}, noIndex bool) (*pb.Value, error) {
 	val := &pb.Value{ExcludeFromIndexes: noIndex}
 	switch v := iv.(type) {
 	case int:
-		val.ValueType = &pb.Value_IntegerValue{int64(v)}
+		val.ValueType = &pb.Value_IntegerValue{IntegerValue: int64(v)}
 	case int32:
-		val.ValueType = &pb.Value_IntegerValue{int64(v)}
+		val.ValueType = &pb.Value_IntegerValue{IntegerValue: int64(v)}
 	case int64:
-		val.ValueType = &pb.Value_IntegerValue{v}
+		val.ValueType = &pb.Value_IntegerValue{IntegerValue: v}
 	case bool:
-		val.ValueType = &pb.Value_BooleanValue{v}
+		val.ValueType = &pb.Value_BooleanValue{BooleanValue: v}
 	case string:
 		if len(v) > 1500 && !noIndex {
 			return nil, errors.New("string property too long to index")
 		}
-		val.ValueType = &pb.Value_StringValue{v}
+		if !utf8.ValidString(v) {
+			return nil, fmt.Errorf("string is not valid utf8: %q", v)
+		}
+		val.ValueType = &pb.Value_StringValue{StringValue: v}
 	case float32:
-		val.ValueType = &pb.Value_DoubleValue{float64(v)}
+		val.ValueType = &pb.Value_DoubleValue{DoubleValue: float64(v)}
 	case float64:
-		val.ValueType = &pb.Value_DoubleValue{v}
+		val.ValueType = &pb.Value_DoubleValue{DoubleValue: v}
 	case *Key:
 		if v == nil {
 			val.ValueType = &pb.Value_NullValue{}
 		} else {
-			val.ValueType = &pb.Value_KeyValue{keyToProto(v)}
+			val.ValueType = &pb.Value_KeyValue{KeyValue: keyToProto(v)}
 		}
 	case GeoPoint:
 		if !v.Valid() {
 			return nil, errors.New("invalid GeoPoint value")
 		}
-		val.ValueType = &pb.Value_GeoPointValue{&llpb.LatLng{
+		val.ValueType = &pb.Value_GeoPointValue{GeoPointValue: &llpb.LatLng{
 			Latitude:  v.Lat,
 			Longitude: v.Lng,
 		}}
@@ -324,7 +435,7 @@ func interfaceToProto(iv interface{}, noIndex bool) (*pb.Value, error) {
 		if v.Before(minTime) || v.After(maxTime) {
 			return nil, errors.New("time value out of range")
 		}
-		val.ValueType = &pb.Value_TimestampValue{&timepb.Timestamp{
+		val.ValueType = &pb.Value_TimestampValue{TimestampValue: &timepb.Timestamp{
 			Seconds: v.Unix(),
 			Nanos:   int32(v.Nanosecond()),
 		}}
@@ -332,13 +443,13 @@ func interfaceToProto(iv interface{}, noIndex bool) (*pb.Value, error) {
 		if len(v) > 1500 && !noIndex {
 			return nil, errors.New("[]byte property too long to index")
 		}
-		val.ValueType = &pb.Value_BlobValue{v}
+		val.ValueType = &pb.Value_BlobValue{BlobValue: v}
 	case *Entity:
 		e, err := propertiesToProto(v.Key, v.Properties)
 		if err != nil {
 			return nil, err
 		}
-		val.ValueType = &pb.Value_EntityValue{e}
+		val.ValueType = &pb.Value_EntityValue{EntityValue: e}
 	case []interface{}:
 		arr := make([]*pb.Value, 0, len(v))
 		for i, v := range v {
@@ -348,15 +459,23 @@ func interfaceToProto(iv interface{}, noIndex bool) (*pb.Value, error) {
 			}
 			arr = append(arr, elem)
 		}
-		val.ValueType = &pb.Value_ArrayValue{&pb.ArrayValue{arr}}
+		val.ValueType = &pb.Value_ArrayValue{ArrayValue: &pb.ArrayValue{Values: arr}}
 		// ArrayValues have ExcludeFromIndexes set on the individual items, rather
 		// than the top-level value.
 		val.ExcludeFromIndexes = false
 	default:
-		if iv != nil {
-			return nil, fmt.Errorf("invalid Value type %t", iv)
+		rv := reflect.ValueOf(iv)
+		if !rv.IsValid() {
+			val.ValueType = &pb.Value_NullValue{}
+		} else if rv.Kind() == reflect.Ptr { // non-nil pointer: dereference
+			if rv.IsNil() {
+				val.ValueType = &pb.Value_NullValue{}
+				return val, nil
+			}
+			return interfaceToProto(rv.Elem().Interface(), noIndex)
+		} else {
+			return nil, fmt.Errorf("invalid Value type %T", iv)
 		}
-		val.ValueType = &pb.Value_NullValue{}
 	}
 	// TODO(jbd): Support EntityValue.
 	return val, nil
@@ -378,6 +497,29 @@ func isEmptyValue(v reflect.Value) bool {
 		return v.Float() == 0
 	case reflect.Interface, reflect.Ptr:
 		return v.IsNil()
+	case reflect.Struct:
+		if t, ok := v.Interface().(time.Time); ok {
+			return t.IsZero()
+		}
+	}
+	return false
+}
+
+// isValidPointerType reports whether a struct field can be a pointer to type t
+// for the purposes of saving and loading.
+func isValidPointerType(t reflect.Type) bool {
+	if t == typeOfTime || t == typeOfGeoPoint {
+		return true
+	}
+	switch t.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Bool:
+		return true
+	case reflect.String:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
 	}
 	return false
 }

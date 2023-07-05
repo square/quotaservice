@@ -1,4 +1,4 @@
-// Copyright 2014 Google Inc. All Rights Reserved.
+// Copyright 2014 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,19 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"cloud.google.com/go/internal/fields"
 	pb "google.golang.org/genproto/googleapis/datastore/v1"
 )
 
 var (
-	typeOfByteSlice = reflect.TypeOf([]byte(nil))
-	typeOfTime      = reflect.TypeOf(time.Time{})
-	typeOfGeoPoint  = reflect.TypeOf(GeoPoint{})
-	typeOfKeyPtr    = reflect.TypeOf(&Key{})
-	typeOfEntityPtr = reflect.TypeOf(&Entity{})
+	typeOfByteSlice     = reflect.TypeOf([]byte(nil))
+	typeOfTime          = reflect.TypeOf(time.Time{})
+	typeOfCivilDate     = reflect.TypeOf(civil.Date{})
+	typeOfCivilDateTime = reflect.TypeOf(civil.DateTime{})
+	typeOfCivilTime     = reflect.TypeOf(civil.Time{})
+	typeOfGeoPoint      = reflect.TypeOf(GeoPoint{})
+	typeOfKeyPtr        = reflect.TypeOf(&Key{})
 )
 
 // typeMismatchReason returns a string explaining why the property p could not
@@ -58,6 +61,10 @@ func typeMismatchReason(p Property, v reflect.Value) string {
 	}
 
 	return fmt.Sprintf("type mismatch: %s versus %v", entityType, v.Type())
+}
+
+func overflowReason(x interface{}, v reflect.Value) string {
+	return fmt.Sprintf("value %v overflows struct field of type %v", x, v.Type())
 }
 
 type propertyLoader struct {
@@ -123,7 +130,29 @@ func (l *propertyLoader) loadOneElement(codec fields.List, structValue reflect.V
 			return "cannot set struct field"
 		}
 
-		var err error
+		// If field implements PLS, we delegate loading to the PLS's Load early,
+		// and stop iterating through fields.
+		ok, err := plsFieldLoad(v, p, fieldNames)
+		if err != nil {
+			return err.Error()
+		}
+		if ok {
+			return ""
+		}
+
+		if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+			codec, err = structCache.Fields(field.Type.Elem())
+			if err != nil {
+				return err.Error()
+			}
+
+			// Init value if its nil
+			if v.IsNil() {
+				v.Set(reflect.New(field.Type.Elem()))
+			}
+			structValue = v.Elem()
+		}
+
 		if field.Type.Kind() == reflect.Struct {
 			codec, err = structCache.Fields(field.Type)
 			if err != nil {
@@ -143,6 +172,17 @@ func (l *propertyLoader) loadOneElement(codec fields.List, structValue reflect.V
 				v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
 			}
 			structValue = v.Index(sliceIndex)
+
+			// If structValue implements PLS, we delegate loading to the PLS's
+			// Load early, and stop iterating through fields.
+			ok, err := plsFieldLoad(structValue, p, fieldNames)
+			if err != nil {
+				return err.Error()
+			}
+			if ok {
+				return ""
+			}
+
 			if structValue.Type().Kind() == reflect.Struct {
 				codec, err = structCache.Fields(structValue.Type())
 				if err != nil {
@@ -181,10 +221,50 @@ func (l *propertyLoader) loadOneElement(codec fields.List, structValue reflect.V
 	return ""
 }
 
-// setVal sets 'v' to the value of the Property 'p'.
-func setVal(v reflect.Value, p Property) string {
-	pValue := p.Value
+// plsFieldLoad first tries to converts v's value to a PLS, then v's addressed
+// value to a PLS. If neither succeeds, plsFieldLoad returns false for first return
+// value. Otherwise, the first return value will be true.
+// If v is successfully converted to a PLS, plsFieldLoad will then try to Load
+// the property p into v (by way of the PLS's Load method).
+//
+// If the field v has been flattened, the Property's name must be altered
+// before calling Load to reflect the field v.
+// For example, if our original field name was "A.B.C.D",
+// and at this point in iteration we had initialized the field
+// corresponding to "A" and have moved into the struct, so that now
+// v corresponds to the field named "B", then we want to let the
+// PLS handle this field (B)'s subfields ("C", "D"),
+// so we send the property to the PLS's Load, renamed to "C.D".
+//
+// If subfields are present, the field v has been flattened.
+func plsFieldLoad(v reflect.Value, p Property, subfields []string) (ok bool, err error) {
+	vpls, err := plsForLoad(v)
+	if err != nil {
+		return false, err
+	}
 
+	if vpls == nil {
+		return false, nil
+	}
+
+	// If Entity, load properties as well as key.
+	if e, ok := p.Value.(*Entity); ok {
+		err = loadEntity(vpls, e)
+		return true, err
+	}
+
+	// If flattened, we must alter the property's name to reflect
+	// the field v.
+	if len(subfields) > 0 {
+		p.Name = strings.Join(subfields, ".")
+	}
+
+	return true, vpls.Load([]Property{p})
+}
+
+// setVal sets 'v' to the value of the Property 'p'.
+func setVal(v reflect.Value, p Property) (s string) {
+	pValue := p.Value
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		x, ok := pValue.(int64)
@@ -192,7 +272,7 @@ func setVal(v reflect.Value, p Property) string {
 			return typeMismatchReason(p, v)
 		}
 		if v.OverflowInt(x) {
-			return fmt.Sprintf("value %v overflows struct field of type %v", x, v.Type())
+			return overflowReason(x, v)
 		}
 		v.SetInt(x)
 	case reflect.Bool:
@@ -213,12 +293,24 @@ func setVal(v reflect.Value, p Property) string {
 			return typeMismatchReason(p, v)
 		}
 		if v.OverflowFloat(x) {
-			return fmt.Sprintf("value %v overflows struct field of type %v", x, v.Type())
+			return overflowReason(x, v)
 		}
 		v.SetFloat(x)
+
+	case reflect.Interface:
+		if !v.CanSet() {
+			return fmt.Sprintf("%v is unsettable", v.Type())
+		}
+
+		rpValue := reflect.ValueOf(pValue)
+		if !rpValue.Type().AssignableTo(v.Type()) {
+			return fmt.Sprintf("%q is not assignable to %q", rpValue.Type(), v.Type())
+		}
+		v.Set(rpValue)
+
 	case reflect.Ptr:
-		// v must be either a pointer to a Key or Entity.
-		if v.Type() != typeOfKeyPtr && v.Type().Elem().Kind() != reflect.Struct {
+		// v must be a pointer to either a Key, an Entity, or one of the supported basic types.
+		if v.Type() != typeOfKeyPtr && v.Type().Elem().Kind() != reflect.Struct && !isValidPointerType(v.Type().Elem()) {
 			return typeMismatchReason(p, v)
 		}
 
@@ -230,27 +322,56 @@ func setVal(v reflect.Value, p Property) string {
 			return ""
 		}
 
-		switch x := pValue.(type) {
-		case *Key:
+		if x, ok := p.Value.(*Key); ok {
 			if _, ok := v.Interface().(*Key); !ok {
 				return typeMismatchReason(p, v)
 			}
 			v.Set(reflect.ValueOf(x))
+			return ""
+		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		switch x := pValue.(type) {
 		case *Entity:
-			if v.IsNil() {
-				v.Set(reflect.New(v.Type().Elem()))
-			}
 			err := loadEntity(v.Interface(), x)
 			if err != nil {
 				return err.Error()
 			}
-
+		case int64:
+			if v.Elem().OverflowInt(x) {
+				return overflowReason(x, v.Elem())
+			}
+			v.Elem().SetInt(x)
+		case float64:
+			if v.Elem().OverflowFloat(x) {
+				return overflowReason(x, v.Elem())
+			}
+			v.Elem().SetFloat(x)
+		case bool:
+			v.Elem().SetBool(x)
+		case string:
+			v.Elem().SetString(x)
+		case GeoPoint, time.Time:
+			v.Elem().Set(reflect.ValueOf(x))
 		default:
 			return typeMismatchReason(p, v)
 		}
 	case reflect.Struct:
 		switch v.Type() {
 		case typeOfTime:
+			// Some time values are converted into microsecond integer values
+			// (for example when used with projects). So, here we check first
+			// whether this value is an int64, and next whether it's time.
+			//
+			// See more at https://cloud.google.com/datastore/docs/concepts/queries#limitations_on_projections
+			micros, ok := pValue.(int64)
+			if ok {
+				s := micros / 1e6
+				ns := micros % 1e6
+				v.Set(reflect.ValueOf(time.Unix(s, ns).In(time.UTC)))
+				break
+			}
 			x, ok := pValue.(time.Time)
 			if !ok && pValue != nil {
 				return typeMismatchReason(p, v)
@@ -262,17 +383,20 @@ func setVal(v reflect.Value, p Property) string {
 				return typeMismatchReason(p, v)
 			}
 			v.Set(reflect.ValueOf(x))
+		case typeOfCivilDate:
+			date := civil.DateOf(pValue.(time.Time).In(time.UTC))
+			v.Set(reflect.ValueOf(date))
+		case typeOfCivilDateTime:
+			dateTime := civil.DateTimeOf(pValue.(time.Time).In(time.UTC))
+			v.Set(reflect.ValueOf(dateTime))
+		case typeOfCivilTime:
+			timeVal := civil.TimeOf(pValue.(time.Time).In(time.UTC))
+			v.Set(reflect.ValueOf(timeVal))
 		default:
 			ent, ok := pValue.(*Entity)
 			if !ok {
 				return typeMismatchReason(p, v)
 			}
-
-			// Check if v implements PropertyLoadSaver.
-			if _, ok := v.Interface().(PropertyLoadSaver); ok {
-				return fmt.Sprintf("datastore: PropertyLoadSaver methods must be implemented on a pointer to %T.", v.Interface())
-			}
-
 			err := loadEntity(v.Addr().Interface(), ent)
 			if err != nil {
 				return err.Error()
@@ -320,7 +444,19 @@ func loadEntityProto(dst interface{}, src *pb.Entity) error {
 
 func loadEntity(dst interface{}, ent *Entity) error {
 	if pls, ok := dst.(PropertyLoadSaver); ok {
-		return pls.Load(ent.Properties)
+		// Load both key and properties. Try to load as much as possible, even
+		// if an error occurs during loading either the key or the
+		// properties.
+		var keyLoadErr error
+		if e, ok := dst.(KeyLoader); ok {
+			keyLoadErr = e.LoadKey(ent.Key)
+		}
+		loadErr := pls.Load(ent.Properties)
+		// Let any error returned by LoadKey prevail above any error from Load.
+		if keyLoadErr != nil {
+			return keyLoadErr
+		}
+		return loadErr
 	}
 	return loadEntityToStruct(dst, ent)
 }
@@ -330,18 +466,15 @@ func loadEntityToStruct(dst interface{}, ent *Entity) error {
 	if err != nil {
 		return err
 	}
-	// Load properties.
-	err = pls.Load(ent.Properties)
-	if err != nil {
-		return err
-	}
-	// Load key.
+
+	// Try and load key.
 	keyField := pls.codec.Match(keyFieldName)
 	if keyField != nil && ent.Key != nil {
 		pls.v.FieldByIndex(keyField.Index).Set(reflect.ValueOf(ent.Key))
 	}
 
-	return nil
+	// Load properties.
+	return pls.Load(ent.Properties)
 }
 
 func (s structPLS) Load(props []Property) error {
@@ -403,7 +536,7 @@ func propToValue(v *pb.Value) (interface{}, error) {
 	case *pb.Value_DoubleValue:
 		return v.DoubleValue, nil
 	case *pb.Value_TimestampValue:
-		return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)), nil
+		return time.Unix(v.TimestampValue.Seconds, int64(v.TimestampValue.Nanos)).In(time.UTC), nil
 	case *pb.Value_KeyValue:
 		return protoToKey(v.KeyValue)
 	case *pb.Value_StringValue:
