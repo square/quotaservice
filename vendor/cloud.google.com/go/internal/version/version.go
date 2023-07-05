@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright 2016 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@
 package version
 
 import (
-	"bytes"
 	"runtime"
+	"strings"
 	"unicode"
 )
 
 // Repo is the current version of the client libraries in this
 // repo. It should be a date in YYYYMMDD format.
-const Repo = "20170210"
+const Repo = "20201104"
 
 // Go returns the Go runtime version. The returned string
 // has no whitespace.
@@ -34,16 +34,38 @@ func Go() string {
 	return goVersion
 }
 
-var goVersion = removeWhitespace(runtime.Version())
+var goVersion = goVer(runtime.Version())
 
-func removeWhitespace(s string) string {
-	var buf bytes.Buffer
-	for _, r := range s {
-		if unicode.IsSpace(r) {
-			buf.WriteByte('_')
-		} else {
-			buf.WriteRune(r)
+const develPrefix = "devel +"
+
+func goVer(s string) string {
+	if strings.HasPrefix(s, develPrefix) {
+		s = s[len(develPrefix):]
+		if p := strings.IndexFunc(s, unicode.IsSpace); p >= 0 {
+			s = s[:p]
 		}
+		return s
 	}
-	return buf.String()
+
+	if strings.HasPrefix(s, "go1") {
+		s = s[2:]
+		var prerelease string
+		if p := strings.IndexFunc(s, notSemverRune); p >= 0 {
+			s, prerelease = s[:p], s[p:]
+		}
+		if strings.HasSuffix(s, ".") {
+			s += "0"
+		} else if strings.Count(s, ".") < 2 {
+			s += ".0"
+		}
+		if prerelease != "" {
+			s += "-" + prerelease
+		}
+		return s
+	}
+	return ""
+}
+
+func notSemverRune(r rune) bool {
+	return !strings.ContainsRune("0123456789.", r)
 }
