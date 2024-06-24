@@ -6,6 +6,7 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -19,7 +20,7 @@ import (
 func TestNamespacesPostWithVersion(t *testing.T) {
 	ts := establishTestServer(3)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
 
 	if jsonResponse["error"] != "" {
 		t.Errorf("POST request with correct version header should succeed: %+v", jsonResponse)
@@ -29,7 +30,7 @@ func TestNamespacesPostWithVersion(t *testing.T) {
 func TestNamespacesPostNoVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodPost, "", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, false, http.MethodPost, "", t)
 
 	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
 		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
@@ -39,7 +40,7 @@ func TestNamespacesPostNoVersion(t *testing.T) {
 func TestNamespacesPostIncorrectVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, true, http.MethodPost, "3", t)
 
 	if jsonResponse["error"] != http.StatusText(http.StatusConflict) {
 		t.Errorf("Expected 409 Conflict, but received \"%+v\"", jsonResponse)
@@ -49,7 +50,7 @@ func TestNamespacesPostIncorrectVersion(t *testing.T) {
 func TestNamespacesPostBadVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodPost, "ABC", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, true, http.MethodPost, "ABC", t)
 
 	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
 		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
@@ -57,9 +58,14 @@ func TestNamespacesPostBadVersion(t *testing.T) {
 }
 
 func TestNamespacesGetWithVersion(t *testing.T) {
-	ts := establishTestServer(3)
+	currentVersion := 3
+	ts := establishTestServer(int32(currentVersion))
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
+	jsonResponse, resVersion := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
+
+	if resVersion != fmt.Sprintf("%d", currentVersion) {
+		t.Errorf("Expected version %d, but received %s", currentVersion, resVersion)
+	}
 
 	if jsonResponse["error"] != "" {
 		t.Errorf("GET request with correct version header should succeed: %+v", jsonResponse)
@@ -69,7 +75,7 @@ func TestNamespacesGetWithVersion(t *testing.T) {
 func TestNamespacesGetNoVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodGet, "", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, false, http.MethodGet, "", t)
 
 	if jsonResponse["error"] != "" {
 		t.Errorf("GET request without version header should succeed: %+v", jsonResponse)
@@ -79,20 +85,20 @@ func TestNamespacesGetNoVersion(t *testing.T) {
 func TestNamespacesGetIncorrectVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, true, http.MethodGet, "3", t)
 
-	if jsonResponse["error"] != http.StatusText(http.StatusConflict) {
-		t.Errorf("Expected 409 Conflict, but received \"%+v\"", jsonResponse)
+	if jsonResponse["error"] != "" {
+		t.Errorf("GET request with incorrect version header should succeed, as it's ignored: %+v", jsonResponse)
 	}
 }
 
 func TestNamespacesGetBadVersion(t *testing.T) {
 	ts := establishTestServer(10)
 	defer ts.Close()
-	jsonResponse := executeRequestForVersioningTest(ts, true, http.MethodGet, "ABC", t)
+	jsonResponse, _ := executeRequestForVersioningTest(ts, true, http.MethodGet, "ABC", t)
 
-	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
-		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
+	if jsonResponse["error"] != "" {
+		t.Errorf("GET request with bad version header should succeed, as it's ignored: %+v", jsonResponse)
 	}
 }
 
@@ -176,7 +182,7 @@ func establishTestServer(version int32) *httptest.Server {
 	return httptest.NewServer(apiHandler)
 }
 
-func executeRequestForVersioningTest(ts *httptest.Server, versioned bool, method string, version string, t *testing.T) map[string]string {
+func executeRequestForVersioningTest(ts *httptest.Server, versioned bool, method string, version string, t *testing.T) (jsonResponse map[string]string, resVersion string) {
 	client := &http.Client{}
 	request, err := http.NewRequest(method, ts.URL, strings.NewReader(""))
 
@@ -190,12 +196,11 @@ func executeRequestForVersioningTest(ts *httptest.Server, versioned bool, method
 		t.Fatal(err)
 	}
 
-	jsonResponse := make(map[string]string)
 	err = unmarshalJSON(res.Body, &jsonResponse)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return jsonResponse
+	return jsonResponse, res.Header.Get("Version")
 }
