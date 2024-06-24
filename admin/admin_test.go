@@ -31,8 +31,8 @@ func TestNamespacesPostNoVersion(t *testing.T) {
 	defer ts.Close()
 	jsonResponse := executeRequestForVersioningTest(ts, false, http.MethodPost, "", t)
 
-	if jsonResponse["error"] != http.StatusText(http.StatusBadRequest) {
-		t.Errorf("Expected 400 Bad Request, but received \"%+v\"", jsonResponse)
+	if jsonResponse["error"] != "" {
+		t.Errorf("POST request without version header should succeed \"%+v\"", jsonResponse)
 	}
 }
 
