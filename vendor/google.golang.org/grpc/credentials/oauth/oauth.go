@@ -1,33 +1,18 @@
 /*
  *
- * Copyright 2015, Google Inc.
- * All rights reserved.
+ * Copyright 2015 gRPC authors.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -35,10 +20,12 @@
 package oauth
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
+	"net/url"
+	"os"
+	"sync"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
@@ -56,6 +43,10 @@ func (ts TokenSource) GetRequestMetadata(ctx context.Context, uri ...string) (ma
 	if err != nil {
 		return nil, err
 	}
+	ri, _ := credentials.RequestInfoFromContext(ctx)
+	if err = credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
+		return nil, fmt.Errorf("unable to transfer TokenSource PerRPCCredentials: %v", err)
+	}
 	return map[string]string{
 		"authorization": token.Type() + " " + token.AccessToken,
 	}, nil
@@ -66,13 +57,23 @@ func (ts TokenSource) RequireTransportSecurity() bool {
 	return true
 }
 
+// removeServiceNameFromJWTURI removes RPC service name from URI.
+func removeServiceNameFromJWTURI(uri string) (string, error) {
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return "", err
+	}
+	parsed.Path = "/"
+	return parsed.String(), nil
+}
+
 type jwtAccess struct {
 	jsonKey []byte
 }
 
 // NewJWTAccessFromFile creates PerRPCCredentials from the given keyFile.
 func NewJWTAccessFromFile(keyFile string) (credentials.PerRPCCredentials, error) {
-	jsonKey, err := ioutil.ReadFile(keyFile)
+	jsonKey, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, fmt.Errorf("credentials: failed to read the service account key file: %v", err)
 	}
@@ -85,7 +86,15 @@ func NewJWTAccessFromKey(jsonKey []byte) (credentials.PerRPCCredentials, error) 
 }
 
 func (j jwtAccess) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	ts, err := google.JWTAccessTokenSourceFromJSON(j.jsonKey, uri[0])
+	// Remove RPC service name from URI that will be used as audience
+	// in a self-signed JWT token. It follows https://google.aip.dev/auth/4111.
+	aud, err := removeServiceNameFromJWTURI(uri[0])
+	if err != nil {
+		return nil, err
+	}
+	// TODO: the returned TokenSource is reusable. Store it in a sync.Map, with
+	// uri as the key, to avoid recreating for every RPC.
+	ts, err := google.JWTAccessTokenSourceFromJSON(j.jsonKey, aud)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +102,12 @@ func (j jwtAccess) GetRequestMetadata(ctx context.Context, uri ...string) (map[s
 	if err != nil {
 		return nil, err
 	}
+	ri, _ := credentials.RequestInfoFromContext(ctx)
+	if err = credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
+		return nil, fmt.Errorf("unable to transfer jwtAccess PerRPCCredentials: %v", err)
+	}
 	return map[string]string{
-		"authorization": token.TokenType + " " + token.AccessToken,
+		"authorization": token.Type() + " " + token.AccessToken,
 	}, nil
 }
 
@@ -108,13 +121,19 @@ type oauthAccess struct {
 }
 
 // NewOauthAccess constructs the PerRPCCredentials using a given token.
+//
+// Deprecated: use oauth.TokenSource instead.
 func NewOauthAccess(token *oauth2.Token) credentials.PerRPCCredentials {
 	return oauthAccess{token: *token}
 }
 
 func (oa oauthAccess) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	ri, _ := credentials.RequestInfoFromContext(ctx)
+	if err := credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
+		return nil, fmt.Errorf("unable to transfer oauthAccess PerRPCCredentials: %v", err)
+	}
 	return map[string]string{
-		"authorization": oa.token.TokenType + " " + oa.token.AccessToken,
+		"authorization": oa.token.Type() + " " + oa.token.AccessToken,
 	}, nil
 }
 
@@ -132,20 +151,31 @@ func NewComputeEngine() credentials.PerRPCCredentials {
 
 // serviceAccount represents PerRPCCredentials via JWT signing key.
 type serviceAccount struct {
+	mu     sync.Mutex
 	config *jwt.Config
+	t      *oauth2.Token
 }
 
-func (s serviceAccount) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	token, err := s.config.TokenSource(ctx).Token()
-	if err != nil {
-		return nil, err
+func (s *serviceAccount) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.t.Valid() {
+		var err error
+		s.t, err = s.config.TokenSource(ctx).Token()
+		if err != nil {
+			return nil, err
+		}
+	}
+	ri, _ := credentials.RequestInfoFromContext(ctx)
+	if err := credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
+		return nil, fmt.Errorf("unable to transfer serviceAccount PerRPCCredentials: %v", err)
 	}
 	return map[string]string{
-		"authorization": token.TokenType + " " + token.AccessToken,
+		"authorization": s.t.Type() + " " + s.t.AccessToken,
 	}, nil
 }
 
-func (s serviceAccount) RequireTransportSecurity() bool {
+func (s *serviceAccount) RequireTransportSecurity() bool {
 	return true
 }
 
@@ -156,13 +186,13 @@ func NewServiceAccountFromKey(jsonKey []byte, scope ...string) (credentials.PerR
 	if err != nil {
 		return nil, err
 	}
-	return serviceAccount{config: config}, nil
+	return &serviceAccount{config: config}, nil
 }
 
 // NewServiceAccountFromFile constructs the PerRPCCredentials using the JSON key file
 // of a Google Developers service account.
 func NewServiceAccountFromFile(keyFile string, scope ...string) (credentials.PerRPCCredentials, error) {
-	jsonKey, err := ioutil.ReadFile(keyFile)
+	jsonKey, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, fmt.Errorf("credentials: failed to read the service account key file: %v", err)
 	}
@@ -172,9 +202,43 @@ func NewServiceAccountFromFile(keyFile string, scope ...string) (credentials.Per
 // NewApplicationDefault returns "Application Default Credentials". For more
 // detail, see https://developers.google.com/accounts/docs/application-default-credentials.
 func NewApplicationDefault(ctx context.Context, scope ...string) (credentials.PerRPCCredentials, error) {
-	t, err := google.DefaultTokenSource(ctx, scope...)
+	creds, err := google.FindDefaultCredentials(ctx, scope...)
 	if err != nil {
 		return nil, err
 	}
-	return TokenSource{t}, nil
+
+	// If JSON is nil, the authentication is provided by the environment and not
+	// with a credentials file, e.g. when code is running on Google Cloud
+	// Platform. Use the returned token source.
+	if creds.JSON == nil {
+		return TokenSource{creds.TokenSource}, nil
+	}
+
+	// If auth is provided by env variable or creds file, the behavior will be
+	// different based on whether scope is set. Because the returned
+	// creds.TokenSource does oauth with jwt by default, and it requires scope.
+	// We can only use it if scope is not empty, otherwise it will fail with
+	// missing scope error.
+	//
+	// If scope is set, use it, it should just work.
+	//
+	// If scope is not set, we try to use jwt directly without oauth (this only
+	// works if it's a service account).
+
+	if len(scope) != 0 {
+		return TokenSource{creds.TokenSource}, nil
+	}
+
+	// Try to convert JSON to a jwt config without setting the optional scope
+	// parameter to check if it's a service account (the function errors if it's
+	// not). This is necessary because the returned config doesn't show the type
+	// of the account.
+	if _, err := google.JWTConfigFromJSON(creds.JSON); err != nil {
+		// If this fails, it's not a service account, return the original
+		// TokenSource from above.
+		return TokenSource{creds.TokenSource}, nil
+	}
+
+	// If it's a service account, create a JWT only access with the key.
+	return NewJWTAccessFromKey(creds.JSON)
 }
