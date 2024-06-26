@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
-	"os/exec"
 
 	"github.com/square/quotaservice/config"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -20,7 +20,8 @@ import (
 var (
 	app     = kingpin.New("quotaservice-cli", "The quotaservice CLI tool.")
 	verbose = app.Flag("verbose", "Verbose output").Short('v').Default("false").Bool()
-	env     = app.Flag("env", "Environment").Short('e').Enum("production", "staging", "local")
+	host    = app.Flag("host", "Host address").Short('h').Default("localhost").String()
+	port    = app.Flag("port", "Host port").Short('p').Default("80").Int()
 
 	// show
 	show          = app.Command("show", "Show configuration for the entire service, optionally filtered by namespace and/or bucket name.")
@@ -75,14 +76,17 @@ func doShow(gdb bool, namespace, bucket string) {
 	logf("Called show(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
 	resp := connectToServer("GET", url)
+	defer func() { _ = resp.Body.Close() }()
+	body, e := ioutil.ReadAll(resp.Body)
+	kingpin.FatalIfError(e, "Error reading HTTP response")
 
 	if *output == "" {
-		fmt.Print(resp)
+		fmt.Print(string(body))
 	} else {
 		logf("Writing to %v\n", *output)
 		f, err := os.Create(*output)
 		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
-		_, err = f.WriteString(resp)
+		_, err = f.WriteString(string(body))
 		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
 		err = f.Close()
 		kingpin.FatalIfError(err, "Cannot write to file %v", *output)
@@ -94,14 +98,16 @@ func doAdd(gdb bool, namespace, bucket string) {
 	logf("Called add(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	cfgBytes := readCfg(*addFile, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
-	connectToServer("POST", url, cfgBytes)
+	resp := connectToServer("POST", url, cfgBytes)
+	_ = resp.Body.Close()
 }
 
 func doRemove(gdb bool, namespace, bucket string) {
 	validate(gdb, namespace, bucket)
 	logf("Called remove(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
-	connectToServer("DELETE", url)
+	resp := connectToServer("DELETE", url)
+	_ = resp.Body.Close()
 }
 
 func doUpdate(gdb bool, namespace, bucket string) {
@@ -109,7 +115,8 @@ func doUpdate(gdb bool, namespace, bucket string) {
 	logf("Called update(gdb=%v, namespace=%v, bucket=%v)\n", gdb, namespace, bucket)
 	cfgBytes := readCfg(*updateFile, namespace, bucket)
 	url := createUrl(gdb, namespace, bucket)
-	connectToServer("PUT", url, cfgBytes)
+	resp := connectToServer("PUT", url, cfgBytes)
+	_ = resp.Body.Close()
 }
 
 func readCfg(f, namespace, bucket string) []byte {
@@ -180,7 +187,7 @@ func validate(gdb bool, namespace, bucket string) {
 	}
 }
 
-func connectToServer(method, url string, data ...[]byte) string {
+func connectToServer(method, url string, data ...[]byte) *http.Response {
 	var dataReader io.Reader
 
 	switch len(data) {
@@ -192,21 +199,22 @@ func connectToServer(method, url string, data ...[]byte) string {
 		panic("Should never get here")
 	}
 
-	cmdTokens := []string{"-sS", "-X", method, url, "-H", "Content-Type: application/json"}
-	if dataReader != nil {
-		cmdTokens = append(cmdTokens, "--data", string(data[0]))
+	r, e := http.NewRequest(method, url, dataReader)
+	kingpin.FatalIfError(e, "HTTP error")
+
+	client := &http.Client{}
+	resp, e := client.Do(r)
+	kingpin.FatalIfError(e, "HTTP error")
+
+	logf("Response Status: %v\n", resp.Status)
+	logf("Response Headers: %v\n", resp.Header)
+	if resp.StatusCode != 200 {
+		defer func() { _ = resp.Body.Close() }()
+		body, _ := ioutil.ReadAll(resp.Body)
+		kingpin.Fatalf("HTTP request failed with status %v and reason %v\n", resp.StatusCode, string(body))
 	}
 
-	cmd := exec.Command("beyond-curl", cmdTokens...)
-
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	err := cmd.Run()
-	if err != nil {
-		kingpin.Fatalf("beyond-curl command failed with error: %v", err)
-	}
-	return out.String()
+	return resp
 }
 
 func createUrl(gdb bool, namespace, bucket string) string {
@@ -221,14 +229,7 @@ func createUrl(gdb bool, namespace, bucket string) string {
 		}
 	}
 
-	host := "localhost:3000"
-	if *env == "staging" {
-		host = "quotaservice.stage.sqprod.co"
-	} else if *env == "production" {
-		host = "quotaservice.sqprod.co"
-	}
-
-	url := fmt.Sprintf("https://%v/api/%v", host, uri)
+	url := fmt.Sprintf("http://%v:%v/api/%v", *host, *port, uri)
 	logf("Connecting to URL %v\n", url)
 	return url
 }
