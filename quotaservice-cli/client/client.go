@@ -13,8 +13,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/alecthomas/kingpin/v2"
+
 	"github.com/square/quotaservice/config"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type QuotaserviceClient struct {
