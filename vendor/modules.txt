@@ -17,18 +17,10 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5
 github.com/Nvveen/Gotty
-# github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
+# github.com/alecthomas/kingpin/v2 v2.4.0
 ## explicit
-# github.com/alecthomas/colour v0.0.0-20160524082231-60882d9e2721
-## explicit
-# github.com/alecthomas/repr v0.0.0-20181024024818-d37bc2a10ba1
-## explicit
-# github.com/alecthomas/template v0.0.0-20150530000104-b867cc6ab45c
-## explicit
-github.com/alecthomas/template
-github.com/alecthomas/template/parse
-# github.com/alecthomas/units v0.0.0-20150109002421-6b4e7dc5e314
-## explicit
+github.com/alecthomas/kingpin/v2
+# github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 github.com/alecthomas/units
 # github.com/cenkalti/backoff/v3 v3.0.0
 github.com/cenkalti/backoff/v3
@@ -80,8 +72,6 @@ github.com/lann/builder
 github.com/lann/ps
 # github.com/lib/pq v1.0.0
 ## explicit
-# github.com/mattn/go-isatty v0.0.4
-## explicit
 # github.com/mattn/go-sqlite3 v1.9.0
 ## explicit
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -127,14 +117,14 @@ github.com/ory/dockertest/v3/docker/types/versions
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/sergi/go-diff v1.0.0
-## explicit
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.8.2
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/xhit/go-str2duration/v2 v2.1.0
+github.com/xhit/go-str2duration/v2
 # golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
 ## explicit
 golang.org/x/net/context
@@ -236,11 +226,10 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
-# gopkg.in/alecthomas/kingpin.v2 v2.2.3
-## explicit
-gopkg.in/alecthomas/kingpin.v2
 # gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 ## explicit
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.1
+gopkg.in/yaml.v3

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/kingpin/v2"
 
 	"github.com/square/quotaservice/quotaservice-cli/client"
 )
