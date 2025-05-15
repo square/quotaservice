@@ -138,6 +138,7 @@ func (s *server) Allow(ctx context.Context, namespace, name string, tokensReques
 	w, success, err := b.Take(ctx, tokensRequested, maxWaitTime)
 	if err != nil {
 		s.Emit(events.NewBucketErrorEvent(namespace, name, b.Dynamic()))
+		logging.Printf("Error taking bucket %v:%v: %v", namespace, name, err)
 		return 0, b.Dynamic(), errors.Wrap(err, "failed to take tokens")
 	}
 
