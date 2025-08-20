@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"github.com/square/quotaservice"
 	"github.com/square/quotaservice/logging"
 	pbconfig "github.com/square/quotaservice/protos/config"
